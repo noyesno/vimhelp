@@ -1,0 +1,295 @@
+<?xml version="1.0"?>
+<!--
+ Ref: 
+   http://www.perrygarvin.com/blog/2012/01/16/how-to-make-an-amazon-kindle-book-using-html-and-css/
+   http://rogerx.freeshell.org/programming/kindle-convert_linuxmantomobi.html
+   http://wiki.mobileread.com/wiki/KindleGen
+-->
+ 
+<package version="2.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+    <dc:title>Vim Help</dc:title>
+    <dc:language>en</dc:language>
+    <dc:creator opf:file-as="Zhang, Sean" opf:role="aut">Sean Zhang</dc:creator>
+    <dc:publisher>vimhelp2mobi</dc:publisher>
+    <dc:subject>Reference</dc:subject>
+    <dc:date>2015-02-28</dc:date>
+    <dc:description>Vim Help Files</dc:description>
+  </metadata>
+ 
+  <manifest>
+<item id="help.html" href="help.html" media-type="application/xhtml+xml"/>
+<item id="helphelp.html" href="helphelp.html" media-type="application/xhtml+xml"/>
+<item id="intro.html" href="intro.html" media-type="application/xhtml+xml"/>
+<item id="quickref.html" href="quickref.html" media-type="application/xhtml+xml"/>
+<item id="usr_01.html" href="usr_01.html" media-type="application/xhtml+xml"/>
+<item id="uganda.html" href="uganda.html" media-type="application/xhtml+xml"/>
+<item id="sponsor.html" href="sponsor.html" media-type="application/xhtml+xml"/>
+<item id="usr_toc.html" href="usr_toc.html" media-type="application/xhtml+xml"/>
+<item id="usr_02.html" href="usr_02.html" media-type="application/xhtml+xml"/>
+<item id="usr_03.html" href="usr_03.html" media-type="application/xhtml+xml"/>
+<item id="usr_04.html" href="usr_04.html" media-type="application/xhtml+xml"/>
+<item id="usr_05.html" href="usr_05.html" media-type="application/xhtml+xml"/>
+<item id="usr_06.html" href="usr_06.html" media-type="application/xhtml+xml"/>
+<item id="usr_07.html" href="usr_07.html" media-type="application/xhtml+xml"/>
+<item id="usr_08.html" href="usr_08.html" media-type="application/xhtml+xml"/>
+<item id="usr_09.html" href="usr_09.html" media-type="application/xhtml+xml"/>
+<item id="usr_10.html" href="usr_10.html" media-type="application/xhtml+xml"/>
+<item id="usr_11.html" href="usr_11.html" media-type="application/xhtml+xml"/>
+<item id="usr_12.html" href="usr_12.html" media-type="application/xhtml+xml"/>
+<item id="usr_20.html" href="usr_20.html" media-type="application/xhtml+xml"/>
+<item id="usr_21.html" href="usr_21.html" media-type="application/xhtml+xml"/>
+<item id="usr_22.html" href="usr_22.html" media-type="application/xhtml+xml"/>
+<item id="usr_23.html" href="usr_23.html" media-type="application/xhtml+xml"/>
+<item id="usr_24.html" href="usr_24.html" media-type="application/xhtml+xml"/>
+<item id="usr_25.html" href="usr_25.html" media-type="application/xhtml+xml"/>
+<item id="usr_26.html" href="usr_26.html" media-type="application/xhtml+xml"/>
+<item id="usr_27.html" href="usr_27.html" media-type="application/xhtml+xml"/>
+<item id="usr_28.html" href="usr_28.html" media-type="application/xhtml+xml"/>
+<item id="usr_29.html" href="usr_29.html" media-type="application/xhtml+xml"/>
+<item id="usr_30.html" href="usr_30.html" media-type="application/xhtml+xml"/>
+<item id="usr_31.html" href="usr_31.html" media-type="application/xhtml+xml"/>
+<item id="usr_32.html" href="usr_32.html" media-type="application/xhtml+xml"/>
+<item id="usr_40.html" href="usr_40.html" media-type="application/xhtml+xml"/>
+<item id="usr_41.html" href="usr_41.html" media-type="application/xhtml+xml"/>
+<item id="usr_42.html" href="usr_42.html" media-type="application/xhtml+xml"/>
+<item id="usr_43.html" href="usr_43.html" media-type="application/xhtml+xml"/>
+<item id="usr_44.html" href="usr_44.html" media-type="application/xhtml+xml"/>
+<item id="usr_45.html" href="usr_45.html" media-type="application/xhtml+xml"/>
+<item id="usr_90.html" href="usr_90.html" media-type="application/xhtml+xml"/>
+<item id="index.html" href="index.html" media-type="application/xhtml+xml"/>
+<item id="howto.html" href="howto.html" media-type="application/xhtml+xml"/>
+<item id="tips.html" href="tips.html" media-type="application/xhtml+xml"/>
+<item id="message.html" href="message.html" media-type="application/xhtml+xml"/>
+<item id="quotes.html" href="quotes.html" media-type="application/xhtml+xml"/>
+<item id="todo.html" href="todo.html" media-type="application/xhtml+xml"/>
+<item id="develop.html" href="develop.html" media-type="application/xhtml+xml"/>
+<item id="debug.html" href="debug.html" media-type="application/xhtml+xml"/>
+<item id="starting.html" href="starting.html" media-type="application/xhtml+xml"/>
+<item id="editing.html" href="editing.html" media-type="application/xhtml+xml"/>
+<item id="motion.html" href="motion.html" media-type="application/xhtml+xml"/>
+<item id="scroll.html" href="scroll.html" media-type="application/xhtml+xml"/>
+<item id="insert.html" href="insert.html" media-type="application/xhtml+xml"/>
+<item id="change.html" href="change.html" media-type="application/xhtml+xml"/>
+<item id="indent.html" href="indent.html" media-type="application/xhtml+xml"/>
+<item id="undo.html" href="undo.html" media-type="application/xhtml+xml"/>
+<item id="repeat.html" href="repeat.html" media-type="application/xhtml+xml"/>
+<item id="visual.html" href="visual.html" media-type="application/xhtml+xml"/>
+<item id="various.html" href="various.html" media-type="application/xhtml+xml"/>
+<item id="recover.html" href="recover.html" media-type="application/xhtml+xml"/>
+<item id="cmdline.html" href="cmdline.html" media-type="application/xhtml+xml"/>
+<item id="options.html" href="options.html" media-type="application/xhtml+xml"/>
+<item id="pattern.html" href="pattern.html" media-type="application/xhtml+xml"/>
+<item id="map.html" href="map.html" media-type="application/xhtml+xml"/>
+<item id="tagsrch.html" href="tagsrch.html" media-type="application/xhtml+xml"/>
+<item id="quickfix.html" href="quickfix.html" media-type="application/xhtml+xml"/>
+<item id="windows.html" href="windows.html" media-type="application/xhtml+xml"/>
+<item id="tabpage.html" href="tabpage.html" media-type="application/xhtml+xml"/>
+<item id="syntax.html" href="syntax.html" media-type="application/xhtml+xml"/>
+<item id="spell.html" href="spell.html" media-type="application/xhtml+xml"/>
+<item id="diff.html" href="diff.html" media-type="application/xhtml+xml"/>
+<item id="autocmd.html" href="autocmd.html" media-type="application/xhtml+xml"/>
+<item id="filetype.html" href="filetype.html" media-type="application/xhtml+xml"/>
+<item id="eval.html" href="eval.html" media-type="application/xhtml+xml"/>
+<item id="fold.html" href="fold.html" media-type="application/xhtml+xml"/>
+<item id="print.html" href="print.html" media-type="application/xhtml+xml"/>
+<item id="remote.html" href="remote.html" media-type="application/xhtml+xml"/>
+<item id="term.html" href="term.html" media-type="application/xhtml+xml"/>
+<item id="digraph.html" href="digraph.html" media-type="application/xhtml+xml"/>
+<item id="mbyte.html" href="mbyte.html" media-type="application/xhtml+xml"/>
+<item id="mlang.html" href="mlang.html" media-type="application/xhtml+xml"/>
+<item id="arabic.html" href="arabic.html" media-type="application/xhtml+xml"/>
+<item id="farsi.html" href="farsi.html" media-type="application/xhtml+xml"/>
+<item id="hebrew.html" href="hebrew.html" media-type="application/xhtml+xml"/>
+<item id="russian.html" href="russian.html" media-type="application/xhtml+xml"/>
+<item id="ft_ada.html" href="ft_ada.html" media-type="application/xhtml+xml"/>
+<item id="ft_sql.html" href="ft_sql.html" media-type="application/xhtml+xml"/>
+<item id="hangulin.html" href="hangulin.html" media-type="application/xhtml+xml"/>
+<item id="rileft.html" href="rileft.html" media-type="application/xhtml+xml"/>
+<item id="gui.html" href="gui.html" media-type="application/xhtml+xml"/>
+<item id="gui_w16.html" href="gui_w16.html" media-type="application/xhtml+xml"/>
+<item id="gui_w32.html" href="gui_w32.html" media-type="application/xhtml+xml"/>
+<item id="gui_x11.html" href="gui_x11.html" media-type="application/xhtml+xml"/>
+<item id="if_cscop.html" href="if_cscop.html" media-type="application/xhtml+xml"/>
+<item id="if_lua.html" href="if_lua.html" media-type="application/xhtml+xml"/>
+<item id="if_mzsch.html" href="if_mzsch.html" media-type="application/xhtml+xml"/>
+<item id="if_perl.html" href="if_perl.html" media-type="application/xhtml+xml"/>
+<item id="if_pyth.html" href="if_pyth.html" media-type="application/xhtml+xml"/>
+<item id="if_sniff.html" href="if_sniff.html" media-type="application/xhtml+xml"/>
+<item id="if_tcl.html" href="if_tcl.html" media-type="application/xhtml+xml"/>
+<item id="if_ole.html" href="if_ole.html" media-type="application/xhtml+xml"/>
+<item id="if_ruby.html" href="if_ruby.html" media-type="application/xhtml+xml"/>
+<item id="debugger.html" href="debugger.html" media-type="application/xhtml+xml"/>
+<item id="workshop.html" href="workshop.html" media-type="application/xhtml+xml"/>
+<item id="netbeans.html" href="netbeans.html" media-type="application/xhtml+xml"/>
+<item id="sign.html" href="sign.html" media-type="application/xhtml+xml"/>
+<item id="vi_diff.html" href="vi_diff.html" media-type="application/xhtml+xml"/>
+<item id="version4.html" href="version4.html" media-type="application/xhtml+xml"/>
+<item id="version5.html" href="version5.html" media-type="application/xhtml+xml"/>
+<item id="version6.html" href="version6.html" media-type="application/xhtml+xml"/>
+<item id="version7.html" href="version7.html" media-type="application/xhtml+xml"/>
+<item id="os_390.html" href="os_390.html" media-type="application/xhtml+xml"/>
+<item id="os_amiga.html" href="os_amiga.html" media-type="application/xhtml+xml"/>
+<item id="os_beos.html" href="os_beos.html" media-type="application/xhtml+xml"/>
+<item id="os_dos.html" href="os_dos.html" media-type="application/xhtml+xml"/>
+<item id="os_mac.html" href="os_mac.html" media-type="application/xhtml+xml"/>
+<item id="os_mint.html" href="os_mint.html" media-type="application/xhtml+xml"/>
+<item id="os_msdos.html" href="os_msdos.html" media-type="application/xhtml+xml"/>
+<item id="os_os2.html" href="os_os2.html" media-type="application/xhtml+xml"/>
+<item id="os_qnx.html" href="os_qnx.html" media-type="application/xhtml+xml"/>
+<item id="os_risc.html" href="os_risc.html" media-type="application/xhtml+xml"/>
+<item id="os_unix.html" href="os_unix.html" media-type="application/xhtml+xml"/>
+<item id="os_vms.html" href="os_vms.html" media-type="application/xhtml+xml"/>
+<item id="os_win32.html" href="os_win32.html" media-type="application/xhtml+xml"/>
+<item id="pi_getscript.html" href="pi_getscript.html" media-type="application/xhtml+xml"/>
+<item id="pi_gzip.html" href="pi_gzip.html" media-type="application/xhtml+xml"/>
+<item id="pi_netrw.html" href="pi_netrw.html" media-type="application/xhtml+xml"/>
+<item id="pi_paren.html" href="pi_paren.html" media-type="application/xhtml+xml"/>
+<item id="pi_tar.html" href="pi_tar.html" media-type="application/xhtml+xml"/>
+<item id="pi_vimball.html" href="pi_vimball.html" media-type="application/xhtml+xml"/>
+<item id="pi_zip.html" href="pi_zip.html" media-type="application/xhtml+xml"/>
+  </manifest>
+ 
+  <!-- Each itemref references the id of a document designated in the manifest. The order of the itemref elements organizes the associated content files into the linear reading order of the publication.  -->
+  <spine toc="ncx">
+<itemref idref="help.html"/>
+<itemref idref="helphelp.html"/>
+<itemref idref="intro.html"/>
+<itemref idref="quickref.html"/>
+<itemref idref="uganda.html"/>
+<itemref idref="sponsor.html"/>
+<itemref idref="usr_toc.html"/>
+<itemref idref="usr_01.html"/>
+<itemref idref="usr_02.html"/>
+<itemref idref="usr_03.html"/>
+<itemref idref="usr_04.html"/>
+<itemref idref="usr_05.html"/>
+<itemref idref="usr_06.html"/>
+<itemref idref="usr_07.html"/>
+<itemref idref="usr_08.html"/>
+<itemref idref="usr_09.html"/>
+<itemref idref="usr_10.html"/>
+<itemref idref="usr_11.html"/>
+<itemref idref="usr_12.html"/>
+<itemref idref="usr_20.html"/>
+<itemref idref="usr_21.html"/>
+<itemref idref="usr_22.html"/>
+<itemref idref="usr_23.html"/>
+<itemref idref="usr_24.html"/>
+<itemref idref="usr_25.html"/>
+<itemref idref="usr_26.html"/>
+<itemref idref="usr_27.html"/>
+<itemref idref="usr_28.html"/>
+<itemref idref="usr_29.html"/>
+<itemref idref="usr_30.html"/>
+<itemref idref="usr_31.html"/>
+<itemref idref="usr_32.html"/>
+<itemref idref="usr_40.html"/>
+<itemref idref="usr_41.html"/>
+<itemref idref="usr_42.html"/>
+<itemref idref="usr_43.html"/>
+<itemref idref="usr_44.html"/>
+<itemref idref="usr_45.html"/>
+<itemref idref="usr_90.html"/>
+<itemref idref="index.html"/>
+<itemref idref="howto.html"/>
+<itemref idref="tips.html"/>
+<itemref idref="message.html"/>
+<itemref idref="quotes.html"/>
+<itemref idref="todo.html"/>
+<itemref idref="develop.html"/>
+<itemref idref="debug.html"/>
+<itemref idref="starting.html"/>
+<itemref idref="editing.html"/>
+<itemref idref="motion.html"/>
+<itemref idref="scroll.html"/>
+<itemref idref="insert.html"/>
+<itemref idref="change.html"/>
+<itemref idref="indent.html"/>
+<itemref idref="undo.html"/>
+<itemref idref="repeat.html"/>
+<itemref idref="visual.html"/>
+<itemref idref="various.html"/>
+<itemref idref="recover.html"/>
+<itemref idref="cmdline.html"/>
+<itemref idref="options.html"/>
+<itemref idref="pattern.html"/>
+<itemref idref="map.html"/>
+<itemref idref="tagsrch.html"/>
+<itemref idref="quickfix.html"/>
+<itemref idref="windows.html"/>
+<itemref idref="tabpage.html"/>
+<itemref idref="syntax.html"/>
+<itemref idref="spell.html"/>
+<itemref idref="diff.html"/>
+<itemref idref="autocmd.html"/>
+<itemref idref="filetype.html"/>
+<itemref idref="eval.html"/>
+<itemref idref="fold.html"/>
+<itemref idref="print.html"/>
+<itemref idref="remote.html"/>
+<itemref idref="term.html"/>
+<itemref idref="digraph.html"/>
+<itemref idref="mbyte.html"/>
+<itemref idref="mlang.html"/>
+<itemref idref="arabic.html"/>
+<itemref idref="farsi.html"/>
+<itemref idref="hebrew.html"/>
+<itemref idref="russian.html"/>
+<itemref idref="ft_ada.html"/>
+<itemref idref="ft_sql.html"/>
+<itemref idref="hangulin.html"/>
+<itemref idref="rileft.html"/>
+<itemref idref="gui.html"/>
+<itemref idref="gui_w16.html"/>
+<itemref idref="gui_w32.html"/>
+<itemref idref="gui_x11.html"/>
+<itemref idref="if_cscop.html"/>
+<itemref idref="if_lua.html"/>
+<itemref idref="if_mzsch.html"/>
+<itemref idref="if_perl.html"/>
+<itemref idref="if_pyth.html"/>
+<itemref idref="if_sniff.html"/>
+<itemref idref="if_tcl.html"/>
+<itemref idref="if_ole.html"/>
+<itemref idref="if_ruby.html"/>
+<itemref idref="debugger.html"/>
+<itemref idref="workshop.html"/>
+<itemref idref="netbeans.html"/>
+<itemref idref="sign.html"/>
+<itemref idref="vi_diff.html"/>
+<itemref idref="version4.html"/>
+<itemref idref="version5.html"/>
+<itemref idref="version6.html"/>
+<itemref idref="version7.html"/>
+<itemref idref="os_390.html"/>
+<itemref idref="os_amiga.html"/>
+<itemref idref="os_beos.html"/>
+<itemref idref="os_dos.html"/>
+<itemref idref="os_mac.html"/>
+<itemref idref="os_mint.html"/>
+<itemref idref="os_msdos.html"/>
+<itemref idref="os_os2.html"/>
+<itemref idref="os_qnx.html"/>
+<itemref idref="os_risc.html"/>
+<itemref idref="os_unix.html"/>
+<itemref idref="os_vms.html"/>
+<itemref idref="os_win32.html"/>
+<itemref idref="pi_getscript.html"/>
+<itemref idref="pi_gzip.html"/>
+<itemref idref="pi_netrw.html"/>
+<itemref idref="pi_paren.html"/>
+<itemref idref="pi_tar.html"/>
+<itemref idref="pi_vimball.html"/>
+<itemref idref="pi_zip.html"/>
+  </spine>
+ 
+  <!-- The Kindle reading system supports two special guide items which are both mandatory.
+  type="toc" [mandatory]: a link to the HTML table of contents
+  type="text" [mandatory]: a link to where the content of the book starts (typically after the front matter) -->
+  <guide>
+    <reference type="toc" title="Table of Contents" href="usr_toc.html"/>
+    <reference type="text" title="Beginning" href="help.html"></reference>
+  </guide>
+ 
+</package>
