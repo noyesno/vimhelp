@@ -9,7 +9,7 @@ vimhelp.epub:
 
 
 txt2html:
-	/usr/share/vim/vim73/doc/vim2html.pl /usr/share/vim/vim73/doc/tags /usr/share/vim/vim73/doc/*.txt
+	cd vimhelp.epub.src && /usr/share/vim/vim73/doc/vim2html.pl /usr/share/vim/vim73/doc/tags /usr/share/vim/vim73/doc/*.txt
 
 opf:
 	mkdir -p tmp

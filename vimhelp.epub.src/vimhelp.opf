@@ -158,6 +158,7 @@
 <itemref idref="quickref.html"/>
 <itemref idref="uganda.html"/>
 <itemref idref="sponsor.html"/>
+
 <itemref idref="usr_toc.html"/>
 <itemref idref="usr_01.html"/>
 <itemref idref="usr_02.html"/>
@@ -191,6 +192,7 @@
 <itemref idref="usr_44.html"/>
 <itemref idref="usr_45.html"/>
 <itemref idref="usr_90.html"/>
+
 <itemref idref="index.html"/>
 <itemref idref="howto.html"/>
 <itemref idref="tips.html"/>
@@ -287,9 +289,10 @@
   <!-- The Kindle reading system supports two special guide items which are both mandatory.
   type="toc" [mandatory]: a link to the HTML table of contents
   type="text" [mandatory]: a link to where the content of the book starts (typically after the front matter) -->
-  <guide>
-    <reference type="toc" title="Table of Contents" href="usr_toc.html"/>
-    <reference type="text" title="Beginning" href="help.html"></reference>
-  </guide>
+
+<guide>
+  <reference type="toc" title="Table of Contents" href="usr_toc.html"/>
+  <reference type="text" title="Beginning" href="help.html"></reference>
+</guide>
  
 </package>
