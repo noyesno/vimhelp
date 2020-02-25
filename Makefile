@@ -1,26 +1,51 @@
 
-.PHONY: vimhelp.epub
+basedir  = $(abspath $(dir $(MAKEFILE_LIST)))
+
+vim2html = $(basedir)/bin/vim2html.pl
+vimdoc   = $(basedir)/vim/runtime/doc
+
+help:
+	@echo $(basedir)
+
+#-------------------------------------------------------
+# Usage: 
+#
+#    mkdir build 
+#    make -C build ../Makefile vimhelp.epub 
+#-------------------------------------------------------
+
+build:
+	mkdir build
+	$(MAKE) -C build ../Makefile vimhelp.epub 
+
+vimhelp.epub: txt2html vimhelp.opf
+	cd vimhelp && zip -r ../vimhelp.epub .
 
 vimhelp.mobi: vimhelp.epub
 	kindlegen -dont_append_source $<
 
-vimhelp.epub:
-	cd vimhelp.epub.src && zip -r ../vimhelp.epub .
-
-
 txt2html:
-	cd vimhelp.epub.src && /usr/share/vim/vim73/doc/vim2html.pl /usr/share/vim/vim73/doc/tags /usr/share/vim/vim73/doc/*.txt
+	mkdir -p vimhelp
+	cd vimhelp && $(vim2html) $(vimdoc)/tags $(vimdoc)/*.txt
 
-opf:
-	mkdir -p tmp
-	sed 's/["#]/\n/g' help.html | awk '/\.html$$/ {if(!($$1 in lut)) print $$1; lut[$$1]++}' > tmp/help.list
-	ls -1 *.html | sort > tmp/html.list
-	sort tmp/help.list  > tmp/help.sort.list
-	-@ diff tmp/html.list tmp/help.sort.list
-	cat tmp/help.list | awk '{printf "<item id=\"%s\" href=\"%s\" media-type=\"application/xhtml+xml\"/>\n",$$1,$$1}' > tmp/opf.manifest
-	cat tmp/help.list | awk '{printf "<itemref idref=\"%s\"/>\n",$$1}' > tmp/opf.spine
+vimhelp.opf:
+	sed 's/["#]/\n/g' ./vimhelp/help.html \
+	   | awk '/\.html$$/ {if(!($$1 in lut)) print $$1; lut[$$1]++}' > help.list
+	cat help.list \
+	   | awk 'BEGIN {print "<manifest>"} END {print "</manifest>"} {printf "<item id=\"%s\" href=\"%s\" media-type=\"application/xhtml+xml\"/>\n",$$1,$$1}' \
+	     > vimhelp.manifest
+	cat help.list \
+	   | awk 'BEGIN {print "<spine toc=\"ncx\">"} END {print "</spine>"}{printf "<itemref idref=\"%s\"/>\n",$$1}' \
+	     > vimhelp.spine
+	sed -e '/<manifest/,/<\/manifest/ d' \
+	    -e '/<spine/,/<\/spine/ d' \
+	    -e '/include vimhelp.manifest/ r vimhelp.manifest' \
+	    -e '/include vimhelp.spine/ r vimhelp.spine' \
+	    ../vimhelp.epub/vimhelp.opf \
+	    > vimhelp/vimhelp.opf
+
 
 clean:
-	rm -rf tmp
+	rm -rf build 
 
 

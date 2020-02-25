@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<!--
+ Ref: 
+   http://www.perrygarvin.com/blog/2012/01/16/how-to-make-an-amazon-kindle-book-using-html-and-css/
+   http://rogerx.freeshell.org/programming/kindle-convert_linuxmantomobi.html
+   http://wiki.mobileread.com/wiki/KindleGen
+-->
+ 
+<package version="2.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+    <dc:title>Vim Help</dc:title>
+    <dc:language>en</dc:language>
+    <dc:creator opf:file-as="Zhang, Sean" opf:role="aut">Sean Zhang</dc:creator>
+    <dc:publisher>vimhelp2mobi</dc:publisher>
+    <dc:subject>Reference</dc:subject>
+    <dc:date>2015-02-28</dc:date>
+    <dc:description>Vim Help Files</dc:description>
+  </metadata>
+ 
+  <manifest>
+	<item id="help.html" href="help.html" media-type="application/xhtml+xml"/>
+	<item id="helphelp.html" href="helphelp.html" media-type="application/xhtml+xml"/>
+	<item id="intro.html" href="intro.html" media-type="application/xhtml+xml"/>
+  </manifest>
+ 
+  <!-- include vimhelp.manifest -->
+
+  <!-- Each itemref references the id of a document designated in the manifest. The order of the itemref elements organizes the associated content files into the linear reading order of the publication.  -->
+  
+  <spine toc="ncx">
+	<itemref idref="help.html"/>
+	<itemref idref="helphelp.html"/>
+	<itemref idref="intro.html"/>
+	<itemref idref="quickref.html"/>
+	<itemref idref="uganda.html"/>
+	<itemref idref="sponsor.html"/>
+  </spine>
+
+  <!-- include vimhelp.spine -->
+ 
+  <!-- The Kindle reading system supports two special guide items which are both mandatory.
+  type="toc" [mandatory]: a link to the HTML table of contents
+  type="text" [mandatory]: a link to where the content of the book starts (typically after the front matter) -->
+
+<guide>
+  <reference type="toc" title="Table of Contents" href="usr_toc.html"/>
+  <reference type="text" title="Beginning" href="help.html"></reference>
+</guide>
+ 
+</package>
