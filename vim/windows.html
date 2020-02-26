@@ -1,0 +1,1358 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: windows</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>WINDOWS</h2>
+<pre>
+<b class="vimtag">*<a name="windows.txt">windows.txt</a>*</b>   For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Editing with multiple windows and buffers.		<b class="vimtag">*<a name="windows">windows</a>*</b> <b class="vimtag">*<a name="buffers">buffers</a>*</b>
+
+The commands which have been added to use multiple windows and buffers are
+explained here.  Additionally, there are explanations for commands that work
+differently when used in combination with more than one window.
+
+The basics are explained in chapter 7 and 8 of the user manual |<a href="usr_07.html#usr_07.txt">usr_07</a>|
+|<a href="usr_08.html#usr_08.txt">usr_08</a>|.
+
+1.  Introduction				|<a href="windows.html#windows-intro">windows-intro</a>|
+2.  Starting Vim				|<a href="windows.html#windows-starting">windows-starting</a>|
+3.  Opening and closing a window		|<a href="windows.html#opening-window">opening-window</a>|
+4.  Moving cursor to other windows		|<a href="windows.html#window-move-cursor">window-move-cursor</a>|
+5.  Moving windows around			|<a href="windows.html#window-moving">window-moving</a>|
+6.  Window resizing				|<a href="windows.html#window-resize">window-resize</a>|
+7.  Argument and buffer list commands		|<a href="windows.html#buffer-list">buffer-list</a>|
+8.  Do a command in all buffers or windows	|<a href="windows.html#list-repeat">list-repeat</a>|
+9.  Tag or file name under the cursor		|<a href="windows.html#window-tag">window-tag</a>|
+10. The preview window				|<a href="windows.html#preview-window">preview-window</a>|
+11. Using hidden buffers			|<a href="windows.html#buffer-hidden">buffer-hidden</a>|
+12. Special kinds of buffers			|<a href="windows.html#special-buffers">special-buffers</a>|
+
+{not able to use multiple windows when the |<a href="various.html#+windows">+windows</a>| feature was disabled at
+compile time}
+
+</pre><hr/><pre>1. Introduction					<b class="vimtag">*<a name="windows-intro">windows-intro</a>*</b> <b class="vimtag">*<a name="window">window</a>*</b>
+
+Summary:
+   A buffer is the in-memory text of a file.
+   A window is a viewport on a buffer.
+   A tab page is a collection of windows.
+
+A window is a viewport onto a buffer.  You can use multiple windows on one
+buffer, or several windows on different buffers.
+
+A buffer is a file loaded into memory for editing.  The original file remains
+unchanged until you write the buffer to the file.
+
+A buffer can be in one of three states:
+
+							<b class="vimtag">*<a name="active-buffer">active-buffer</a>*</b>
+active:   The buffer is displayed in a window.  If there is a file for this
+	  buffer, it has been read into the buffer.  The buffer may have been
+	  modified since then and thus be different from the file.
+							<b class="vimtag">*<a name="hidden-buffer">hidden-buffer</a>*</b>
+hidden:   The buffer is not displayed.  If there is a file for this buffer, it
+	  has been read into the buffer.  Otherwise it's the same as an active
+	  buffer, you just can't see it.
+							<b class="vimtag">*<a name="inactive-buffer">inactive-buffer</a>*</b>
+inactive: The buffer is not displayed and does not contain anything.  Options
+	  for the buffer are remembered if the file was once loaded.  It can
+	  contain marks from the |<a href="starting.html#viminfo">viminfo</a>| file.  But the buffer doesn't
+	  contain text.
+
+In a table:
+
+<code class="section">state		displayed	loaded		":buffers"  </code>
+<code class="section">		in window			shows	    </code>
+active		  yes		 yes		  'a'
+hidden		  no		 yes		  'h'
+inactive	  no		 no		  ' '
+
+<code class="note">Note:</code> All <code class="keystroke">CTRL-W</code> commands can also be executed with |<a href="windows.html#:wincmd">:wincmd</a>|, for those
+places where a Normal mode command can't be used or is inconvenient.
+
+The main Vim window can hold several split windows.  There are also tab pages
+|<a href="tabpage.html#tab-page">tab-page</a>|, each of which can hold multiple windows.
+					<b class="vimtag">*<a name="window-ID">window-ID</a>*</b> <b class="vimtag">*<a name="winid">winid</a>*</b> <b class="vimtag">*<a name="windowid">windowid</a>*</b>
+Each window has a unique identifier called the window ID.  This identifier
+will not change within a Vim session. The |<a href="eval.html#win_getid()">win_getid()</a>| and |<a href="eval.html#win_id2tabwin()">win_id2tabwin()</a>|
+functions can be used to convert between the window/tab number and the
+identifier.  There is also the window number, which may change whenever
+windows are opened or closed, see |<a href="eval.html#winnr()">winnr()</a>|.
+The window number is only valid in one specific tab.  The window ID is valid
+across tabs.  For most functions that take a window ID or a window number, the
+window number only applies to the current tab, while the window ID can refer
+to a window in any tab.
+
+Each buffer has a unique number and the number will not change within a Vim
+session.  The |<a href="eval.html#bufnr()">bufnr()</a>| and |<a href="eval.html#bufname()">bufname()</a>| functions can be used to convert
+between a buffer name and the buffer number.
+
+</pre><hr/><pre>2. Starting Vim						<b class="vimtag">*<a name="windows-starting">windows-starting</a>*</b>
+
+By default, Vim starts with one window, just like Vi.
+
+The "-o" and "-O" arguments to Vim can be used to open a window for each file
+in the argument list.  The "-o" argument will split the windows horizontally;
+the "-O" argument will split the windows vertically.  If both "-o" and "-O"
+are given, the last one encountered will be used to determine the split
+orientation.  For example, this will open three windows, split horizontally:
+<code class="example">	vim -o file1 file2 file3</code>
+<code class="example"></code>
+"-oN", where N is a decimal number, opens N windows split horizontally.  If
+there are more file names than windows, only N windows are opened and some
+files do not get a window.  If there are more windows than file names, the
+last few windows will be editing empty buffers.  Similarly, "-ON" opens N
+windows split vertically, with the same restrictions.
+
+If there are many file names, the windows will become very small.  You might
+want to set the 'winheight' and/or 'winwidth' options to create a workable
+situation.
+
+Buf/Win Enter/Leave |<a href="autocmd.html#autocommand">autocommand</a>|s are not executed when opening the new
+windows and reading the files, that's only done when they are really entered.
+
+							<b class="vimtag">*<a name="status-line">status-line</a>*</b>
+A status line will be used to separate windows.  The 'laststatus' option tells
+when the last window also has a status line:
+	'laststatus' = 0	never a status line
+	'laststatus' = 1	status line if there is more than one window
+	'laststatus' = 2	always a status line
+
+You can change the contents of the status line with the 'statusline' option.
+This option can be local to the window, so that you can have a different
+status line in each window.
+
+Normally, inversion is used to display the status line.  This can be changed
+with the 's' character in the 'highlight' option.  For example, "sb" sets it to
+bold characters.  If no highlighting is used for the status line ("sn"), the
+'^' character is used for the current window, and '=' for other windows.  If
+the mouse is supported and enabled with the 'mouse' option, a status line can
+be dragged to resize windows.
+
+<code class="note">Note:</code> If you expect your status line to be in reverse video and it isn't,
+check if the 'highlight' option contains "si".  In version 3.0, this meant to
+invert the status line.  Now it should be "sr", reverse the status line, as
+"si" now stands for italic!  If italic is not available on your terminal, the
+status line is inverted anyway; you will only see this problem on terminals
+that have termcap codes for italics.
+
+</pre><hr/><pre>3. Opening and closing a window				<b class="vimtag">*<a name="opening-window">opening-window</a>*</b> <b class="vimtag">*<a name="E36">E36</a>*</b>
+
+<code class="keystroke">CTRL-W</code> s						<b class="vimtag">*<a name="CTRL-W_s">CTRL-W_s</a>*</b>
+<code class="keystroke">CTRL-W</code> S						<b class="vimtag">*<a name="CTRL-W_S">CTRL-W_S</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-S</code>						<b class="vimtag">*<a name="CTRL-W_CTRL-S">CTRL-W_CTRL-S</a>*</b>
+:[N]sp[lit] [++opt] [+cmd] [file]			<b class="vimtag">*<a name=":sp">:sp</a>*</b> <b class="vimtag">*<a name=":split">:split</a>*</b>
+		Split current window in two.  The result is two viewports on
+		the same file.
+
+		Make the new window N high (default is to use half the height
+		of the current window).  Reduces the current window height to
+		create room (and others, if the 'equalalways' option is set,
+		'eadirection' isn't "hor", and one of them is higher than the
+		current or the new window).
+
+		If [file] is given it will be edited in the new window.  If it
+		is not loaded in any buffer, it will be read.  Else the new
+		window will use the already loaded buffer.
+
+		<code class="note">Note:</code> <code class="keystroke">CTRL-S</code> does not work on all terminals and might block
+		further input, use <code class="keystroke">CTRL-Q</code> to get going again.
+		Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+							<b class="vimtag">*<a name="E242">E242</a>*</b>
+		Be careful when splitting a window in an autocommand, it may
+		mess up the window layout if this happens while making other
+		window layout changes.
+
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-V</code>						<b class="vimtag">*<a name="CTRL-W_CTRL-V">CTRL-W_CTRL-V</a>*</b>
+<code class="keystroke">CTRL-W</code> v						<b class="vimtag">*<a name="CTRL-W_v">CTRL-W_v</a>*</b>
+:[N]vs[plit] [++opt] [+cmd] [file]			<b class="vimtag">*<a name=":vs">:vs</a>*</b> <b class="vimtag">*<a name=":vsplit">:vsplit</a>*</b>
+		Like |<a href="windows.html#:split">:split</a>|, but split vertically.  The windows will be
+		spread out horizontally if
+		1. a width was not specified,
+		2. 'equalalways' is set,
+		3. 'eadirection' isn't "ver", and
+		4. one of the other windows is wider than the current or new
+		   window.
+		<code class="note">Note:</code> In other places <code class="keystroke">CTRL-Q</code> does the same as <code class="keystroke">CTRL-V</code>, but here
+		it doesn't!
+
+<code class="keystroke">CTRL-W</code> n						<b class="vimtag">*<a name="CTRL-W_n">CTRL-W_n</a>*</b>
+<code class="keystroke">CTRL-W</code> CTRL_N						<b class="vimtag">*<a name="CTRL-W_CTRL-N">CTRL-W_CTRL-N</a>*</b>
+:[N]new [++opt] [+cmd]					<b class="vimtag">*<a name=":new">:new</a>*</b>
+		Create a new window and start editing an empty file in it.
+		Make new window N high (default is to use half the existing
+		height).  Reduces the current window height to create room (and
+		others, if the 'equalalways' option is set and 'eadirection'
+		isn't "hor").
+		Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+		If 'fileformats' is not empty, the first format given will be
+		used for the new buffer.  If 'fileformats' is empty, the
+		'fileformat' of the current buffer is used.  This can be
+		overridden with the |<a href="editing.html#++opt">++opt</a>| argument.
+		Autocommands are executed in this order:
+		1. WinLeave for the current window
+		2. WinEnter for the new window
+		3. BufLeave for the current buffer
+		4. BufEnter for the new buffer
+		This behaves like a ":split" first, and then an ":enew"
+		command.
+
+:[N]vne[w] [++opt] [+cmd] [file]			<b class="vimtag">*<a name=":vne">:vne</a>*</b> <b class="vimtag">*<a name=":vnew">:vnew</a>*</b>
+		Like |<a href="windows.html#:new">:new</a>|, but split vertically.  If 'equalalways' is set
+		and 'eadirection' isn't "ver" the windows will be spread out
+		horizontally, unless a width was specified.
+
+:[N]new [++opt] [+cmd] <code class="special">{file}</code>
+:[N]sp[lit] [++opt] [+cmd] <code class="special">{file}</code>			<b class="vimtag">*<a name=":split_f">:split_f</a>*</b>
+		Create a new window and start editing file <code class="special">{file}</code> in it.  This
+		behaves like a ":split" first, and then an ":e" command.
+		If [+cmd] is given, execute the command when the file has been
+		loaded |<a href="editing.html#+cmd">+cmd</a>|.
+		Also see |<a href="editing.html#++opt">++opt</a>|.
+		Make new window N high (default is to use half the existing
+		height).  Reduces the current window height to create room
+		(and others, if the 'equalalways' option is set).
+
+:[N]sv[iew] [++opt] [+cmd] <code class="special">{file}</code>		<b class="vimtag">*<a name=":sv">:sv</a>*</b> <b class="vimtag">*<a name=":sview">:sview</a>*</b> <b class="vimtag">*<a name="splitview">splitview</a>*</b>
+		Same as ":split", but set 'readonly' option for this buffer.
+
+:[N]sf[ind] [++opt] [+cmd] <code class="special">{file}</code>	     <b class="vimtag">*<a name=":sf">:sf</a>*</b> <b class="vimtag">*<a name=":sfi">:sfi</a>*</b> <b class="vimtag">*<a name=":sfind">:sfind</a>*</b> <b class="vimtag">*<a name="splitfind">splitfind</a>*</b>
+		Same as ":split", but search for <code class="special">{file}</code> in 'path' like in
+		|<a href="editing.html#:find">:find</a>|.  Doesn't split if <code class="special">{file}</code> is not found.
+
+<code class="keystroke">CTRL-W</code> CTRL-^					<b class="vimtag">*<a name="CTRL-W_CTRL-^">CTRL-W_CTRL-^</a>*</b> <b class="vimtag">*<a name="CTRL-W_^">CTRL-W_^</a>*</b>
+<code class="keystroke">CTRL-W</code> ^	Split the current window in two and edit the alternate file.
+		When a count N is given, split the current window and edit
+		buffer N.  Similar to ":sp #" and ":sp #N", but it allows the
+		other buffer to be unnamed.  This command matches the behavior
+		of |<a href="editing.html#CTRL-^">CTRL-^</a>|, except that it splits a window first.
+
+						<b class="vimtag">*<a name="CTRL-W_:">CTRL-W_:</a>*</b>
+<code class="keystroke">CTRL-W</code> :	Does the same as typing |<a href="cmdline.html#:">:</a>| - enter a command line.  Useful in a
+		terminal window, where all Vim commands must be preceded with
+		<code class="keystroke">CTRL-W</code> or 'termwinkey'.
+
+<code class="note">Note</code> that the 'splitbelow' and 'splitright' options influence where a new
+window will appear.
+
+						<b class="vimtag">*<a name=":vert">:vert</a>*</b> <b class="vimtag">*<a name=":vertical">:vertical</a>*</b>
+:vert[ical] <code class="special">{cmd}</code>
+		Execute <code class="special">{cmd}</code>.  If it contains a command that splits a window,
+		it will be split vertically.
+		Doesn't work for |<a href="eval.html#:execute">:execute</a>| and |<a href="various.html#:normal">:normal</a>|.
+
+:lefta[bove] <code class="special">{cmd}</code>				<b class="vimtag">*<a name=":lefta">:lefta</a>*</b> <b class="vimtag">*<a name=":leftabove">:leftabove</a>*</b>
+:abo[veleft] <code class="special">{cmd}</code>				<b class="vimtag">*<a name=":abo">:abo</a>*</b> <b class="vimtag">*<a name=":aboveleft">:aboveleft</a>*</b>
+		Execute <code class="special">{cmd}</code>.  If it contains a command that splits a window,
+		it will be opened left (vertical split) or above (horizontal
+		split) the current window.  Overrules 'splitbelow' and
+		'splitright'.
+		Doesn't work for |<a href="eval.html#:execute">:execute</a>| and |<a href="various.html#:normal">:normal</a>|.
+
+:rightb[elow] <code class="special">{cmd}</code>				<b class="vimtag">*<a name=":rightb">:rightb</a>*</b> <b class="vimtag">*<a name=":rightbelow">:rightbelow</a>*</b>
+:bel[owright] <code class="special">{cmd}</code>				<b class="vimtag">*<a name=":bel">:bel</a>*</b> <b class="vimtag">*<a name=":belowright">:belowright</a>*</b>
+		Execute <code class="special">{cmd}</code>.  If it contains a command that splits a window,
+		it will be opened right (vertical split) or below (horizontal
+		split) the current window.  Overrules 'splitbelow' and
+		'splitright'.
+		Doesn't work for |<a href="eval.html#:execute">:execute</a>| and |<a href="various.html#:normal">:normal</a>|.
+
+						<b class="vimtag">*<a name=":topleft">:topleft</a>*</b> <b class="vimtag">*<a name="E442">E442</a>*</b>
+:to[pleft] <code class="special">{cmd}</code>
+		Execute <code class="special">{cmd}</code>.  If it contains a command that splits a window,
+		it will appear at the top and occupy the full width of the Vim
+		window.  When the split is vertical the window appears at the
+		far left and occupies the full height of the Vim window.
+		Doesn't work for |<a href="eval.html#:execute">:execute</a>| and |<a href="various.html#:normal">:normal</a>|.
+
+						<b class="vimtag">*<a name=":bo">:bo</a>*</b> <b class="vimtag">*<a name=":botright">:botright</a>*</b>
+:bo[tright] <code class="special">{cmd}</code>
+		Execute <code class="special">{cmd}</code>.  If it contains a command that splits a window,
+		it will appear at the bottom and occupy the full width of the
+		Vim window.  When the split is vertical the window appears at
+		the far right and occupies the full height of the Vim window.
+		Doesn't work for |<a href="eval.html#:execute">:execute</a>| and |<a href="various.html#:normal">:normal</a>|.
+
+These command modifiers can be combined to make a vertically split window
+occupy the full height.  Example:
+<code class="example">	:vertical topleft split tags</code>
+Opens a vertically split, full-height window on the "tags" file at the far
+left of the Vim window.
+
+
+Closing a window
+</pre><hr/><pre>
+:q[uit]
+:<code class="special">{count}</code>q[uit]
+<code class="keystroke">CTRL-W</code> q						<b class="vimtag">*<a name="CTRL-W_q">CTRL-W_q</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-Q</code>						<b class="vimtag">*<a name="CTRL-W_CTRL-Q">CTRL-W_CTRL-Q</a>*</b>
+		Without <code class="special">{count}</code>: Quit the current window.  If <code class="special">{count}</code> is
+		given quit the <code class="special">{count}</code> window.
+
+		When quitting the last window (not counting a help window),
+		exit Vim.
+
+		When 'hidden' is set, and there is only one window for the
+		current buffer, it becomes hidden.  When 'hidden' is not set,
+		and there is only one window for the current buffer, and the
+		buffer was changed, the command fails.
+
+		(<code class="note">Note:</code> <code class="keystroke">CTRL-Q</code> does not work on all terminals).
+
+		If <code class="special">[count]</code> is greater than the last window number the last
+		window will be closed:
+<code class="example">		    :1quit  " quit the first window</code>
+<code class="example">		    :$quit  " quit the last window</code>
+<code class="example">		    :9quit  " quit the last window</code>
+<code class="example">			    " if there are fewer than 9 windows opened</code>
+<code class="example">		    :-quit  " quit the previous window</code>
+<code class="example">		    :+quit  " quit the next window</code>
+<code class="example">		    :+2quit " quit the second next window</code>
+
+		When closing a help window, Vim will try to restore the
+		previous window layout |<a href="helphelp.html#:helpclose">:helpclose</a>|.
+
+:q[uit]!
+:<code class="special">{count}</code>q[uit]!
+		Without <code class="special">{count}</code>: Quit the current window.  If <code class="special">{count}</code> is
+		given quit the <code class="special">{count}</code> window.
+
+		If this was the last window for a buffer, any changes to that
+		buffer are lost.  When quitting the last window (not counting
+		help windows), exit Vim.  The contents of the buffer are lost,
+		even when 'hidden' is set.
+
+:clo[se][!]
+:<code class="special">{count}</code>clo[se][!]
+<code class="keystroke">CTRL-W</code> c					<b class="vimtag">*<a name="CTRL-W_c">CTRL-W_c</a>*</b> <b class="vimtag">*<a name=":clo">:clo</a>*</b> <b class="vimtag">*<a name=":close">:close</a>*</b>
+		Without <code class="special">{count}</code>: Close the current window.  If <code class="special">{count}</code> is
+		given close the <code class="special">{count}</code> window.
+
+		When the 'hidden' option is set, or when the buffer was
+		changed and the [!] is used, the buffer becomes hidden (unless
+		there is another window editing it).
+
+		When there is only one window in the current tab page and
+		there is another tab page, this closes the current tab page.
+		|<a href="tabpage.html#tab-page">tab-page</a>|.
+
+		This command fails when:			<b class="vimtag">*<a name="E444">E444</a>*</b>
+		- There is only one window on the screen.
+		- When 'hidden' is not set, [!] is not used, the buffer has
+		  changes, and there is no other window on this buffer.
+		Changes to the buffer are not written and won't get lost, so
+		this is a "safe" command.
+
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-C</code>						<b class="vimtag">*<a name="CTRL-W_CTRL-C">CTRL-W_CTRL-C</a>*</b>
+		You might have expected that <code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-C</code> closes the current
+		window, but that does not work, because the <code class="keystroke">CTRL-C</code> cancels the
+		command.
+
+							<b class="vimtag">*<a name=":hide">:hide</a>*</b>
+:hid[e]
+:<code class="special">{count}</code>hid[e]
+		Without <code class="special">{count}</code>: Quit the current window, unless it is the
+		last window on the screen.
+		If <code class="special">{count}</code> is given quit the <code class="special">{count}</code> window.
+
+		The buffer becomes hidden (unless there is another window
+		editing it or 'bufhidden' is "unload", "delete" or "wipe").
+		If the window is the last one in the current tab page the tab
+		page is closed.  |<a href="tabpage.html#tab-page">tab-page</a>|
+
+		The value of 'hidden' is irrelevant for this command.  Changes
+		to the buffer are not written and won't get lost, so this is a
+		"safe" command.
+
+:hid[e] <code class="special">{cmd}</code>	Execute <code class="special">{cmd}</code> with 'hidden' is set.  The previous value of
+		'hidden' is restored after <code class="special">{cmd}</code> has been executed.
+		Example:
+<code class="example">		    :hide edit Makefile</code>
+		This will edit "Makefile", and hide the current buffer if it
+		has any changes.
+
+:on[ly][!]
+:<code class="special">{count}</code>on[ly][!]
+<code class="keystroke">CTRL-W</code> o						<b class="vimtag">*<a name="CTRL-W_o">CTRL-W_o</a>*</b> <b class="vimtag">*<a name="E445">E445</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-O</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-O">CTRL-W_CTRL-O</a>*</b> <b class="vimtag">*<a name=":on">:on</a>*</b> <b class="vimtag">*<a name=":only">:only</a>*</b>
+		Make the current window the only one on the screen.  All other
+		windows are closed.  For <code class="special">{count}</code> see |<a href="editing.html#:quit">:quit</a>| command.
+
+		When the 'hidden' option is set, all buffers in closed windows
+		become hidden.
+
+		When 'hidden' is not set, and the 'autowrite' option is set,
+		modified buffers are written.  Otherwise, windows that have
+		buffers that are modified are not removed, unless the [!] is
+		given, then they become hidden.  But modified buffers are
+		never abandoned, so changes cannot get lost.
+
+</pre><hr/><pre>4. Moving cursor to other windows			<b class="vimtag">*<a name="window-move-cursor">window-move-cursor</a>*</b>
+
+<code class="keystroke">CTRL-W</code> <code class="special">&lt;Down&gt;</code>					<b class="vimtag">*<a name="CTRL-W_%3CDown%3E">CTRL-W_&lt;Down&gt;</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-J</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-J">CTRL-W_CTRL-J</a>*</b> <b class="vimtag">*<a name="CTRL-W_j">CTRL-W_j</a>*</b>
+<code class="keystroke">CTRL-W</code> j	Move cursor to Nth window below current one.  Uses the cursor
+		position to select between alternatives.
+
+<code class="keystroke">CTRL-W</code> <code class="special">&lt;Up&gt;</code>					<b class="vimtag">*<a name="CTRL-W_%3CUp%3E">CTRL-W_&lt;Up&gt;</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-K</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-K">CTRL-W_CTRL-K</a>*</b> <b class="vimtag">*<a name="CTRL-W_k">CTRL-W_k</a>*</b>
+<code class="keystroke">CTRL-W</code> k	Move cursor to Nth window above current one.  Uses the cursor
+		position to select between alternatives.
+
+<code class="keystroke">CTRL-W</code> <code class="special">&lt;Left&gt;</code>					<b class="vimtag">*<a name="CTRL-W_%3CLeft%3E">CTRL-W_&lt;Left&gt;</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-H</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-H">CTRL-W_CTRL-H</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="special">&lt;BS&gt;</code>					<b class="vimtag">*<a name="CTRL-W_%3CBS%3E">CTRL-W_&lt;BS&gt;</a>*</b> <b class="vimtag">*<a name="CTRL-W_h">CTRL-W_h</a>*</b>
+<code class="keystroke">CTRL-W</code> h	Move cursor to Nth window left of current one.  Uses the
+		cursor position to select between alternatives.
+
+<code class="keystroke">CTRL-W</code> <code class="special">&lt;Right&gt;</code>					<b class="vimtag">*<a name="CTRL-W_%3CRight%3E">CTRL-W_&lt;Right&gt;</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-L</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-L">CTRL-W_CTRL-L</a>*</b> <b class="vimtag">*<a name="CTRL-W_l">CTRL-W_l</a>*</b>
+<code class="keystroke">CTRL-W</code> l	Move cursor to Nth window right of current one.  Uses the
+		cursor position to select between alternatives.
+
+<code class="keystroke">CTRL-W</code> w					<b class="vimtag">*<a name="CTRL-W_w">CTRL-W_w</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-W">CTRL-W_CTRL-W</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-W</code>	Without count: move cursor to window below/right of the
+		current one.  If there is no window below or right, go to
+		top-left window.
+		With count: go to Nth window (windows are numbered from
+		top-left to bottom-right).  To obtain the window number see
+		|<a href="eval.html#bufwinnr()">bufwinnr()</a>| and |<a href="eval.html#winnr()">winnr()</a>|.  When N is larger than the number
+		of windows go to the last window.
+
+						<b class="vimtag">*<a name="CTRL-W_W">CTRL-W_W</a>*</b>
+<code class="keystroke">CTRL-W</code> W	Without count: move cursor to window above/left of current
+		one.  If there is no window above or left, go to bottom-right
+		window.  With count: go to Nth window, like with <code class="keystroke">CTRL-W</code> w.
+
+<code class="keystroke">CTRL-W</code> t					<b class="vimtag">*<a name="CTRL-W_t">CTRL-W_t</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-T">CTRL-W_CTRL-T</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-T</code>	Move cursor to top-left window.
+
+<code class="keystroke">CTRL-W</code> b					<b class="vimtag">*<a name="CTRL-W_b">CTRL-W_b</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-B">CTRL-W_CTRL-B</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-B</code>	Move cursor to bottom-right window.
+
+<code class="keystroke">CTRL-W</code> p					<b class="vimtag">*<a name="CTRL-W_p">CTRL-W_p</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-P">CTRL-W_CTRL-P</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-P</code>	Go to previous (last accessed) window.
+
+						<b class="vimtag">*<a name="CTRL-W_P">CTRL-W_P</a>*</b> <b class="vimtag">*<a name="E441">E441</a>*</b>
+<code class="keystroke">CTRL-W</code> P	Go to preview window.  When there is no preview window this is
+		an error.
+		{not available when compiled without the |<a href="various.html#+quickfix">+quickfix</a>| feature}
+
+If Visual mode is active and the new window is not for the same buffer, the
+Visual mode is ended.  If the window is on the same buffer, the cursor
+position is set to keep the same Visual area selected.
+
+						<b class="vimtag">*<a name=":winc">:winc</a>*</b> <b class="vimtag">*<a name=":wincmd">:wincmd</a>*</b>
+These commands can also be executed with ":wincmd":
+
+:<code class="special">[count]</code>winc[md] <code class="special">{arg}</code>
+		Like executing <code class="keystroke">CTRL-W</code> <code class="special">[count]</code> <code class="special">{arg}</code>.  Example:
+<code class="example">			:wincmd j</code>
+		Moves to the window below the current one.
+		This command is useful when a Normal mode cannot be used (for
+		the |<a href="autocmd.html#CursorHold">CursorHold</a>| autocommand event).  Or when a Normal mode
+		command is inconvenient.
+		The count can also be a window number.  Example:
+<code class="example">			:exe nr . "wincmd w"</code>
+		This goes to window "nr".
+
+</pre><hr/><pre>5. Moving windows around				<b class="vimtag">*<a name="window-moving">window-moving</a>*</b>
+
+<code class="keystroke">CTRL-W</code> r				<b class="vimtag">*<a name="CTRL-W_r">CTRL-W_r</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-R">CTRL-W_CTRL-R</a>*</b> <b class="vimtag">*<a name="E443">E443</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-R</code>	Rotate windows downwards/rightwards.  The first window becomes
+		the second one, the second one becomes the third one, etc.
+		The last window becomes the first window.  The cursor remains
+		in the same window.
+		This only works within the row or column of windows that the
+		current window is in.
+
+						<b class="vimtag">*<a name="CTRL-W_R">CTRL-W_R</a>*</b>
+<code class="keystroke">CTRL-W</code> R	Rotate windows upwards/leftwards.  The second window becomes
+		the first one, the third one becomes the second one, etc.  The
+		first window becomes the last window.  The cursor remains in
+		the same window.
+		This only works within the row or column of windows that the
+		current window is in.
+
+<code class="keystroke">CTRL-W</code> x					<b class="vimtag">*<a name="CTRL-W_x">CTRL-W_x</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-X">CTRL-W_CTRL-X</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-X</code>	Without count: Exchange current window with next one.  If there
+		is no next window, exchange with previous window.
+		With count: Exchange current window with Nth window (first
+		window is 1).  The cursor is put in the other window.
+		When vertical and horizontal window splits are mixed, the
+		exchange is only done in the row or column of windows that the
+		current window is in.
+
+The following commands can be used to change the window layout.  For example,
+when there are two vertically split windows, <code class="keystroke">CTRL-W</code> K will change that in
+horizontally split windows.  <code class="keystroke">CTRL-W</code> H does it the other way around.
+
+						<b class="vimtag">*<a name="CTRL-W_K">CTRL-W_K</a>*</b>
+<code class="keystroke">CTRL-W</code> K	Move the current window to be at the very top, using the full
+		width of the screen.  This works like closing the current
+		window and then creating another one with ":topleft split",
+		except that the current window contents is used for the new
+		window.
+
+						<b class="vimtag">*<a name="CTRL-W_J">CTRL-W_J</a>*</b>
+<code class="keystroke">CTRL-W</code> J	Move the current window to be at the very bottom, using the
+		full width of the screen.  This works like closing the current
+		window and then creating another one with ":botright split",
+		except that the current window contents is used for the new
+		window.
+
+						<b class="vimtag">*<a name="CTRL-W_H">CTRL-W_H</a>*</b>
+<code class="keystroke">CTRL-W</code> H	Move the current window to be at the far left, using the
+		full height of the screen.  This works like closing the
+		current window and then creating another one with
+		":vert topleft split", except that the current window contents
+		is used for the new window.
+
+						<b class="vimtag">*<a name="CTRL-W_L">CTRL-W_L</a>*</b>
+<code class="keystroke">CTRL-W</code> L	Move the current window to be at the far right, using the full
+		height of the screen.  This works like closing the
+		current window and then creating another one with
+		":vert botright split", except that the current window
+		contents is used for the new window.
+
+						<b class="vimtag">*<a name="CTRL-W_T">CTRL-W_T</a>*</b>
+<code class="keystroke">CTRL-W</code> T	Move the current window to a new tab page.  This fails if
+		there is only one window in the current tab page.
+		When a count is specified the new tab page will be opened
+		before the tab page with this index.  Otherwise it comes after
+		the current tab page.
+
+</pre><hr/><pre>6. Window resizing					<b class="vimtag">*<a name="window-resize">window-resize</a>*</b>
+
+						<b class="vimtag">*<a name="CTRL-W_%20">CTRL-W_=</a>*</b>
+<code class="keystroke">CTRL-W</code> =	Make all windows (almost) equally high and wide, but use
+		'winheight' and 'winwidth' for the current window.
+		Windows with 'winfixheight' set keep their height and windows
+		with 'winfixwidth' set keep their width.
+
+:res[ize] -N					<b class="vimtag">*<a name=":res">:res</a>*</b> <b class="vimtag">*<a name=":resize">:resize</a>*</b> <b class="vimtag">*<a name="CTRL-W_-">CTRL-W_-</a>*</b>
+<code class="keystroke">CTRL-W</code> -	Decrease current window height by N (default 1).
+		If used after |<a href="windows.html#:vertical">:vertical</a>|: decrease width by N.
+
+:res[ize] +N					<b class="vimtag">*<a name="CTRL-W_+">CTRL-W_+</a>*</b>
+<code class="keystroke">CTRL-W</code> +	Increase current window height by N (default 1).
+		If used after |<a href="windows.html#:vertical">:vertical</a>|: increase width by N.
+
+:res[ize] [N]
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-_</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-_">CTRL-W_CTRL-_</a>*</b> <b class="vimtag">*<a name="CTRL-W__">CTRL-W__</a>*</b>
+<code class="keystroke">CTRL-W</code> _	Set current window height to N (default: highest possible).
+
+:<code class="special">{winnr}</code>res[ize] [+-]N
+		Like `:resize` above, but apply the size to window <code class="special">{winnr}</code>
+		instead of the current window.
+
+z<code class="special">{nr}</code><code class="special">&lt;CR&gt;</code>	Set current window height to <code class="special">{nr}</code>.
+
+						<b class="vimtag">*<a name="CTRL-W_%3C">CTRL-W_&lt;</a>*</b>
+<code class="keystroke">CTRL-W</code> &lt;	Decrease current window width by N (default 1).
+
+						<b class="vimtag">*<a name="CTRL-W_%3E">CTRL-W_&gt;</a>*</b>
+<code class="keystroke">CTRL-W</code> &gt;	Increase current window width by N (default 1).
+
+:vertical res[ize] [N]			<b class="vimtag">*<a name=":vertical-resize">:vertical-resize</a>*</b> <b class="vimtag">*<a name="CTRL-W_bar">CTRL-W_bar</a>*</b>
+<code class="keystroke">CTRL-W</code> |	Set current window width to N (default: widest possible).
+
+You can also resize a window by dragging a status line up or down with the
+mouse.  Or by dragging a vertical separator line left or right.  This only
+works if the version of Vim that is being used supports the mouse and the
+'mouse' option has been set to enable it.
+
+The option 'winheight' ('wh') is used to set the minimal window height of the
+current window.  This option is used each time another window becomes the
+current window.  If the option is '0', it is disabled.  Set 'winheight' to a
+very large value, e.g., '9999', to make the current window always fill all
+available space.  Set it to a reasonable value, e.g., '10', to make editing in
+the current window comfortable.
+
+The equivalent 'winwidth' ('wiw') option is used to set the minimal width of
+the current window.
+
+When the option 'equalalways' ('ea') is set, all the windows are automatically
+made the same size after splitting or closing a window.  If you don't set this
+option, splitting a window will reduce the size of the current window and
+leave the other windows the same.  When closing a window, the extra lines are
+given to the window above it.
+
+The 'eadirection' option limits the direction in which the 'equalalways'
+option is applied.  The default "both" resizes in both directions.  When the
+value is "ver" only the heights of windows are equalized.  Use this when you
+have manually resized a vertically split window and want to keep this width.
+Likewise, "hor" causes only the widths of windows to be equalized.
+
+The option 'cmdheight' ('ch') is used to set the height of the command-line.
+If you are annoyed by the |<a href="message.html#hit-enter">hit-enter</a>| prompt for long messages, set this
+option to 2 or 3.
+
+If there is only one window, resizing that window will also change the command
+line height.  If there are several windows, resizing the current window will
+also change the height of the window below it (and sometimes the window above
+it).
+
+The minimal height and width of a window is set with 'winminheight' and
+'winminwidth'.  These are hard values, a window will never become smaller.
+
+</pre><hr/><pre>7. Argument and buffer list commands			<b class="vimtag">*<a name="buffer-list">buffer-list</a>*</b>
+
+<code class="section">      args list		       buffer list	   meaning </code>
+1. :[N]argument [N]	11. :[N]buffer [N]	to arg/buf N
+2. :[N]next [file ..]	12. :[N]bnext [N]	to Nth next arg/buf
+3. :[N]Next [N]		13. :[N]bNext [N]	to Nth previous arg/buf
+4. :[N]previous	[N]	14. :[N]bprevious [N]	to Nth previous arg/buf
+5. :rewind / :first	15. :brewind / :bfirst	to first arg/buf
+6. :last		16. :blast		to last arg/buf
+7. :all			17. :ball		edit all args/buffers
+			18. :unhide		edit all loaded buffers
+			19. :[N]bmod [N]	to Nth modified buf
+
+<code class="section">  split &amp; args list	  split &amp; buffer list	   meaning </code>
+21. :[N]sargument [N]   31. :[N]sbuffer [N]	split + to arg/buf N
+22. :[N]snext [file ..] 32. :[N]sbnext [N]      split + to Nth next arg/buf
+23. :[N]sNext [N]       33. :[N]sbNext [N]      split + to Nth previous arg/buf
+24. :[N]sprevious [N]   34. :[N]sbprevious [N]  split + to Nth previous arg/buf
+25. :srewind / :sfirst	35. :sbrewind / :sbfirst split + to first arg/buf
+26. :slast		36. :sblast		split + to last arg/buf
+27. :sall		37. :sball		edit all args/buffers
+			38. :sunhide		edit all loaded buffers
+			39. :[N]sbmod [N]	split + to Nth modified buf
+
+40. :args		list of arguments
+41. :buffers		list of buffers
+
+The meaning of [N] depends on the command:
+ [N] is the number of buffers to go forward/backward on 2/12/22/32,
+     3/13/23/33, and 4/14/24/34
+ [N] is an argument number, defaulting to current argument, for 1 and 21
+ [N] is a buffer number, defaulting to current buffer, for 11 and 31
+ [N] is a count for 19 and 39
+
+<code class="note">Note:</code> ":next" is an exception, because it must accept a list of file names
+for compatibility with Vi.
+
+
+The argument list and multiple windows
+</pre><hr/><pre>
+The current position in the argument list can be different for each window.
+Remember that when doing ":e file", the position in the argument list stays
+the same, but you are not editing the file at that position.  To indicate
+this, the file message (and the title, if you have one) shows
+"(file (N) of M)", where "(N)" is the current position in the file list, and
+"M" the number of files in the file list.
+
+All the entries in the argument list are added to the buffer list.  Thus, you
+can also get to them with the buffer list commands, like ":bnext".
+
+:[N]al[l][!] [N]				<b class="vimtag">*<a name=":al">:al</a>*</b> <b class="vimtag">*<a name=":all">:all</a>*</b> <b class="vimtag">*<a name=":sal">:sal</a>*</b> <b class="vimtag">*<a name=":sall">:sall</a>*</b>
+:[N]sal[l][!] [N]
+		Rearrange the screen to open one window for each argument.
+		All other windows are closed.  When a count is given, this is
+		the maximum number of windows to open.
+		With the |<a href="tabpage.html#:tab">:tab</a>| modifier open a tab page for each argument.
+		When there are more arguments than 'tabpagemax' further ones
+		become split windows in the last tab page.
+		When the 'hidden' option is set, all buffers in closed windows
+		become hidden.
+		When 'hidden' is not set, and the 'autowrite' option is set,
+		modified buffers are written.  Otherwise, windows that have
+		buffers that are modified are not removed, unless the [!] is
+		given, then they become hidden.  But modified buffers are
+		never abandoned, so changes cannot get lost.
+		[N] is the maximum number of windows to open.  'winheight'
+		also limits the number of windows opened ('winwidth' if
+		|<a href="windows.html#:vertical">:vertical</a>| was prepended).
+		Buf/Win Enter/Leave autocommands are not executed for the new
+		windows here, that's only done when they are really entered.
+		If autocommands change the window layout while this command is
+		busy an error will be given. <b class="vimtag">*<a name="E249">E249</a>*</b>
+
+:[N]sa[rgument][!] [++opt] [+cmd] [N]			<b class="vimtag">*<a name=":sa">:sa</a>*</b> <b class="vimtag">*<a name=":sargument">:sargument</a>*</b>
+		Short for ":split | argument [N]": split window and go to Nth
+		argument.  But when there is no such argument, the window is
+		not split.  Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]sn[ext][!] [++opt] [+cmd] [file ..]			<b class="vimtag">*<a name=":sn">:sn</a>*</b> <b class="vimtag">*<a name=":snext">:snext</a>*</b>
+		Short for ":split | [N]next": split window and go to Nth next
+		argument.  But when there is no next file, the window is not
+		split.  Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]spr[evious][!] [++opt] [+cmd] [N]			<b class="vimtag">*<a name=":spr">:spr</a>*</b> <b class="vimtag">*<a name=":sprevious">:sprevious</a>*</b>
+:[N]sN[ext][!] [++opt] [+cmd] [N]			<b class="vimtag">*<a name=":sN">:sN</a>*</b> <b class="vimtag">*<a name=":sNext">:sNext</a>*</b>
+		Short for ":split | [N]Next": split window and go to Nth
+		previous argument.  But when there is no previous file, the
+		window is not split.  Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+
+						<b class="vimtag">*<a name=":sre">:sre</a>*</b> <b class="vimtag">*<a name=":srewind">:srewind</a>*</b>
+:sre[wind][!] [++opt] [+cmd]
+		Short for ":split | rewind": split window and go to first
+		argument.  But when there is no argument list, the window is
+		not split.  Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+
+						<b class="vimtag">*<a name=":sfir">:sfir</a>*</b> <b class="vimtag">*<a name=":sfirst">:sfirst</a>*</b>
+:sfir[st] [++opt] [+cmd]
+		Same as ":srewind".
+
+						<b class="vimtag">*<a name=":sla">:sla</a>*</b> <b class="vimtag">*<a name=":slast">:slast</a>*</b>
+:sla[st][!] [++opt] [+cmd]
+		Short for ":split | last": split window and go to last
+		argument.  But when there is no argument list, the window is
+		not split.  Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+
+						<b class="vimtag">*<a name=":dr">:dr</a>*</b> <b class="vimtag">*<a name=":drop">:drop</a>*</b>
+:dr[op] [++opt] [+cmd] <code class="special">{file}</code> ..
+		Edit the first <code class="special">{file}</code> in a window.
+		- If the file is already open in a window change to that
+		  window.
+		- If the file is not open in a window edit the file in the
+		  current window.  If the current buffer can't be |<a href="editing.html#abandon">abandon</a>|ed,
+		  the window is split first.
+		- Windows that are not in the argument list or are not full
+		  width will be closed if possible.
+		The |<a href="editing.html#argument-list">argument-list</a>| is set, like with the |<a href="editing.html#:next">:next</a>| command.
+		The purpose of this command is that it can be used from a
+		program that wants Vim to edit another file, e.g., a debugger.
+		When using the |<a href="tabpage.html#:tab">:tab</a>| modifier each argument is opened in a
+		tab page.  The last window is used if it's empty.
+		Also see |<a href="editing.html#++opt">++opt</a>| and |<a href="editing.html#+cmd">+cmd</a>|.
+
+</pre><hr/><pre>8. Do a command in all buffers or windows			<b class="vimtag">*<a name="list-repeat">list-repeat</a>*</b>
+
+							<b class="vimtag">*<a name=":windo">:windo</a>*</b>
+:<code class="special">[range]</code>windo <code class="special">{cmd}</code>	Execute <code class="special">{cmd}</code> in each window or if <code class="special">[range]</code> is given
+			only in windows for which the window number lies in
+			the <code class="special">[range]</code>.  It works like doing this:
+<code class="example">				<code class="keystroke">CTRL-W</code> t</code>
+<code class="example">				:<code class="special">{cmd}</code></code>
+<code class="example">				<code class="keystroke">CTRL-W</code> w</code>
+<code class="example">				:<code class="special">{cmd}</code></code>
+<code class="example">				etc.</code>
+			This only operates in the current tab page.
+			When an error is detected on one window, further
+			windows will not be visited.
+			The last window (or where an error occurred) becomes
+			the current window.
+			<code class="special">{cmd}</code> can contain '|' to concatenate several commands.
+			<code class="special">{cmd}</code> must not open or close windows or reorder them.
+
+			Also see |<a href="tabpage.html#:tabdo">:tabdo</a>|, |<a href="editing.html#:argdo">:argdo</a>|, |<a href="windows.html#:bufdo">:bufdo</a>|, |<a href="quickfix.html#:cdo">:cdo</a>|, |<a href="quickfix.html#:ldo">:ldo</a>|,
+			|<a href="quickfix.html#:cfdo">:cfdo</a>| and |<a href="quickfix.html#:lfdo">:lfdo</a>|
+
+							<b class="vimtag">*<a name=":bufdo">:bufdo</a>*</b>
+:<code class="special">[range]</code>bufdo[!] <code class="special">{cmd}</code>	Execute <code class="special">{cmd}</code> in each buffer in the buffer list or if
+			<code class="special">[range]</code> is given only for buffers for which their
+			buffer number is in the <code class="special">[range]</code>.  It works like doing
+			this:
+<code class="example">				:bfirst</code>
+<code class="example">				:<code class="special">{cmd}</code></code>
+<code class="example">				:bnext</code>
+<code class="example">				:<code class="special">{cmd}</code></code>
+<code class="example">				etc.</code>
+			When the current file can't be |<a href="editing.html#abandon">abandon</a>|ed and the [!]
+			is not present, the command fails.
+			When an error is detected on one buffer, further
+			buffers will not be visited.
+			Unlisted buffers are skipped.
+			The last buffer (or where an error occurred) becomes
+			the current buffer.
+			<code class="special">{cmd}</code> can contain '|' to concatenate several commands.
+			<code class="special">{cmd}</code> must not delete buffers or add buffers to the
+			buffer list.
+			<code class="note">Note:</code> While this command is executing, the Syntax
+			autocommand event is disabled by adding it to
+			'eventignore'.  This considerably speeds up editing
+			each buffer.
+
+			Also see |<a href="tabpage.html#:tabdo">:tabdo</a>|, |<a href="editing.html#:argdo">:argdo</a>|, |<a href="windows.html#:windo">:windo</a>|, |<a href="quickfix.html#:cdo">:cdo</a>|, |<a href="quickfix.html#:ldo">:ldo</a>|,
+			|<a href="quickfix.html#:cfdo">:cfdo</a>| and |<a href="quickfix.html#:lfdo">:lfdo</a>|
+
+Examples:
+<code class="example"></code>
+<code class="example">	:windo set nolist nofoldcolumn | normal zn</code>
+<code class="example"></code>
+This resets the 'list' option and disables folding in all windows.
+<code class="example"></code>
+<code class="example">	:bufdo set fileencoding= | update</code>
+<code class="example"></code>
+This resets the 'fileencoding' in each buffer and writes it if this changed
+the buffer.  The result is that all buffers will use the 'encoding' encoding
+(if conversion works properly).
+
+</pre><hr/><pre>9. Tag or file name under the cursor			<b class="vimtag">*<a name="window-tag">window-tag</a>*</b>
+
+							<b class="vimtag">*<a name=":sta">:sta</a>*</b> <b class="vimtag">*<a name=":stag">:stag</a>*</b>
+:sta[g][!] [tagname]
+		Does ":tag[!] [tagname]" and splits the window for the found
+		tag.  See also |<a href="tagsrch.html#:tag">:tag</a>|.
+
+<code class="keystroke">CTRL-W</code> ]					<b class="vimtag">*<a name="CTRL-W_]">CTRL-W_]</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-]">CTRL-W_CTRL-]</a>*</b>
+<code class="keystroke">CTRL-W</code> CTRL-]	Split current window in two.  Use identifier under cursor as a
+		tag and jump to it in the new upper window.
+		In Visual mode uses the Visually selected text as a tag.
+		Make new window N high.
+
+							<b class="vimtag">*<a name="CTRL-W_g]">CTRL-W_g]</a>*</b>
+<code class="keystroke">CTRL-W</code> g ]	Split current window in two.  Use identifier under cursor as a
+		tag and perform ":tselect" on it in the new upper window.
+		In Visual mode uses the Visually selected text as a tag.
+		Make new window N high.
+
+							<b class="vimtag">*<a name="CTRL-W_g_CTRL-]">CTRL-W_g_CTRL-]</a>*</b>
+<code class="keystroke">CTRL-W</code> g CTRL-]	Split current window in two.  Use identifier under cursor as a
+		tag and perform ":tjump" on it in the new upper window.
+		In Visual mode uses the Visually selected text as a tag.
+		Make new window N high.
+
+<code class="keystroke">CTRL-W</code> f					<b class="vimtag">*<a name="CTRL-W_f">CTRL-W_f</a>*</b> <b class="vimtag">*<a name="CTRL-W_CTRL-F">CTRL-W_CTRL-F</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-F</code>	Split current window in two.  Edit file name under cursor.
+		Like ":split gf", but window isn't split if the file does not
+		exist.
+		Uses the 'path' variable as a list of directory names where to
+		look for the file.  Also the path for current file is
+		used to search for the file name.
+		If the name is a hypertext link that looks like
+		"type://machine/path", only "/path" is used.
+		If a count is given, the count'th matching file is edited.
+		{not available when the |<a href="various.html#+file_in_path">+file_in_path</a>| feature was disabled
+		at compile time}
+
+<code class="keystroke">CTRL-W</code> F						<b class="vimtag">*<a name="CTRL-W_F">CTRL-W_F</a>*</b>
+		Split current window in two.  Edit file name under cursor and
+		jump to the line number following the file name. See |<a href="editing.html#gF">gF</a>| for
+		details on how the line number is obtained.
+		{not available when the |<a href="various.html#+file_in_path">+file_in_path</a>| feature was disabled
+		at compile time}
+
+<code class="keystroke">CTRL-W</code> gf						<b class="vimtag">*<a name="CTRL-W_gf">CTRL-W_gf</a>*</b>
+		Open a new tab page and edit the file name under the cursor.
+		Like "tab split" and "gf", but the new tab page isn't created
+		if the file does not exist.
+		{not available when the |<a href="various.html#+file_in_path">+file_in_path</a>| feature was disabled
+		at compile time}
+
+<code class="keystroke">CTRL-W</code> gF						<b class="vimtag">*<a name="CTRL-W_gF">CTRL-W_gF</a>*</b>
+		Open a new tab page and edit the file name under the cursor
+		and jump to the line number following the file name.  Like
+		"tab split" and "gF", but the new tab page isn't created if
+		the file does not exist.
+		{not available when the |<a href="various.html#+file_in_path">+file_in_path</a>| feature was disabled
+		at compile time}
+
+<code class="keystroke">CTRL-W</code> gt						<b class="vimtag">*<a name="CTRL-W_gt">CTRL-W_gt</a>*</b>
+		Go to next tab page, same as `gt`.
+
+<code class="keystroke">CTRL-W</code> gT						<b class="vimtag">*<a name="CTRL-W_gT">CTRL-W_gT</a>*</b>
+		Go to previous tab page, same as `gT`.
+
+Also see |<a href="tagsrch.html#CTRL-W_CTRL-I">CTRL-W_CTRL-I</a>|: open window for an included file that includes
+the keyword under the cursor.
+
+</pre><hr/><pre>10. The preview window				<b class="vimtag">*<a name="preview-window">preview-window</a>*</b>
+
+The preview window is a special window to show (preview) another file.  It is
+normally a small window used to show an include file or definition of a
+function.
+{not available when compiled without the |<a href="various.html#+quickfix">+quickfix</a>| feature}
+
+There can be only one preview window (per tab page).  It is created with one
+of the commands below.  The 'previewheight' option can be set to specify the
+height of the preview window when it's opened.  The 'previewwindow' option is
+set in the preview window to be able to recognize it.  The 'winfixheight'
+option is set to have it keep the same height when opening/closing other
+windows.
+						<b class="vimtag">*<a name="preview-popup">preview-popup</a>*</b>
+Alternatively, a popup window can be used by setting the 'previewpopup'
+option.  When set, it overrules the 'previewwindow' and 'previewheight'
+settings.  The option is a comma separated list of values:
+	height		maximum height of the popup
+	width		maximum width of the popup
+	highlight	highlight group of the popup (default is Pmenu)
+Example:
+<code class="example">	:set previewpopup=height:10,width:60</code>
+<code class="example"></code>
+A few peculiarities:
+- If the file is in a buffer already, it will be re-used.  This will allow for
+  editing the file while it's visible in the popup window.
+- No ATTENTION dialog will be used, since you can't edit the file in the popup
+  window.  However, if you later open the same buffer in a normal window, you
+  may not notice it's edited elsewhere.  And when then using ":edit" to
+  trigger the ATTENTION and responding "A" for Abort, the preview window will
+  become empty.
+
+						<b class="vimtag">*<a name=":pta">:pta</a>*</b> <b class="vimtag">*<a name=":ptag">:ptag</a>*</b>
+:pta[g][!] [tagname]
+		Does ":tag[!] [tagname]" and shows the found tag in a
+		"Preview" window without changing the current buffer or cursor
+		position.  If a "Preview" window already exists, it is re-used
+		(like a help window is).  If a new one is opened,
+		'previewheight' is used for the height of the window.   See
+		also |<a href="tagsrch.html#:tag">:tag</a>|.
+		See below for an example. |<a href="windows.html#CursorHold-example">CursorHold-example</a>|
+		Small difference from |<a href="tagsrch.html#:tag">:tag</a>|: When [tagname] is equal to the
+		already displayed tag, the position in the matching tag list
+		is not reset.  This makes the CursorHold example work after a
+		|<a href="tagsrch.html#:ptnext">:ptnext</a>|.
+
+<code class="keystroke">CTRL-W</code> z					<b class="vimtag">*<a name="CTRL-W_z">CTRL-W_z</a>*</b>
+<code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-Z</code>					<b class="vimtag">*<a name="CTRL-W_CTRL-Z">CTRL-W_CTRL-Z</a>*</b> <b class="vimtag">*<a name=":pc">:pc</a>*</b> <b class="vimtag">*<a name=":pclose">:pclose</a>*</b>
+:pc[lose][!]	Close any "Preview" window currently open.  When the 'hidden'
+		option is set, or when the buffer was changed and the [!] is
+		used, the buffer becomes hidden (unless there is another
+		window editing it).  The command fails if any "Preview" buffer
+		cannot be closed.  See also |<a href="windows.html#:close">:close</a>|.
+
+							<b class="vimtag">*<a name=":pp">:pp</a>*</b> <b class="vimtag">*<a name=":ppop">:ppop</a>*</b>
+:<code class="special">[count]</code>pp[op][!]
+		Does ":<code class="special">[count]</code>pop[!]" in the preview window.  See |<a href="tagsrch.html#:pop">:pop</a>| and
+		|<a href="windows.html#:ptag">:ptag</a>|.
+
+<code class="keystroke">CTRL-W</code> }						<b class="vimtag">*<a name="CTRL-W_}">CTRL-W_}</a>*</b>
+		Use identifier under cursor as a tag and perform a :ptag on
+		it.  Make the new Preview window (if required) N high.  If N is
+		not given, 'previewheight' is used.
+
+<code class="keystroke">CTRL-W</code> g }						<b class="vimtag">*<a name="CTRL-W_g}">CTRL-W_g}</a>*</b>
+		Use identifier under cursor as a tag and perform a :ptjump on
+		it.  Make the new Preview window (if required) N high.  If N is
+		not given, 'previewheight' is used.
+
+							<b class="vimtag">*<a name=":ped">:ped</a>*</b> <b class="vimtag">*<a name=":pedit">:pedit</a>*</b>
+:ped[it][!] [++opt] [+cmd] <code class="special">{file}</code>
+		Edit <code class="special">{file}</code> in the preview window.  The preview window is
+		opened like with |<a href="windows.html#:ptag">:ptag</a>|.  The current window and cursor
+		position isn't changed.  Useful example:
+<code class="example">			:pedit +/fputc /usr/include/stdio.h</code>
+
+							<b class="vimtag">*<a name=":ps">:ps</a>*</b> <b class="vimtag">*<a name=":psearch">:psearch</a>*</b>
+:<code class="special">[range]</code>ps[earch][!] <code class="special">[count]</code> [/]pattern[/]
+		Works like |<a href="tagsrch.html#:ijump">:ijump</a>| but shows the found match in the preview
+		window.  The preview window is opened like with |<a href="windows.html#:ptag">:ptag</a>|.  The
+		current window and cursor position isn't changed.  Useful
+		example:
+<code class="example">			:psearch popen</code>
+		Like with the |<a href="windows.html#:ptag">:ptag</a>| command, you can use this to
+		automatically show information about the word under the
+		cursor.  This is less clever than using |<a href="windows.html#:ptag">:ptag</a>|, but you don't
+		need a tags file and it will also find matches in system
+		include files.  Example:
+<code class="example">  :au! CursorHold *.[ch] nested exe "silent! psearch " . expand("<code class="special">&lt;cword&gt;</code>")</code>
+		Warning: This can be slow.
+
+Example						<b class="vimtag">*<a name="CursorHold-example">CursorHold-example</a>*</b>
+<code class="example"></code>
+<code class="example">  :au! CursorHold *.[ch] nested exe "silent! ptag " . expand("<code class="special">&lt;cword&gt;</code>")</code>
+<code class="example"></code>
+This will cause a ":ptag" to be executed for the keyword under the cursor,
+when the cursor hasn't moved for the time set with 'updatetime'.  The "nested"
+makes other autocommands be executed, so that syntax highlighting works in the
+preview window.  The "silent!" avoids an error message when the tag could not
+be found.  Also see |<a href="autocmd.html#CursorHold">CursorHold</a>|.  To disable this again:
+<code class="example"></code>
+<code class="example">  :au! CursorHold</code>
+<code class="example"></code>
+A nice addition is to highlight the found tag, avoid the ":ptag" when there
+is no word under the cursor, and a few other things:
+<code class="example"></code>
+<code class="example">  :au! CursorHold *.[ch] nested call PreviewWord()</code>
+<code class="example">  :func PreviewWord()</code>
+<code class="example">  :  if &amp;previewwindow			" don't do this in the preview window</code>
+<code class="example">  :    return</code>
+<code class="example">  :  endif</code>
+<code class="example">  :  let w = expand("<code class="special">&lt;cword&gt;</code>")		" get the word under cursor</code>
+<code class="example">  :  if w =~ '\a'			" if the word contains a letter</code>
+<code class="example">  :</code>
+<code class="example">  :    " Delete any existing highlight before showing another tag</code>
+<code class="example">  :    silent! wincmd P			" jump to preview window</code>
+<code class="example">  :    if &amp;previewwindow			" if we really get there...</code>
+<code class="example">  :      match none			" delete existing highlight</code>
+<code class="example">  :      wincmd p			" back to old window</code>
+<code class="example">  :    endif</code>
+<code class="example">  :</code>
+<code class="example">  :    " Try displaying a matching tag for the word under the cursor</code>
+<code class="example">  :    try</code>
+<code class="example">  :       exe "ptag " . w</code>
+<code class="example">  :    catch</code>
+<code class="example">  :      return</code>
+<code class="example">  :    endtry</code>
+<code class="example">  :</code>
+<code class="example">  :    silent! wincmd P			" jump to preview window</code>
+<code class="example">  :    if &amp;previewwindow		" if we really get there...</code>
+<code class="example">  :	 if has("folding")</code>
+<code class="example">  :	   silent! .foldopen		" don't want a closed fold</code>
+<code class="example">  :	 endif</code>
+<code class="example">  :	 call search("$", "b")		" to end of previous line</code>
+<code class="example">  :	 let w = substitute(w, '\\', '\\\\', "")</code>
+<code class="example">  :	 call search('\<code class="special">&lt;\V' . w . '\&gt;</code>')	" position cursor on match</code>
+<code class="example">  :	 " Add a match highlight to the word at this position</code>
+<code class="example">  :      hi previewWord term=bold ctermbg=green guibg=green</code>
+<code class="example">  :	 exe 'match previewWord "\%' . line(".") . 'l\%' . col(".") . 'c\k*"'</code>
+<code class="example">  :      wincmd p			" back to old window</code>
+<code class="example">  :    endif</code>
+<code class="example">  :  endif</code>
+<code class="example">  :endfun</code>
+<code class="example"></code>
+</pre><hr/><pre>11. Using hidden buffers				<b class="vimtag">*<a name="buffer-hidden">buffer-hidden</a>*</b>
+
+A hidden buffer is not displayed in a window, but is still loaded into memory.
+This makes it possible to jump from file to file, without the need to read or
+write the file every time you get another buffer in a window.
+
+							<b class="vimtag">*<a name=":buffer-!">:buffer-!</a>*</b>
+If the option 'hidden' ('hid') is set, abandoned buffers are kept for all
+commands that start editing another file: ":edit", ":next", ":tag", etc.  The
+commands that move through the buffer list sometimes make the current buffer
+hidden although the 'hidden' option is not set.  This happens when a buffer is
+modified, but is forced (with '!') to be removed from a window, and
+'autowrite' is off or the buffer can't be written.
+
+You can make a hidden buffer not hidden by starting to edit it with any
+command.  Or by deleting it with the ":bdelete" command.
+
+The 'hidden' is global, it is used for all buffers.  The 'bufhidden' option
+can be used to make an exception for a specific buffer.  It can take these
+values:
+	<code class="special">&lt;empty&gt;</code>		Use the value of 'hidden'.
+	hide		Hide this buffer, also when 'hidden' is not set.
+	unload		Don't hide but unload this buffer, also when 'hidden'
+			is set.
+	delete		Delete the buffer.
+
+							<b class="vimtag">*<a name="hidden-quit">hidden-quit</a>*</b>
+When you try to quit Vim while there is a hidden, modified buffer, you will
+get an error message and Vim will make that buffer the current buffer.  You
+can then decide to write this buffer (":wq") or quit without writing (":q!").
+Be careful: there may be more hidden, modified buffers!
+
+A buffer can also be unlisted.  This means it exists, but it is not in the
+list of buffers. |<a href="windows.html#unlisted-buffer">unlisted-buffer</a>|
+
+
+:files[!] [flags]				<b class="vimtag">*<a name=":files">:files</a>*</b>
+:buffers[!] [flags]				<b class="vimtag">*<a name=":buffers">:buffers</a>*</b> <b class="vimtag">*<a name=":ls">:ls</a>*</b>
+:ls[!] [flags]
+		Show all buffers.  Example:
+
+<code class="section">			1 #h   "/test/text"		line 1 </code>
+<code class="section">			2u     "asdf"			line 0 </code>
+<code class="section">			3 %a + "version.c"		line 1 </code>
+
+		When the [!] is included the list will show unlisted buffers
+		(the term "unlisted" is a bit confusing then...).
+
+		Each buffer has a unique number.  That number will not change,
+		thus you can always go to a specific buffer with ":buffer N"
+		or "N CTRL-^", where N is the buffer number.
+
+		For the file name these special values are used:
+			[Prompt]	|<a href="channel.html#prompt-buffer">prompt-buffer</a>|
+			[Popup]		buffer of a |<a href="popup.html#popup-window">popup-window</a>|
+			[Scratch]	'buftype' is "nofile"
+			[No Name]	no file name specified
+		For a |<a href="terminal.html#terminal-window">terminal-window</a>| buffer the status is used.
+
+		Indicators (chars in the same column are mutually exclusive):
+		u	an unlisted buffer (only displayed when [!] is used)
+			   |<a href="windows.html#unlisted-buffer">unlisted-buffer</a>|
+		 %	the buffer in the current window
+		 #	the alternate buffer for ":e #" and CTRL-^
+		  a	an active buffer: it is loaded and visible
+		  h	a hidden buffer: It is loaded, but currently not
+			   displayed in a window |<a href="windows.html#hidden-buffer">hidden-buffer</a>|
+		   -	a buffer with 'modifiable' off
+		   =	a readonly buffer
+		   R	a terminal buffer with a running job
+		   F	a terminal buffer with a finished job
+		   ?    a terminal buffer without a job: `:terminal NONE`
+		    +	a modified buffer
+		    x   a buffer with read errors
+
+		[flags] can be a combination of the following characters,
+		which restrict the buffers to be listed:
+		     +   modified buffers
+		     -   buffers with 'modifiable' off
+		     =   readonly buffers
+		     a   active buffers
+		     u   unlisted buffers (overrides the "!")
+		     h   hidden buffers
+		     x   buffers with a read error
+		     %   current buffer
+		     #   alternate buffer
+		     R	 terminal buffers with a running job
+		     F	 terminal buffers with a finished job
+		     ?   terminal buffers without a job: `:terminal NONE`
+		     t   show time last used and sort buffers
+		Combining flags means they are "and"ed together, e.g.:
+		     h+   hidden buffers which are modified
+		     a+   active buffers which are modified
+
+		When using |<a href="various.html#:filter">:filter</a>| the pattern is matched against the
+		displayed buffer name, e.g.:
+<code class="example">			filter /\.vim/ ls</code>
+
+						<b class="vimtag">*<a name=":bad">:bad</a>*</b> <b class="vimtag">*<a name=":badd">:badd</a>*</b>
+:bad[d]	[+lnum] <code class="special">{fname}</code>
+		Add file name <code class="special">{fname}</code> to the buffer list, without loading it.
+		If "lnum" is specified, the cursor will be positioned at that
+		line when the buffer is first entered.  <code class="note">Note</code> that other
+		commands after the + will be ignored.
+
+:[N]bd[elete][!]			<b class="vimtag">*<a name=":bd">:bd</a>*</b> <b class="vimtag">*<a name=":bdel">:bdel</a>*</b> <b class="vimtag">*<a name=":bdelete">:bdelete</a>*</b> <b class="vimtag">*<a name="E516">E516</a>*</b>
+:bd[elete][!] [N]
+		Unload buffer [N] (default: current buffer) and delete it from
+		the buffer list.  If the buffer was changed, this fails,
+		unless when [!] is specified, in which case changes are lost.
+		The file remains unaffected.  Any windows for this buffer are
+		closed.  If buffer [N] is the current buffer, another buffer
+		will be displayed instead.  This is the most recent entry in
+		the jump list that points into a loaded buffer.
+		Actually, the buffer isn't completely deleted, it is removed
+		from the buffer list |<a href="windows.html#unlisted-buffer">unlisted-buffer</a>| and option values,
+		variables and mappings/abbreviations for the buffer are
+		cleared. Examples:
+<code class="example">		    :.,$-bdelete    " delete buffers from the current one to</code>
+<code class="example">				    " last but one</code>
+<code class="example">		    :%bdelete	    " delete all buffers</code>
+
+
+:bdelete[!] <code class="special">{bufname}</code>						<b class="vimtag">*<a name="E93">E93</a>*</b> <b class="vimtag">*<a name="E94">E94</a>*</b>
+		Like ":bdelete[!] [N]", but buffer given by name, see
+		|<a href="windows.html#{bufname}">{bufname}</a>|.
+
+:bdelete[!] N1 N2 ...
+		Do ":bdelete[!]" for buffer N1, N2, etc.  The arguments can be
+		buffer numbers or buffer names (but not buffer names that are
+		a number).  Insert a backslash before a space in a buffer
+		name.
+
+:N,Mbdelete[!]	Do ":bdelete[!]" for all buffers in the range N to M
+		|<a href="motion.html#inclusive">inclusive</a>|.
+
+:[N]bw[ipeout][!]			<b class="vimtag">*<a name=":bw">:bw</a>*</b> <b class="vimtag">*<a name=":bwipe">:bwipe</a>*</b> <b class="vimtag">*<a name=":bwipeout">:bwipeout</a>*</b> <b class="vimtag">*<a name="E517">E517</a>*</b>
+:bw[ipeout][!] <code class="special">{bufname}</code>
+:N,Mbw[ipeout][!]
+:bw[ipeout][!] N1 N2 ...
+		Like |<a href="windows.html#:bdelete">:bdelete</a>|, but really delete the buffer.  Everything
+		related to the buffer is lost.  All marks in this buffer
+		become invalid, option settings are lost, etc.  Don't use this
+		unless you know what you are doing. Examples:
+<code class="example">		    :.+,$bwipeout   " wipe out all buffers after the current</code>
+<code class="example">				    " one</code>
+<code class="example">		    :%bwipeout	    " wipe out all buffers</code>
+
+
+:[N]bun[load][!]				<b class="vimtag">*<a name=":bun">:bun</a>*</b> <b class="vimtag">*<a name=":bunload">:bunload</a>*</b> <b class="vimtag">*<a name="E515">E515</a>*</b>
+:bun[load][!] [N]
+		Unload buffer [N] (default: current buffer).  The memory
+		allocated for this buffer will be freed.  The buffer remains
+		in the buffer list.
+		If the buffer was changed, this fails, unless when [!] is
+		specified, in which case the changes are lost.
+		Any windows for this buffer are closed.  If buffer [N] is the
+		current buffer, another buffer will be displayed instead.
+		This is the most recent entry in the jump list that points
+		into a loaded buffer.
+
+:bunload[!] <code class="special">{bufname}</code>
+		Like ":bunload[!] [N]", but buffer given by name.
+		Also see |<a href="windows.html#{bufname}">{bufname}</a>|.
+
+:N,Mbunload[!]	Do ":bunload[!]" for all buffers in the range N to M
+		|<a href="motion.html#inclusive">inclusive</a>|.
+
+:bunload[!] N1 N2 ...
+		Do ":bunload[!]" for buffer N1, N2, etc.  The arguments can be
+		buffer numbers or buffer names (but not buffer names that are
+		a number).  Insert a backslash before a space in a buffer
+		name.
+
+:[N]b[uffer][!] [+cmd] [N]		<b class="vimtag">*<a name=":b">:b</a>*</b> <b class="vimtag">*<a name=":bu">:bu</a>*</b> <b class="vimtag">*<a name=":buf">:buf</a>*</b> <b class="vimtag">*<a name=":buffer">:buffer</a>*</b> <b class="vimtag">*<a name="E86">E86</a>*</b>
+		Edit buffer [N] from the buffer list.  If [N] is not given,
+		the current buffer remains being edited.  See |<a href="windows.html#:buffer-!">:buffer-!</a>| for
+		[!].  This will also edit a buffer that is not in the buffer
+		list, without setting the 'buflisted' flag.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]b[uffer][!] [+cmd] <code class="special">{bufname}</code>				<b class="vimtag">*<a name="{bufname}">{bufname}</a>*</b>
+		Edit buffer for <code class="special">{bufname}</code> from the buffer list.  A partial
+		name also works, so long as it is unique in the list of
+		buffers.
+		<code class="note">Note</code> that a buffer whose name is a number cannot be referenced
+		by that name; use the buffer number instead.
+		Insert a backslash before a space in a buffer name.
+		See |<a href="windows.html#:buffer-!">:buffer-!</a>| for [!].
+		This will also edit a buffer that is not in the buffer list,
+		without setting the 'buflisted' flag.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]sb[uffer] [+cmd] [N]				<b class="vimtag">*<a name=":sb">:sb</a>*</b> <b class="vimtag">*<a name=":sbuffer">:sbuffer</a>*</b>
+		Split window and edit buffer [N] from the buffer list.  If [N]
+		is not given, the current buffer is edited.  Respects the
+		"useopen" setting of 'switchbuf' when splitting.  This will
+		also edit a buffer that is not in the buffer list, without
+		setting the 'buflisted' flag.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]sb[uffer] [+cmd] <code class="special">{bufname}</code>
+		Split window and edit buffer for |<a href="windows.html#{bufname}">{bufname}</a>| from the buffer
+		list.  This will also edit a buffer that is not in the buffer
+		list, without setting the 'buflisted' flag.
+		<code class="note">Note:</code> If what you want to do is split the buffer, make a copy
+		under another name, you can do it this way:
+<code class="example">			:w foobar | sp #</code>
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]bn[ext][!] [+cmd] [N]				<b class="vimtag">*<a name=":bn">:bn</a>*</b> <b class="vimtag">*<a name=":bnext">:bnext</a>*</b> <b class="vimtag">*<a name="E87">E87</a>*</b>
+		Go to [N]th next buffer in buffer list.  [N] defaults to one.
+		Wraps around the end of the buffer list.
+		See |<a href="windows.html#:buffer-!">:buffer-!</a>| for [!].
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+		If you are in a help buffer, this takes you to the next help
+		buffer (if there is one).  Similarly, if you are in a normal
+		(non-help) buffer, this takes you to the next normal buffer.
+		This is so that if you have invoked help, it doesn't get in
+		the way when you're browsing code/text buffers.  The next three
+		commands also work like this.
+
+							<b class="vimtag">*<a name=":sbn">:sbn</a>*</b> <b class="vimtag">*<a name=":sbnext">:sbnext</a>*</b>
+:[N]sbn[ext] [+cmd] [N]
+		Split window and go to [N]th next buffer in buffer list.
+		Wraps around the end of the buffer list.  Uses 'switchbuf'
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]bN[ext][!] [+cmd] [N]		<b class="vimtag">*<a name=":bN">:bN</a>*</b> <b class="vimtag">*<a name=":bNext">:bNext</a>*</b> <b class="vimtag">*<a name=":bp">:bp</a>*</b> <b class="vimtag">*<a name=":bprevious">:bprevious</a>*</b> <b class="vimtag">*<a name="E88">E88</a>*</b>
+:[N]bp[revious][!] [+cmd] [N]
+		Go to [N]th previous buffer in buffer list.  [N] defaults to
+		one.  Wraps around the start of the buffer list.
+		See |<a href="windows.html#:buffer-!">:buffer-!</a>| for [!] and 'switchbuf'.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:[N]sbN[ext] [+cmd] [N]			<b class="vimtag">*<a name=":sbN">:sbN</a>*</b> <b class="vimtag">*<a name=":sbNext">:sbNext</a>*</b> <b class="vimtag">*<a name=":sbp">:sbp</a>*</b> <b class="vimtag">*<a name=":sbprevious">:sbprevious</a>*</b>
+:[N]sbp[revious] [+cmd] [N]
+		Split window and go to [N]th previous buffer in buffer list.
+		Wraps around the start of the buffer list.
+		Uses 'switchbuf'.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:br[ewind][!] [+cmd]					<b class="vimtag">*<a name=":br">:br</a>*</b> <b class="vimtag">*<a name=":bre">:bre</a>*</b> <b class="vimtag">*<a name=":brewind">:brewind</a>*</b>
+		Go to first buffer in buffer list.  If the buffer list is
+		empty, go to the first unlisted buffer.
+		See |<a href="windows.html#:buffer-!">:buffer-!</a>| for [!].
+
+:bf[irst] [+cmd]					<b class="vimtag">*<a name=":bf">:bf</a>*</b> <b class="vimtag">*<a name=":bfirst">:bfirst</a>*</b>
+		Same as |<a href="windows.html#:brewind">:brewind</a>|.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:sbr[ewind] [+cmd]					<b class="vimtag">*<a name=":sbr">:sbr</a>*</b> <b class="vimtag">*<a name=":sbrewind">:sbrewind</a>*</b>
+		Split window and go to first buffer in buffer list.  If the
+		buffer list is empty, go to the first unlisted buffer.
+		Respects the 'switchbuf' option.
+		Also see |<a href="editing.html#+cmd">+cmd</a>|.
+
+:sbf[irst] [+cmd]					<b class="vimtag">*<a name=":sbf">:sbf</a>*</b> <b class="vimtag">*<a name=":sbfirst">:sbfirst</a>*</b>
+		Same as ":sbrewind".
+
+:bl[ast][!] [+cmd]					<b class="vimtag">*<a name=":bl">:bl</a>*</b> <b class="vimtag">*<a name=":blast">:blast</a>*</b>
+		Go to last buffer in buffer list.  If the buffer list is
+		empty, go to the last unlisted buffer.
+		See |<a href="windows.html#:buffer-!">:buffer-!</a>| for [!].
+
+:sbl[ast] [+cmd]					<b class="vimtag">*<a name=":sbl">:sbl</a>*</b> <b class="vimtag">*<a name=":sblast">:sblast</a>*</b>
+		Split window and go to last buffer in buffer list.  If the
+		buffer list is empty, go to the last unlisted buffer.
+		Respects 'switchbuf' option.
+
+:[N]bm[odified][!] [+cmd] [N]			<b class="vimtag">*<a name=":bm">:bm</a>*</b> <b class="vimtag">*<a name=":bmodified">:bmodified</a>*</b> <b class="vimtag">*<a name="E84">E84</a>*</b>
+		Go to [N]th next modified buffer.  <code class="note">Note:</code> this command also
+		finds unlisted buffers.  If there is no modified buffer the
+		command fails.
+
+:[N]sbm[odified] [+cmd] [N]				<b class="vimtag">*<a name=":sbm">:sbm</a>*</b> <b class="vimtag">*<a name=":sbmodified">:sbmodified</a>*</b>
+		Split window and go to [N]th next modified buffer.
+		Respects 'switchbuf' option.
+		<code class="note">Note:</code> this command also finds buffers not in the buffer list.
+
+:[N]unh[ide] [N]			<b class="vimtag">*<a name=":unh">:unh</a>*</b> <b class="vimtag">*<a name=":unhide">:unhide</a>*</b> <b class="vimtag">*<a name=":sun">:sun</a>*</b> <b class="vimtag">*<a name=":sunhide">:sunhide</a>*</b>
+:[N]sun[hide] [N]
+		Rearrange the screen to open one window for each loaded buffer
+		in the buffer list.  When a count is given, this is the
+		maximum number of windows to open.
+
+:[N]ba[ll] [N]					<b class="vimtag">*<a name=":ba">:ba</a>*</b> <b class="vimtag">*<a name=":ball">:ball</a>*</b> <b class="vimtag">*<a name=":sba">:sba</a>*</b> <b class="vimtag">*<a name=":sball">:sball</a>*</b>
+:[N]sba[ll] [N]	Rearrange the screen to open one window for each buffer in
+		the buffer list.  When a count is given, this is the maximum
+		number of windows to open.  'winheight' also limits the number
+		of windows opened ('winwidth' if |<a href="windows.html#:vertical">:vertical</a>| was prepended).
+		Buf/Win Enter/Leave autocommands are not executed for the new
+		windows here, that's only done when they are really entered.
+		When the |<a href="tabpage.html#:tab">:tab</a>| modifier is used new windows are opened in a
+		new tab, up to 'tabpagemax'.
+
+<code class="note">Note:</code> All the commands above that start editing another buffer, keep the
+'readonly' flag as it was.  This differs from the ":edit" command, which sets
+the 'readonly' flag each time the file is read.
+
+</pre><hr/><pre>12. Special kinds of buffers			<b class="vimtag">*<a name="special-buffers">special-buffers</a>*</b>
+
+Instead of containing the text of a file, buffers can also be used for other
+purposes.  A few options can be set to change the behavior of a buffer:
+	'bufhidden'	what happens when the buffer is no longer displayed
+			in a window.
+	'buftype'	what kind of a buffer this is
+	'swapfile'	whether the buffer will have a swap file
+	'buflisted'	buffer shows up in the buffer list
+
+A few useful kinds of a buffer:
+
+quickfix	Used to contain the error list or the location list.  See
+		|<a href="quickfix.html#:cwindow">:cwindow</a>| and |<a href="quickfix.html#:lwindow">:lwindow</a>|.  This command sets the 'buftype'
+		option to "quickfix".  You are not supposed to change this!
+		'swapfile' is off.
+
+help		Contains a help file.  Will only be created with the |<a href="helphelp.html#:help">:help</a>|
+		command.  The flag that indicates a help buffer is internal
+		and can't be changed.  The 'buflisted' option will be reset
+		for a help buffer.
+
+terminal	A terminal window buffer, see |<a href="terminal.html#terminal">terminal</a>|. The contents cannot
+		be read or changed until the job ends.
+
+directory	Displays directory contents.  Can be used by a file explorer
+		plugin.  The buffer is created with these settings:
+<code class="example">			:setlocal buftype=nowrite</code>
+<code class="example">			:setlocal bufhidden=delete</code>
+<code class="example">			:setlocal noswapfile</code>
+		The buffer name is the name of the directory and is adjusted
+		when using the |<a href="editing.html#:cd">:cd</a>| command.
+
+scratch		Contains text that can be discarded at any time.  It is kept
+		when closing the window, it must be deleted explicitly.
+		Settings:
+<code class="example">			:setlocal buftype=nofile</code>
+<code class="example">			:setlocal bufhidden=hide</code>
+<code class="example">			:setlocal noswapfile</code>
+		The buffer name can be used to identify the buffer, if you
+		give it a meaningful name.
+
+						<b class="vimtag">*<a name="unlisted-buffer">unlisted-buffer</a>*</b>
+unlisted	The buffer is not in the buffer list.  It is not used for
+		normal editing, but to show a help file, remember a file name
+		or marks.  The ":bdelete" command will also set this option,
+		thus it doesn't completely delete the buffer.  Settings:
+<code class="example">			:setlocal nobuflisted</code>
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

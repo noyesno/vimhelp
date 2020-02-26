@@ -1,0 +1,285 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_06</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_06</h2>
+<pre>
+<b class="vimtag">*<a name="usr_06.txt">usr_06.txt</a>*</b>	For Vim version 8.2.  Last change: 2019 Jun 01
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			  Using syntax highlighting
+
+
+Black and white text is boring.  With colors your file comes to life.  This
+not only looks nice, it also speeds up your work.  Change the colors used for
+the different sorts of text.  Print your text, with the colors you see on the
+screen.
+
+|<a href="usr_06.html#06.1">06.1</a>|	Switching it on
+|<a href="usr_06.html#06.2">06.2</a>|	No or wrong colors?
+|<a href="usr_06.html#06.3">06.3</a>|	Different colors
+|<a href="usr_06.html#06.4">06.4</a>|	With colors or without colors
+|<a href="usr_06.html#06.5">06.5</a>|	Printing with colors
+|<a href="usr_06.html#06.6">06.6</a>|	Further reading
+
+     Next chapter: |<a href="usr_07.html#usr_07.txt">usr_07</a>|  Editing more than one file
+ Previous chapter: |<a href="usr_05.html#usr_05.txt">usr_05</a>|  Set your settings
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="06.1">06.1</a>*</b>	Switching it on
+
+It all starts with one simple command:
+<code class="example"></code>
+<code class="example">	:syntax enable</code>
+<code class="example"></code>
+That should work in most situations to get color in your files.  Vim will
+automagically detect the type of file and load the right syntax highlighting.
+Suddenly comments are blue, keywords brown and strings red.  This makes it
+easy to overview the file.  After a while you will find that black&amp;white text
+slows you down!
+
+If you always want to use syntax highlighting, put the ":syntax enable"
+command in your |<a href="starting.html#vimrc">vimrc</a>| file.
+
+If you want syntax highlighting only when the terminal supports colors, you
+can put this in your |<a href="starting.html#vimrc">vimrc</a>| file:
+<code class="example"></code>
+<code class="example">	if &amp;t_Co &gt; 1</code>
+<code class="example">	   syntax enable</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+If you want syntax highlighting only in the GUI version, put the ":syntax
+enable" command in your |<a href="gui.html#gvimrc">gvimrc</a>| file.
+
+</pre><hr/><pre><b class="vimtag">*<a name="06.2">06.2</a>*</b>	No or wrong colors?
+
+There can be a number of reasons why you don't see colors:
+
+- Your terminal does not support colors.
+	Vim will use bold, italic and underlined text, but this doesn't look
+	very nice.  You probably will want to try to get a terminal with
+	colors.  For Unix, I recommend the xterm from the XFree86 project:
+	|<a href="syntax.html#xfree-xterm">xfree-xterm</a>|.
+
+- Your terminal does support colors, but Vim doesn't know this.
+	Make sure your $TERM setting is correct.  For example, when using an
+	xterm that supports colors:
+<code class="example"></code>
+<code class="example">		setenv TERM xterm-color</code>
+
+	or (depending on your shell):
+<code class="example"></code>
+<code class="example">		TERM=xterm-color; export TERM</code>
+<code class="example"></code>
+	The terminal name must match the terminal you are using.  If it
+	still doesn't work, have a look at |<a href="syntax.html#xterm-color">xterm-color</a>|, which shows a few
+	ways to make Vim display colors (not only for an xterm).
+
+- The file type is not recognized.
+	Vim doesn't know all file types, and sometimes it's near to impossible
+	to tell what language a file uses.  Try this command:
+<code class="example"></code>
+<code class="example">		:set filetype</code>
+
+	If the result is "filetype=" then the problem is indeed that Vim
+	doesn't know what type of file this is.  You can set the type
+	manually:
+<code class="example"></code>
+<code class="example">		:set filetype=fortran</code>
+<code class="example"></code>
+	To see which types are available, look in the directory
+	$VIMRUNTIME/syntax.  For the GUI you can use the Syntax menu.
+	Setting the filetype can also be done with a |<a href="options.html#modeline">modeline</a>|, so that the
+	file will be highlighted each time you edit it.  For example, this
+	line can be used in a Makefile (put it near the start or end of the
+	file):
+<code class="example"></code>
+<code class="example">		# vim: syntax=make</code>
+<code class="example"></code>
+	You might know how to detect the file type yourself.  Often the file
+	name extension (after the dot) can be used.
+	See |<a href="filetype.html#new-filetype">new-filetype</a>| for how to tell Vim to detect that file type.
+
+- There is no highlighting for your file type.
+	You could try using a similar file type by manually setting it as
+	mentioned above.  If that isn't good enough, you can write your own
+	syntax file, see |<a href="syntax.html#mysyntaxfile">mysyntaxfile</a>|.
+
+
+Or the colors could be wrong:
+
+- The colored text is very hard to read.
+	Vim guesses the background color that you are using.  If it is black
+	(or another dark color) it will use light colors for text.  If it is
+	white (or another light color) it will use dark colors for text.  If
+	Vim guessed wrong the text will be hard to read.  To solve this, set
+	the 'background' option.  For a dark background:
+<code class="example"></code>
+<code class="example">		:set background=dark</code>
+<code class="example"></code>
+&lt;	And for a light background:
+<code class="example"></code>
+<code class="example">		:set background=light</code>
+<code class="example"></code>
+	Make sure you put this _before_ the ":syntax enable" command,
+	otherwise the colors will already have been set.  You could do
+	":syntax reset" after setting 'background' to make Vim set the default
+	colors again.
+
+- The colors are wrong when scrolling bottom to top.
+	Vim doesn't read the whole file to parse the text.  It starts parsing
+	wherever you are viewing the file.  That saves a lot of time, but
+	sometimes the colors are wrong.  A simple fix is hitting <code class="keystroke">CTRL-L</code>.  Or
+	scroll back a bit and then forward again.
+	For a real fix, see |<a href="syntax.html#:syn-sync">:syn-sync</a>|.  Some syntax files have a way to make
+	it look further back, see the help for the specific syntax file.  For
+	example, |<a href="syntax.html#tex.vim">tex.vim</a>| for the TeX syntax.
+
+</pre><hr/><pre><b class="vimtag">*<a name="06.3">06.3</a>*</b>	Different colors				<b class="vimtag">*<a name=":syn-default-override">:syn-default-override</a>*</b>
+
+If you don't like the default colors, you can select another color scheme.  In
+the GUI use the Edit/Color Scheme menu.  You can also type the command:
+<code class="example"></code>
+<code class="example">	:colorscheme evening</code>
+<code class="example"></code>
+"evening" is the name of the color scheme.  There are several others you might
+want to try out.  Look in the directory $VIMRUNTIME/colors.
+
+When you found the color scheme that you like, add the ":colorscheme" command
+to your |<a href="starting.html#vimrc">vimrc</a>| file.
+
+You could also write your own color scheme.  This is how you do it:
+
+1. Select a color scheme that comes close.  Copy this file to your own Vim
+   directory.  For Unix, this should work:
+<code class="example"></code>
+<code class="example">	!mkdir ~/.vim/colors</code>
+<code class="example">	!cp $VIMRUNTIME/colors/morning.vim ~/.vim/colors/mine.vim</code>
+
+   This is done from Vim, because it knows the value of $VIMRUNTIME.
+
+2. Edit the color scheme file.  These entries are useful:
+
+	term		attributes in a B&amp;W terminal
+	cterm		attributes in a color terminal
+	ctermfg		foreground color in a color terminal
+	ctermbg		background color in a color terminal
+	gui		attributes in the GUI
+	guifg		foreground color in the GUI
+	guibg		background color in the GUI
+
+   For example, to make comments green:
+<code class="example"></code>
+<code class="example">	:highlight Comment ctermfg=green guifg=green</code>
+
+   Attributes you can use for "cterm" and "gui" are "bold" and "underline".
+   If you want both, use "bold,underline".  For details see the |<a href="syntax.html#:highlight">:highlight</a>|
+   command.
+
+3. Tell Vim to always use your color scheme.  Put this line in your |<a href="starting.html#vimrc">vimrc</a>|:
+<code class="example"></code>
+<code class="example">	colorscheme mine</code>
+<code class="example"></code>
+If you want to see what the most often used color combinations look like, use
+this command:
+<code class="example"></code>
+<code class="example">	:runtime syntax/colortest.vim</code>
+<code class="example"></code>
+You will see text in various color combinations.  You can check which ones are
+readable and look nice.
+
+</pre><hr/><pre><b class="vimtag">*<a name="06.4">06.4</a>*</b>	With colors or without colors
+
+Displaying text in color takes a lot of effort.  If you find the displaying
+too slow, you might want to disable syntax highlighting for a moment:
+<code class="example"></code>
+<code class="example">	:syntax clear</code>
+<code class="example"></code>
+When editing another file (or the same one) the colors will come back.
+
+If you want to stop highlighting completely use:
+<code class="example"></code>
+<code class="example">	:syntax off</code>
+<code class="example"></code>
+This will completely disable syntax highlighting and remove it immediately for
+all buffers.  See |<a href="syntax.html#:syntax-off">:syntax-off</a>| for more details.
+
+							<b class="vimtag">*<a name=":syn-manual">:syn-manual</a>*</b>
+If you want syntax highlighting only for specific files, use this:
+<code class="example"></code>
+<code class="example">	:syntax manual</code>
+<code class="example"></code>
+This will enable the syntax highlighting, but not switch it on automatically
+when starting to edit a buffer.  To switch highlighting on for the current
+buffer, set the 'syntax' option:
+<code class="example"></code>
+<code class="example">	:set syntax=ON</code>
+
+</pre><hr/><pre><b class="vimtag">*<a name="06.5">06.5</a>*</b>	Printing with colors				<b class="vimtag">*<a name="syntax-printing">syntax-printing</a>*</b>
+
+In the MS-Windows version you can print the current file with this command:
+<code class="example"></code>
+<code class="example">	:hardcopy</code>
+<code class="example"></code>
+You will get the usual printer dialog, where you can select the printer and a
+few settings.  If you have a color printer, the paper output should look the
+same as what you see inside Vim.  But when you use a dark background the
+colors will be adjusted to look good on white paper.
+
+There are several options that change the way Vim prints:
+	'printdevice'
+	'printheader'
+	'printfont'
+	'printoptions'
+
+To print only a range of lines,  use Visual mode to select the lines and then
+type the command:
+<code class="example"></code>
+<code class="example">	v100j:hardcopy</code>
+<code class="example"></code>
+"v" starts Visual mode.  "100j" moves a hundred lines down, they will be
+highlighted.  Then ":hardcopy" will print those lines.  You can use other
+commands to move in Visual mode, of course.
+
+This also works on Unix, if you have a PostScript printer.  Otherwise, you
+will have to do a bit more work.  You need to convert the text to HTML first,
+and then print it from a web browser.
+
+Convert the current file to HTML with this command:
+<code class="example"></code>
+<code class="example">	:TOhtml</code>
+<code class="example"></code>
+In case that doesn't work:
+<code class="example"></code>
+<code class="example">	:source $VIMRUNTIME/syntax/2html.vim</code>
+<code class="example"></code>
+You will see it crunching away, this can take quite a while for a large file.
+Some time later another window shows the HTML code.  Now write this somewhere
+(doesn't matter where, you throw it away later):
+
+<code class="example">	:write main.c.html</code>
+<code class="example"></code>
+Open this file in your favorite browser and print it from there.  If all goes
+well, the output should look exactly as it does in Vim.  See |<a href="syntax.html#2html.vim">2html.vim</a>| for
+details.  Don't forget to delete the HTML file when you are done with it.
+
+Instead of printing, you could also put the HTML file on a web server, and let
+others look at the colored text.
+
+</pre><hr/><pre><b class="vimtag">*<a name="06.6">06.6</a>*</b>	Further reading
+
+|<a href="usr_44.html#usr_44.txt">usr_44</a>|  Your own syntax highlighted.
+|<a href="syntax.html#syntax">syntax</a>|      All the details.
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_07.html#usr_07.txt">usr_07</a>|  Editing more than one file
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

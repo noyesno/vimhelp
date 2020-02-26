@@ -1,0 +1,953 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: if_pyth</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>IF_PYTH</h2>
+<pre>
+<b class="vimtag">*<a name="if_pyth.txt">if_pyth.txt</a>*</b>   For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL    by Paul Moore
+
+
+The Python Interface to Vim				<b class="vimtag">*<a name="python">python</a>*</b> <b class="vimtag">*<a name="Python">Python</a>*</b>
+
+1. Commands					|<a href="if_pyth.html#python-commands">python-commands</a>|
+2. The vim module				|<a href="if_pyth.html#python-vim">python-vim</a>|
+3. Buffer objects				|<a href="if_pyth.html#python-buffer">python-buffer</a>|
+4. Range objects				|<a href="if_pyth.html#python-range">python-range</a>|
+5. Window objects				|<a href="if_pyth.html#python-window">python-window</a>|
+6. Tab page objects				|<a href="if_pyth.html#python-tabpage">python-tabpage</a>|
+7. vim.bindeval objects				|<a href="if_pyth.html#python-bindeval-objects">python-bindeval-objects</a>|
+8. pyeval(), py3eval() Vim functions		|<a href="if_pyth.html#python-pyeval">python-pyeval</a>|
+9. Dynamic loading				|<a href="if_pyth.html#python-dynamic">python-dynamic</a>|
+10. Python 3					|<a href="if_pyth.html#python3">python3</a>|
+11. Python X					|<a href="if_pyth.html#python_x">python_x</a>|
+12. Building with Python support		|<a href="if_pyth.html#python-building">python-building</a>|
+
+The Python 2.x interface is available only when Vim was compiled with the
+|<a href="various.html#+python">+python</a>| feature.
+The Python 3 interface is available only when Vim was compiled with the
+|<a href="various.html#+python3">+python3</a>| feature.
+Both can be available at the same time, but read |<a href="if_pyth.html#python-2-and-3">python-2-and-3</a>|.
+
+</pre><hr/><pre>1. Commands						<b class="vimtag">*<a name="python-commands">python-commands</a>*</b>
+
+					<b class="vimtag">*<a name=":python">:python</a>*</b> <b class="vimtag">*<a name=":py">:py</a>*</b> <b class="vimtag">*<a name="E263">E263</a>*</b> <b class="vimtag">*<a name="E264">E264</a>*</b> <b class="vimtag">*<a name="E887">E887</a>*</b>
+:<code class="special">[range]</code>py[thon] <code class="special">{stmt}</code>
+			Execute Python statement <code class="special">{stmt}</code>.  A simple check if
+			the `:python` command is working:
+<code class="example">				:python print "Hello"</code>
+<code class="example"></code>
+:<code class="special">[range]</code>py[thon] &lt;&lt; [endmarker]
+<code class="special">{script}</code>
+<code class="special">{endmarker}</code>
+			Execute Python script <code class="special">{script}</code>.
+			<code class="note">Note:</code> This command doesn't work when the Python
+			feature wasn't compiled in.  To avoid errors, see
+			|<a href="if_perl.html#script-here">script-here</a>|.
+
+The <code class="special">{endmarker}</code> below the <code class="special">{script}</code> must NOT be preceded by any white space.
+
+If [endmarker] is omitted from after the "&lt;&lt;", a dot '.' must be used after
+<code class="special">{script}</code>, like for the |<a href="insert.html#:append">:append</a>| and |<a href="insert.html#:insert">:insert</a>| commands.
+
+This form of the |<a href="if_pyth.html#:python">:python</a>| command is mainly useful for including python code
+in Vim scripts.
+
+Example:
+<code class="example">	function! IcecreamInitialize()</code>
+<code class="example">	python &lt;&lt; EOF</code>
+<code class="example">	class StrawberryIcecream:</code>
+<code class="example">		def __call__(self):</code>
+<code class="example">			print 'EAT ME'</code>
+<code class="example">	EOF</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+To see what version of Python you have:
+<code class="example">	:python print(sys.version)</code>
+<code class="example"></code>
+There is no need to import sys, it's done by default.
+
+<code class="note">Note:</code> Python is very sensitive to the indenting.  Make sure the "class" line
+and "EOF" do not have any indent.
+
+							<b class="vimtag">*<a name=":pydo">:pydo</a>*</b>
+:<code class="special">[range]</code>pydo <code class="special">{body}</code>	Execute Python function "def _vim_pydo(line, linenr):
+			<code class="special">{body}</code>" for each line in the <code class="special">[range]</code>, with the
+			function arguments being set to the text of each line
+			in turn, without a trailing <code class="special">&lt;EOL&gt;</code>, and the current
+			line number. The function should return a string or
+			None. If a string is returned, it becomes the text of
+			the line in the current turn. The default for <code class="special">[range]</code>
+			is the whole file: "1,$".
+
+Examples:
+
+<code class="example">	:pydo return "%s\t%d" % (line[::-1], len(line))</code>
+<code class="example">	:pydo if line: return "%4d: %s" % (linenr, line)</code>
+
+One can use `:pydo` in possible conjunction with `:py` to filter a range using
+python. For example:
+<code class="example"></code>
+<code class="example">	:py3 &lt;&lt; EOF</code>
+<code class="example">	needle = vim.eval('@a')</code>
+<code class="example">	replacement = vim.eval('@b')</code>
+<code class="example"></code>
+<code class="example">	def py_vim_string_replace(str):</code>
+<code class="example">		return str.replace(needle, replacement)</code>
+<code class="example">	EOF</code>
+<code class="example">	:'<code class="special">&lt;,'&gt;</code>py3do return py_vim_string_replace(line)</code>
+
+							<b class="vimtag">*<a name=":pyfile">:pyfile</a>*</b> <b class="vimtag">*<a name=":pyf">:pyf</a>*</b>
+:<code class="special">[range]</code>pyf[ile] <code class="special">{file}</code>
+			Execute the Python script in <code class="special">{file}</code>.  The whole
+			argument is used as a single file name.
+
+Both of these commands do essentially the same thing - they execute a piece of
+Python code, with the "current range" |<a href="if_pyth.html#python-range">python-range</a>| set to the given line
+range.
+
+In the case of :python, the code to execute is in the command-line.
+In the case of :pyfile, the code to execute is the contents of the given file.
+
+Python commands cannot be used in the |<a href="eval.html#sandbox">sandbox</a>|.
+
+To pass arguments you need to set sys.argv[] explicitly.  Example:
+<code class="example"></code>
+<code class="example">	:python sys.argv = ["foo", "bar"]</code>
+<code class="example">	:pyfile myscript.py</code>
+<code class="example"></code>
+Here are some examples					<b class="vimtag">*<a name="python-examples">python-examples</a>*</b>
+<code class="example"></code>
+<code class="example">	:python from vim import *</code>
+<code class="example">	:python from string import upper</code>
+<code class="example">	:python current.line = upper(current.line)</code>
+<code class="example">	:python print "Hello"</code>
+<code class="example">	:python str = current.buffer[42]</code>
+<code class="example"></code>
+(<code class="note">Note</code> that changes - like the imports - persist from one command to the next,
+just like in the Python interpreter.)
+
+</pre><hr/><pre>2. The vim module					<b class="vimtag">*<a name="python-vim">python-vim</a>*</b>
+
+Python code gets all of its access to vim (with one exception - see
+|<a href="if_pyth.html#python-output">python-output</a>| below) via the "vim" module.  The vim module implements two
+methods, three constants, and one error object.  You need to import the vim
+module before using it:
+<code class="example">	:python import vim</code>
+<code class="example"></code>
+Overview
+<code class="example">	:py print "Hello"		# displays a message</code>
+<code class="example">	:py vim.command(cmd)		# execute an Ex command</code>
+<code class="example">	:py w = vim.windows[n]		# gets window "n"</code>
+<code class="example">	:py cw = vim.current.window	# gets the current window</code>
+<code class="example">	:py b = vim.buffers[n]		# gets buffer "n"</code>
+<code class="example">	:py cb = vim.current.buffer	# gets the current buffer</code>
+<code class="example">	:py w.height = lines		# sets the window height</code>
+<code class="example">	:py w.cursor = (row, col)	# sets the window cursor position</code>
+<code class="example">	:py pos = w.cursor		# gets a tuple (row, col)</code>
+<code class="example">	:py name = b.name		# gets the buffer file name</code>
+<code class="example">	:py line = b[n]			# gets a line from the buffer</code>
+<code class="example">	:py lines = b[n:m]		# gets a list of lines</code>
+<code class="example">	:py num = len(b)		# gets the number of lines</code>
+<code class="example">	:py b[n] = str			# sets a line in the buffer</code>
+<code class="example">	:py b[n:m] = [str1, str2, str3]	# sets a number of lines at once</code>
+<code class="example">	:py del b[n]			# deletes a line</code>
+<code class="example">	:py del b[n:m]			# deletes a number of lines</code>
+<code class="example"></code>
+<code class="example"></code>
+Methods of the "vim" module
+
+vim.command(str)					<b class="vimtag">*<a name="python-command">python-command</a>*</b>
+	Executes the vim (ex-mode) command str.  Returns None.
+	Examples:
+<code class="example">	    :py vim.command("set tw=72")</code>
+<code class="example">	    :py vim.command("%s/aaa/bbb/g")</code>
+&lt;	The following definition executes Normal mode commands:
+<code class="example">		def normal(str):</code>
+<code class="example">			vim.command("normal "+str)</code>
+<code class="example">		# <code class="note">Note</code> the use of single quotes to delimit a string containing</code>
+<code class="example">		# double quotes</code>
+<code class="example">		normal('"a2dd"aP')</code>
+								<b class="vimtag">*<a name="E659">E659</a>*</b>
+	The ":python" command cannot be used recursively with Python 2.2 and
+	older.  This only works with Python 2.3 and later:
+<code class="example">	    :py vim.command("python print 'Hello again Python'")</code>
+<code class="example"></code>
+vim.eval(str)						<b class="vimtag">*<a name="python-eval">python-eval</a>*</b>
+	Evaluates the expression str using the vim internal expression
+	evaluator (see |<a href="eval.html#expression">expression</a>|).  Returns the expression result as:
+	- a string if the Vim expression evaluates to a string or number
+	- a list if the Vim expression evaluates to a Vim list
+	- a dictionary if the Vim expression evaluates to a Vim dictionary
+	Dictionaries and lists are recursively expanded.
+	Examples:
+<code class="example">	    :" value of the 'textwidth' option</code>
+<code class="example">	    :py text_width = vim.eval("&amp;tw")</code>
+<code class="example">	    :</code>
+<code class="example">	    :" contents of the 'a' register</code>
+<code class="example">	    :py a_reg = vim.eval("@a")</code>
+<code class="example">	    :</code>
+<code class="example">	    :" Result is a string! Use string.atoi() to convert to a number.</code>
+<code class="example">	    :py str = vim.eval("12+12")</code>
+<code class="example">	    :</code>
+<code class="example">	    :py tagList = vim.eval('taglist("eval_expr")')</code>
+	The latter will return a python list of python dicts, for instance:
+<code class="section">	[{'cmd': '/^eval_expr(arg, nextcmd)$/', 'static': 0, 'name': </code>
+<code class="section">	'eval_expr', 'kind': 'f', 'filename': './src/eval.c'}] </code>
+
+vim.bindeval(str)					<b class="vimtag">*<a name="python-bindeval">python-bindeval</a>*</b>
+	Like |<a href="if_pyth.html#python-eval">python-eval</a>|, but returns special objects described in
+	|<a href="if_pyth.html#python-bindeval-objects">python-bindeval-objects</a>|. These python objects let you modify (|<a href="eval.html#List">List</a>|
+	or |<a href="eval.html#Dictionary">Dictionary</a>|) or call (|<a href="eval.html#Funcref">Funcref</a>|) vim objects.
+
+vim.strwidth(str)					<b class="vimtag">*<a name="python-strwidth">python-strwidth</a>*</b>
+	Like |<a href="eval.html#strwidth()">strwidth()</a>|: returns number of display cells str occupies, tab
+	is counted as one cell.
+
+vim.foreach_rtp(callable)				<b class="vimtag">*<a name="python-foreach_rtp">python-foreach_rtp</a>*</b>
+	Call the given callable for each path in 'runtimepath' until either
+	callable returns something but None, the exception is raised or there
+	are no longer paths. If stopped in case callable returned non-None,
+	vim.foreach_rtp function returns the value returned by callable.
+
+vim.chdir(<b class="vimtag">*<a name="args, ">args, </a>*</b><b class="vimtag">*<a name="kwargs)				">kwargs)				</a>*</b>python-chdir*
+vim.fchdir(<b class="vimtag">*<a name="args, ">args, </a>*</b><b class="vimtag">*<a name="kwargs)				">kwargs)				</a>*</b>python-fchdir*
+	Run os.chdir or os.fchdir, then all appropriate vim stuff.
+	<code class="note">Note:</code> you should not use these functions directly, use os.chdir and
+	      os.fchdir instead. Behavior of vim.fchdir is undefined in case
+	      os.fchdir does not exist.
+
+Error object of the "vim" module
+
+vim.error						<b class="vimtag">*<a name="python-error">python-error</a>*</b>
+	Upon encountering a Vim error, Python raises an exception of type
+	vim.error.
+	Example:
+<code class="example">		try:</code>
+<code class="example">			vim.command("put a")</code>
+<code class="example">		except vim.error:</code>
+<code class="example">			# nothing in register a</code>
+<code class="example"></code>
+Constants of the "vim" module
+
+	<code class="note">Note</code> that these are not actually constants - you could reassign them.
+	But this is silly, as you would then lose access to the vim objects
+	to which the variables referred.
+
+vim.buffers						<b class="vimtag">*<a name="python-buffers">python-buffers</a>*</b>
+	A mapping object providing access to the list of vim buffers.  The
+	object supports the following operations:
+<code class="example">	    :py b = vim.buffers[i]	# Indexing (read-only)</code>
+<code class="example">	    :py b in vim.buffers	# Membership test</code>
+<code class="example">	    :py n = len(vim.buffers)	# Number of elements</code>
+<code class="example">	    :py for b in vim.buffers:	# Iterating over buffer list</code>
+
+vim.windows						<b class="vimtag">*<a name="python-windows">python-windows</a>*</b>
+	A sequence object providing access to the list of vim windows.  The
+	object supports the following operations:
+<code class="example">	    :py w = vim.windows[i]	# Indexing (read-only)</code>
+<code class="example">	    :py w in vim.windows	# Membership test</code>
+<code class="example">	    :py n = len(vim.windows)	# Number of elements</code>
+<code class="example">	    :py for w in vim.windows:	# Sequential access</code>
+	<code class="note">Note:</code> vim.windows object always accesses current tab page.
+	|<a href="if_pyth.html#python-tabpage">python-tabpage</a>|.windows objects are bound to parent |<a href="if_pyth.html#python-tabpage">python-tabpage</a>|
+	object and always use windows from that tab page (or throw vim.error
+	in case tab page was deleted). You can keep a reference to both
+	without keeping a reference to vim module object or |<a href="if_pyth.html#python-tabpage">python-tabpage</a>|,
+	they will not lose their properties in this case.
+
+vim.tabpages						<b class="vimtag">*<a name="python-tabpages">python-tabpages</a>*</b>
+	A sequence object providing access to the list of vim tab pages. The
+	object supports the following operations:
+<code class="example">	    :py t = vim.tabpages[i]	# Indexing (read-only)</code>
+<code class="example">	    :py t in vim.tabpages	# Membership test</code>
+<code class="example">	    :py n = len(vim.tabpages)	# Number of elements</code>
+<code class="example">	    :py for t in vim.tabpages:	# Sequential access</code>
+
+vim.current						<b class="vimtag">*<a name="python-current">python-current</a>*</b>
+	An object providing access (via specific attributes) to various
+	"current" objects available in vim:
+		vim.current.line	The current line (RW)		String
+		vim.current.buffer	The current buffer (RW)		Buffer
+		vim.current.window	The current window (RW)		Window
+		vim.current.tabpage	The current tab page (RW)	TabPage
+		vim.current.range	The current line range (RO)	Range
+
+	The last case deserves a little explanation.  When the :python or
+	:pyfile command specifies a range, this range of lines becomes the
+	"current range".  A range is a bit like a buffer, but with all access
+	restricted to a subset of lines.  See |<a href="if_pyth.html#python-range">python-range</a>| for more details.
+
+	<code class="note">Note:</code> When assigning to vim.current.<code class="special">{buffer,window,tabpage}</code> it expects
+	valid |<a href="if_pyth.html#python-buffer">python-buffer</a>|, |<a href="if_pyth.html#python-window">python-window</a>| or |<a href="if_pyth.html#python-tabpage">python-tabpage</a>| objects
+	respectively. Assigning triggers normal (with |<a href="autocmd.html#autocommand">autocommand</a>|s)
+	switching to given buffer, window or tab page. It is the only way to
+	switch UI objects in python: you can't assign to
+	|<a href="if_pyth.html#python-tabpage">python-tabpage</a>|.window attribute. To switch without triggering
+	autocommands use
+<code class="example">	    py &lt;&lt; EOF</code>
+<code class="example">	    saved_eventignore = vim.options['eventignore']</code>
+<code class="example">	    vim.options['eventignore'] = 'all'</code>
+<code class="example">	    try:</code>
+<code class="example">	        vim.current.buffer = vim.buffers[2] # Switch to buffer 2</code>
+<code class="example">	    finally:</code>
+<code class="example">	        vim.options['eventignore'] = saved_eventignore</code>
+<code class="example">	    EOF</code>
+
+vim.vars						<b class="vimtag">*<a name="python-vars">python-vars</a>*</b>
+vim.vvars						<b class="vimtag">*<a name="python-vvars">python-vvars</a>*</b>
+	Dictionary-like objects holding dictionaries with global (|<a href="eval.html#g:">g:</a>|) and
+	vim (|<a href="eval.html#v:">v:</a>|) variables respectively. Identical to `vim.bindeval("g:")`,
+	but faster.
+
+vim.options						<b class="vimtag">*<a name="python-options">python-options</a>*</b>
+	Object partly supporting mapping protocol (supports setting and
+	getting items) providing a read-write access to global options.
+	<code class="note">Note:</code> unlike |<a href="options.html#:set">:set</a>| this provides access only to global options. You
+	cannot use this object to obtain or set local options' values or
+	access local-only options in any fashion. Raises KeyError if no global
+	option with such name exists (i.e. does not raise KeyError for
+	|<a href="options.html#global-local">global-local</a>| options and global only options, but does for window-
+	and buffer-local ones).  Use |<a href="if_pyth.html#python-buffer">python-buffer</a>| objects to access to
+	buffer-local options and |<a href="if_pyth.html#python-window">python-window</a>| objects to access to
+	window-local options.
+
+	Type of this object is available via "Options" attribute of vim
+	module.
+
+Output from Python					<b class="vimtag">*<a name="python-output">python-output</a>*</b>
+	Vim displays all Python code output in the Vim message area.  Normal
+	output appears as information messages, and error output appears as
+	error messages.
+
+	In implementation terms, this means that all output to sys.stdout
+	(including the output from print statements) appears as information
+	messages, and all output to sys.stderr (including error tracebacks)
+	appears as error messages.
+
+							<b class="vimtag">*<a name="python-input">python-input</a>*</b>
+	Input (via sys.stdin, including input() and raw_input()) is not
+	supported, and may cause the program to crash.  This should probably be
+	fixed.
+
+		    <b class="vimtag">*<a name="python2-directory">python2-directory</a>*</b> <b class="vimtag">*<a name="python3-directory">python3-directory</a>*</b> <b class="vimtag">*<a name="pythonx-directory">pythonx-directory</a>*</b>
+Python 'runtimepath' handling				<b class="vimtag">*<a name="python-special-path">python-special-path</a>*</b>
+
+In python vim.VIM_SPECIAL_PATH special directory is used as a replacement for
+the list of paths found in 'runtimepath': with this directory in sys.path and
+vim.path_hooks in sys.path_hooks python will try to load module from
+<code class="special">{rtp}</code>/python2 (or python3) and <code class="special">{rtp}</code>/pythonx (for both python versions) for
+each <code class="special">{rtp}</code> found in 'runtimepath'.
+
+Implementation is similar to the following, but written in C:
+<code class="example"></code>
+<code class="example">    from imp import find_module, load_module</code>
+<code class="example">    import vim</code>
+<code class="example">    import sys</code>
+<code class="example"></code>
+<code class="example">    class VimModuleLoader(object):</code>
+<code class="example">        def __init__(self, module):</code>
+<code class="example">            self.module = module</code>
+<code class="example"></code>
+<code class="example">        def load_module(self, fullname, path=None):</code>
+<code class="example">            return self.module</code>
+<code class="example"></code>
+<code class="example">    def _find_module(fullname, oldtail, path):</code>
+<code class="example">        idx = oldtail.find('.')</code>
+<code class="example">        if idx &gt; 0:</code>
+<code class="example">            name = oldtail[:idx]</code>
+<code class="example">            tail = oldtail[idx+1:]</code>
+<code class="example">            fmr = find_module(name, path)</code>
+<code class="example">            module = load_module(fullname[:-len(oldtail)] + name, *fmr)</code>
+<code class="example">            return _find_module(fullname, tail, module.__path__)</code>
+<code class="example">        else:</code>
+<code class="example">            fmr = find_module(fullname, path)</code>
+<code class="example">            return load_module(fullname, *fmr)</code>
+<code class="example"></code>
+<code class="example">    # It uses vim module itself in place of VimPathFinder class: it does not</code>
+<code class="example">    # matter for python which object has find_module function attached to as</code>
+<code class="example">    # an attribute.</code>
+<code class="example">    class VimPathFinder(object):</code>
+<code class="example">        @classmethod</code>
+<code class="example">        def find_module(cls, fullname, path=None):</code>
+<code class="example">            try:</code>
+<code class="example">                return VimModuleLoader(_find_module(fullname, fullname, path or vim._get_paths()))</code>
+<code class="example">            except ImportError:</code>
+<code class="example">                return None</code>
+<code class="example"></code>
+<code class="example">        @classmethod</code>
+<code class="example">        def load_module(cls, fullname, path=None):</code>
+<code class="example">            return _find_module(fullname, fullname, path or vim._get_paths())</code>
+<code class="example"></code>
+<code class="example">    def hook(path):</code>
+<code class="example">        if path == vim.VIM_SPECIAL_PATH:</code>
+<code class="example">            return VimPathFinder</code>
+<code class="example">        else:</code>
+<code class="example">            raise ImportError</code>
+<code class="example"></code>
+<code class="example">    sys.path_hooks.append(hook)</code>
+<code class="example"></code>
+vim.VIM_SPECIAL_PATH					<b class="vimtag">*<a name="python-VIM_SPECIAL_PATH">python-VIM_SPECIAL_PATH</a>*</b>
+	String constant used in conjunction with vim path hook. If path hook
+	installed by vim is requested to handle anything but path equal to
+	vim.VIM_SPECIAL_PATH constant it raises ImportError. In the only other
+	case it uses special loader.
+
+	<code class="note">Note:</code> you must not use value of this constant directly, always use
+	      vim.VIM_SPECIAL_PATH object.
+
+vim.find_module(...)					<b class="vimtag">*<a name="python-find_module">python-find_module</a>*</b>
+vim.path_hook(path)					<b class="vimtag">*<a name="python-path_hook">python-path_hook</a>*</b>
+	Methods or objects used to implement path loading as described above.
+	You should not be using any of these directly except for vim.path_hook
+	in case you need to do something with sys.meta_path. It is not
+	guaranteed that any of the objects will exist in the future vim
+	versions.
+
+vim._get_paths						<b class="vimtag">*<a name="python-_get_paths">python-_get_paths</a>*</b>
+	Methods returning a list of paths which will be searched for by path
+	hook. You should not rely on this method being present in future
+	versions, but can use it for debugging.
+
+	It returns a list of <code class="special">{rtp}</code>/python2 (or <code class="special">{rtp}</code>/python3) and
+	<code class="special">{rtp}</code>/pythonx directories for each <code class="special">{rtp}</code> in 'runtimepath'.
+
+</pre><hr/><pre>3. Buffer objects					<b class="vimtag">*<a name="python-buffer">python-buffer</a>*</b>
+
+Buffer objects represent vim buffers.  You can obtain them in a number of ways:
+	- via vim.current.buffer (|<a href="if_pyth.html#python-current">python-current</a>|)
+	- from indexing vim.buffers (|<a href="if_pyth.html#python-buffers">python-buffers</a>|)
+	- from the "buffer" attribute of a window (|<a href="if_pyth.html#python-window">python-window</a>|)
+
+Buffer objects have two read-only attributes - name - the full file name for
+the buffer, and number - the buffer number.  They also have three methods
+(append, mark, and range; see below).
+
+You can also treat buffer objects as sequence objects.  In this context, they
+act as if they were lists (yes, they are mutable) of strings, with each
+element being a line of the buffer.  All of the usual sequence operations,
+including indexing, index assignment, slicing and slice assignment, work as
+you would expect.  <code class="note">Note</code> that the result of indexing (slicing) a buffer is a
+string (list of strings).  This has one unusual consequence - b[:] is different
+from b.  In particular, "b[:] = None" deletes the whole of the buffer, whereas
+"b = None" merely updates the variable b, with no effect on the buffer.
+
+Buffer indexes start at zero, as is normal in Python.  This differs from vim
+line numbers, which start from 1.  This is particularly relevant when dealing
+with marks (see below) which use vim line numbers.
+
+The buffer object attributes are:
+	b.vars		Dictionary-like object used to access
+			|<a href="eval.html#buffer-variable">buffer-variable</a>|s.
+	b.options	Mapping object (supports item getting, setting and
+			deleting) that provides access to buffer-local options
+			and buffer-local values of |<a href="options.html#global-local">global-local</a>| options. Use
+			|<a href="if_pyth.html#python-window">python-window</a>|.options if option is window-local,
+			this object will raise KeyError. If option is
+			|<a href="options.html#global-local">global-local</a>| and local value is missing getting it
+			will return None.
+	b.name		String, RW. Contains buffer name (full path).
+			<code class="note">Note:</code> when assigning to b.name |<a href="autocmd.html#BufFilePre">BufFilePre</a>| and
+			|<a href="autocmd.html#BufFilePost">BufFilePost</a>| autocommands are launched.
+	b.number	Buffer number. Can be used as |<a href="if_pyth.html#python-buffers">python-buffers</a>| key.
+			Read-only.
+	b.valid		True or False. Buffer object becomes invalid when
+			corresponding buffer is wiped out.
+
+The buffer object methods are:
+	b.append(str)	Append a line to the buffer
+	b.append(str, nr)  Idem, below line "nr"
+	b.append(list)	Append a list of lines to the buffer
+			<code class="note">Note</code> that the option of supplying a list of strings to
+			the append method differs from the equivalent method
+			for Python's built-in list objects.
+	b.append(list, nr)  Idem, below line "nr"
+	b.mark(name)	Return a tuple (row,col) representing the position
+			of the named mark (can also get the []"<code class="special">&lt;&gt;</code> marks)
+	b.range(s,e)	Return a range object (see |<a href="if_pyth.html#python-range">python-range</a>|) which
+			represents the part of the given buffer between line
+			numbers s and e |<a href="motion.html#inclusive">inclusive</a>|.
+
+<code class="note">Note</code> that when adding a line it must not contain a line break character '\n'.
+A trailing '\n' is allowed and ignored, so that you can do:
+<code class="example">	:py b.append(f.readlines())</code>
+<code class="example"></code>
+Buffer object type is available using "Buffer" attribute of vim module.
+
+Examples (assume b is the current buffer)
+<code class="example">	:py print b.name		# write the buffer file name</code>
+<code class="example">	:py b[0] = "hello!!!"		# replace the top line</code>
+<code class="example">	:py b[:] = None			# delete the whole buffer</code>
+<code class="example">	:py del b[:]			# delete the whole buffer</code>
+<code class="example">	:py b[0:0] = [ "a line" ]	# add a line at the top</code>
+<code class="example">	:py del b[2]			# delete a line (the third)</code>
+<code class="example">	:py b.append("bottom")		# add a line at the bottom</code>
+<code class="example">	:py n = len(b)			# number of lines</code>
+<code class="example">	:py (row,col) = b.mark('a')	# named mark</code>
+<code class="example">	:py r = b.range(1,5)		# a sub-range of the buffer</code>
+<code class="example">	:py b.vars["foo"] = "bar"	# assign b:foo variable</code>
+<code class="example">	:py b.options["ff"] = "dos"	# set fileformat</code>
+<code class="example">	:py del b.options["ar"]		# same as :set autoread&lt;</code>
+<code class="example"></code>
+</pre><hr/><pre>4. Range objects					<b class="vimtag">*<a name="python-range">python-range</a>*</b>
+
+Range objects represent a part of a vim buffer.  You can obtain them in a
+number of ways:
+	- via vim.current.range (|<a href="if_pyth.html#python-current">python-current</a>|)
+	- from a buffer's range() method (|<a href="if_pyth.html#python-buffer">python-buffer</a>|)
+
+A range object is almost identical in operation to a buffer object.  However,
+all operations are restricted to the lines within the range (this line range
+can, of course, change as a result of slice assignments, line deletions, or
+the range.append() method).
+
+The range object attributes are:
+	r.start		Index of first line into the buffer
+	r.end		Index of last line into the buffer
+
+The range object methods are:
+	r.append(str)	Append a line to the range
+	r.append(str, nr)  Idem, after line "nr"
+	r.append(list)	Append a list of lines to the range
+			<code class="note">Note</code> that the option of supplying a list of strings to
+			the append method differs from the equivalent method
+			for Python's built-in list objects.
+	r.append(list, nr)  Idem, after line "nr"
+
+Range object type is available using "Range" attribute of vim module.
+
+Example (assume r is the current range):
+	# Send all lines in a range to the default printer
+	vim.command("%d,%dhardcopy!" % (r.start+1,r.end+1))
+
+</pre><hr/><pre>5. Window objects					<b class="vimtag">*<a name="python-window">python-window</a>*</b>
+
+Window objects represent vim windows.  You can obtain them in a number of ways:
+	- via vim.current.window (|<a href="if_pyth.html#python-current">python-current</a>|)
+	- from indexing vim.windows (|<a href="if_pyth.html#python-windows">python-windows</a>|)
+	- from indexing "windows" attribute of a tab page (|<a href="if_pyth.html#python-tabpage">python-tabpage</a>|)
+	- from the "window" attribute of a tab page (|<a href="if_pyth.html#python-tabpage">python-tabpage</a>|)
+
+You can manipulate window objects only through their attributes.  They have no
+methods, and no sequence or other interface.
+
+Window attributes are:
+	buffer (read-only)	The buffer displayed in this window
+	cursor (read-write)	The current cursor position in the window
+				This is a tuple, (row,col).
+	height (read-write)	The window height, in rows
+	width (read-write)	The window width, in columns
+	vars (read-only)	The window |<a href="eval.html#w:">w:</a>| variables. Attribute is
+				unassignable, but you can change window
+				variables this way
+	options (read-only)	The window-local options. Attribute is
+				unassignable, but you can change window
+				options this way. Provides access only to
+				window-local options, for buffer-local use
+				|<a href="if_pyth.html#python-buffer">python-buffer</a>| and for global ones use
+				|<a href="if_pyth.html#python-options">python-options</a>|. If option is |<a href="options.html#global-local">global-local</a>|
+				and local value is missing getting it will
+				return None.
+	number (read-only)	Window number.  The first window has number 1.
+				This is zero in case it cannot be determined
+				(e.g. when the window object belongs to other
+				tab page).
+	row, col (read-only)	On-screen window position in display cells.
+				First position is zero.
+	tabpage (read-only)	Window tab page.
+	valid (read-write)	True or False. Window object becomes invalid
+				when corresponding window is closed.
+
+The height attribute is writable only if the screen is split horizontally.
+The width attribute is writable only if the screen is split vertically.
+
+Window object type is available using "Window" attribute of vim module.
+
+</pre><hr/><pre>6. Tab page objects					<b class="vimtag">*<a name="python-tabpage">python-tabpage</a>*</b>
+
+Tab page objects represent vim tab pages. You can obtain them in a number of
+ways:
+	- via vim.current.tabpage (|<a href="if_pyth.html#python-current">python-current</a>|)
+	- from indexing vim.tabpages (|<a href="if_pyth.html#python-tabpages">python-tabpages</a>|)
+
+You can use this object to access tab page windows. They have no methods and
+no sequence or other interfaces.
+
+Tab page attributes are:
+	number		The tab page number like the one returned by
+			|<a href="eval.html#tabpagenr()">tabpagenr()</a>|.
+	windows		Like |<a href="if_pyth.html#python-windows">python-windows</a>|, but for current tab page.
+	vars		The tab page |<a href="eval.html#t:">t:</a>| variables.
+	window		Current tabpage window.
+	valid		True or False. Tab page object becomes invalid when
+			corresponding tab page is closed.
+
+TabPage object type is available using "TabPage" attribute of vim module.
+
+</pre><hr/><pre>7. vim.bindeval objects				<b class="vimtag">*<a name="python-bindeval-objects">python-bindeval-objects</a>*</b>
+
+vim.Dictionary object				<b class="vimtag">*<a name="python-Dictionary">python-Dictionary</a>*</b>
+    Dictionary-like object providing access to vim |<a href="eval.html#Dictionary">Dictionary</a>| type.
+    Attributes:
+<code class="section">        Attribute  Description </code>
+        locked     One of                       <b class="vimtag">*<a name="python-.locked">python-.locked</a>*</b>
+<code class="section">                    Value           Description </code>
+                    zero            Variable is not locked
+                    vim.VAR_LOCKED  Variable is locked, but can be unlocked
+                    vim.VAR_FIXED   Variable is locked and can't be unlocked
+                   Read-write. You can unlock locked variable by assigning
+                   `True` or `False` to this attribute. No recursive locking
+                   is supported.
+        scope      One of
+<code class="section">                    Value              Description </code>
+                    zero               Dictionary is not a scope one
+                    vim.VAR_DEF_SCOPE  |<a href="eval.html#g:">g:</a>| or |<a href="eval.html#l:">l:</a>| dictionary
+                    vim.VAR_SCOPE      Other scope dictionary,
+                                       see |<a href="eval.html#internal-variables">internal-variables</a>|
+    Methods (<code class="note">note:</code> methods do not support keyword arguments):
+<code class="section">        Method      Description </code>
+        keys()      Returns a list with dictionary keys.
+        values()    Returns a list with dictionary values.
+        items()     Returns a list of 2-tuples with dictionary contents.
+        update(iterable), update(dictionary), update(**kwargs)
+                    Adds keys to dictionary.
+        get(key[, default=None])
+                    Obtain key from dictionary, returning the default if it is
+                    not present.
+        pop(key[, default])
+                    Remove specified key from dictionary and return
+                    corresponding value. If key is not found and default is
+                    given returns the default, otherwise raises KeyError.
+        popitem()
+                    Remove random key from dictionary and return (key, value)
+                    pair.
+        has_key(key)
+                    Check whether dictionary contains specified key, similar
+                    to `key in dict`.
+
+        __new__(), __new__(iterable), __new__(dictionary), __new__(update)
+                    You can use `vim.Dictionary()` to create new vim
+                    dictionaries. `d=vim.Dictionary(arg)` is the same as
+                    `d=vim.bindeval('<code class="special">{}</code>');d.update(arg)`. Without arguments
+                    constructs empty dictionary.
+
+    Examples:
+<code class="example">        d = vim.Dictionary(food="bar")		# Constructor</code>
+<code class="example">        d['a'] = 'b'				# Item assignment</code>
+<code class="example">        print d['a']				# getting item</code>
+<code class="example">        d.update(<code class="special">{'c': 'd'}</code>)			# .update(dictionary)</code>
+<code class="example">        d.update(e='f')				# .update(**kwargs)</code>
+<code class="example">        d.update((('g', 'h'), ('i', 'j')))	# .update(iterable)</code>
+<code class="example">        for key in d.keys():			# .keys()</code>
+<code class="example">        for val in d.values():			# .values()</code>
+<code class="example">        for key, val in d.items():		# .items()</code>
+<code class="example">        print isinstance(d, vim.Dictionary)	# True</code>
+<code class="example">        for key in d:				# Iteration over keys</code>
+<code class="example">        class Dict(vim.Dictionary):		# Subclassing</code>
+
+    <code class="note">Note:</code> when iterating over keys you should not modify dictionary.
+
+vim.List object					<b class="vimtag">*<a name="python-List">python-List</a>*</b>
+    Sequence-like object providing access to vim |<a href="eval.html#List">List</a>| type.
+    Supports `.locked` attribute, see |<a href="if_pyth.html#python-.locked">python-.locked</a>|. Also supports the
+    following methods:
+<code class="section">        Method          Description </code>
+        extend(item)    Add items to the list.
+
+        __new__(), __new__(iterable)
+                        You can use `vim.List()` to create new vim lists.
+                        `l=vim.List(iterable)` is the same as
+                        `l=vim.bindeval('[]');l.extend(iterable)`. Without
+                        arguments constructs empty list.
+    Examples:
+<code class="example">        l = vim.List("abc")		# Constructor, result: ['a', 'b', 'c']</code>
+<code class="example">        l.extend(['abc', 'def'])	# .extend() method</code>
+<code class="example">        print l[1:]			# slicing</code>
+<code class="example">        l[:0] = ['ghi', 'jkl']		# slice assignment</code>
+<code class="example">        print l[0]			# getting item</code>
+<code class="example">        l[0] = 'mno'			# assignment</code>
+<code class="example">        for i in l:			# iteration</code>
+<code class="example">        print isinstance(l, vim.List)	# True</code>
+<code class="example">        class List(vim.List):		# Subclassing</code>
+<code class="example"></code>
+vim.Function object				<b class="vimtag">*<a name="python-Function">python-Function</a>*</b>
+    Function-like object, acting like vim |<a href="eval.html#Funcref">Funcref</a>| object. Accepts special
+    keyword argument `self`, see |<a href="eval.html#Dictionary-function">Dictionary-function</a>|. You can also use
+    `vim.Function(name)` constructor, it is the same as
+    `vim.bindeval('function(%s)'%json.dumps(name))`.
+
+    Attributes (read-only):
+<code class="section">        Attribute    Description </code>
+        name         Function name.
+        args         `None` or a |<a href="if_pyth.html#python-List">python-List</a>| object with arguments.  <code class="note">Note</code>
+                     that this is a copy of the arguments list, constructed
+                     each time you request this attribute. Modifications made
+                     to the list will be ignored (but not to the containers
+                     inside argument list: this is like |<a href="eval.html#copy()">copy()</a>| and not
+                     |<a href="eval.html#deepcopy()">deepcopy()</a>|).
+        self         `None` or a |<a href="if_pyth.html#python-Dictionary">python-Dictionary</a>| object with self
+                     dictionary. <code class="note">Note</code> that explicit `self` keyword used when
+                     calling resulting object overrides this attribute.
+        auto_rebind  Boolean. True if partial created from this Python object
+                     and stored in the Vim script dictionary should be
+                     automatically rebound to the dictionary it is stored in
+                     when this dictionary is indexed. Exposes Vim internal
+                     difference between `dict.func` (auto_rebind=True) and
+                     `function(dict.func,dict)` (auto_rebind=False). This
+                     attribute makes no sense if `self` attribute is `None`.
+
+    Constructor additionally accepts `args`, `self` and `auto_rebind`
+    keywords.  If `args` and/or `self` argument is given then it constructs
+    a partial, see |<a href="eval.html#function()">function()</a>|.  `auto_rebind` is only used when `self`
+    argument is given, otherwise it is assumed to be `True` regardless of
+    whether it was given or not.  If `self` is given then it defaults to
+    `False`.
+
+    Examples:
+<code class="example">        f = vim.Function('tr')			# Constructor</code>
+<code class="example">        print f('abc', 'a', 'b')		# Calls tr('abc', 'a', 'b')</code>
+<code class="example">        vim.command('''</code>
+<code class="example">            function DictFun() dict</code>
+<code class="example">                return self</code>
+<code class="example">            endfunction</code>
+<code class="example">        ''')</code>
+<code class="example">        f = vim.bindeval('function("DictFun")')</code>
+<code class="example">        print f(self=<code class="special">{}</code>)			# Like call('DictFun', [], <code class="special">{}</code>)</code>
+<code class="example">        print isinstance(f, vim.Function)	# True</code>
+<code class="example"></code>
+<code class="example">        p = vim.Function('DictFun', self=<code class="special">{}</code>)</code>
+<code class="example">        print f()</code>
+<code class="example">        p = vim.Function('tr', args=['abc', 'a'])</code>
+<code class="example">        print f('b')</code>
+<code class="example"></code>
+</pre><hr/><pre>8. pyeval() and py3eval() Vim functions			<b class="vimtag">*<a name="python-pyeval">python-pyeval</a>*</b>
+
+To facilitate bi-directional interface, you can use |<a href="eval.html#pyeval()">pyeval()</a>| and |<a href="eval.html#py3eval()">py3eval()</a>|
+functions to evaluate Python expressions and pass their values to Vim script.
+|<a href="eval.html#pyxeval()">pyxeval()</a>| is also available.
+
+The Python value "None" is converted to v:none.
+
+</pre><hr/><pre>9. Dynamic loading					<b class="vimtag">*<a name="python-dynamic">python-dynamic</a>*</b>
+
+On MS-Windows and Unix the Python library can be loaded dynamically.  The
+|<a href="various.html#:version">:version</a>| output then includes |<a href="various.html#+python%2Fdyn">+python/dyn</a>| or |<a href="various.html#+python3%2Fdyn">+python3/dyn</a>|.
+
+This means that Vim will search for the Python DLL or shared library file only
+when needed.  When you don't use the Python interface you don't need it, thus
+you can use Vim without this file.
+
+
+<code class="section">MS-Windows </code>
+
+To use the Python interface the Python DLL must be in your search path.  In a
+console window type "path" to see what directories are used.  The 'pythondll'
+or 'pythonthreedll' option can be also used to specify the Python DLL.
+
+The name of the DLL should match the Python version Vim was compiled with.
+Currently the name for Python 2 is "python27.dll", that is for Python 2.7.
+That is the default value for 'pythondll'.  For Python 3 it is python36.dll
+(Python 3.6).  To know for sure edit "gvim.exe" and search for
+"python\d*.dll\c".
+
+
+<code class="section">Unix </code>
+
+The 'pythondll' or 'pythonthreedll' option can be used to specify the Python
+shared library file instead of DYNAMIC_PYTHON_DLL or DYNAMIC_PYTHON3_DLL file
+what were specified at compile time.  The version of the shared library must
+match the Python 2.x or Python 3 version Vim was compiled with.
+
+</pre><hr/><pre>10. Python 3						<b class="vimtag">*<a name="python3">python3</a>*</b>
+
+							<b class="vimtag">*<a name=":py3">:py3</a>*</b> <b class="vimtag">*<a name=":python3">:python3</a>*</b>
+:<code class="special">[range]</code>py3 <code class="special">{stmt}</code>
+:<code class="special">[range]</code>py3 &lt;&lt; [endmarker]
+<code class="special">{script}</code>
+<code class="special">{endmarker}</code>
+
+:<code class="special">[range]</code>python3 <code class="special">{stmt}</code>
+:<code class="special">[range]</code>python3 &lt;&lt; [endmarker]
+<code class="special">{script}</code>
+<code class="special">{endmarker}</code>
+	The `:py3` and `:python3` commands work similar to `:python`.  A
+	simple check if the `:py3` command is working:
+<code class="example">		:py3 print("Hello")</code>
+
+	To see what version of Python you have:
+<code class="example">		:py3 import sys</code>
+<code class="example">		:py3 print(sys.version)</code>
+							<b class="vimtag">*<a name=":py3file">:py3file</a>*</b>
+:<code class="special">[range]</code>py3f[ile] <code class="special">{file}</code>
+	The `:py3file` command works similar to `:pyfile`.
+							<b class="vimtag">*<a name=":py3do">:py3do</a>*</b>
+:<code class="special">[range]</code>py3do <code class="special">{body}</code>
+	The `:py3do` command works similar to `:pydo`.
+
+
+Vim can be built in four ways (:version output):
+1. No Python support	    (-python, -python3)
+2. Python 2 support only    (+python or +python/dyn, -python3)
+3. Python 3 support only    (-python, +python3 or +python3/dyn)
+4. Python 2 and 3 support   (+python/dyn, +python3/dyn)
+
+Some more details on the special case 4:  <b class="vimtag">*<a name="python-2-and-3">python-2-and-3</a>*</b>
+
+When Python 2 and Python 3 are both supported they must be loaded dynamically.
+
+When doing this on Linux/Unix systems and importing global symbols, this leads
+to a crash when the second Python version is used.  So either global symbols
+are loaded but only one Python version is activated, or no global symbols are
+loaded. The latter makes Python's "import" fail on libraries that expect the
+symbols to be provided by Vim.
+							<b class="vimtag">*<a name="E836">E836</a>*</b> <b class="vimtag">*<a name="E837">E837</a>*</b>
+Vim's configuration script makes a guess for all libraries based on one
+standard Python library (termios).  If importing this library succeeds for
+both Python versions, then both will be made available in Vim at the same
+time.  If not, only the version first used in a session will be enabled.
+When trying to use the other one you will get the E836 or E837 error message.
+
+Here Vim's behavior depends on the system in which it was configured.  In a
+system where both versions of Python were configured with --enable-shared,
+both versions of Python will be activated at the same time.  There will still
+be problems with other third party libraries that were not linked to
+libPython.
+
+To work around such problems there are these options:
+1. The problematic library is recompiled to link to the according
+   libpython.so.
+2. Vim is recompiled for only one Python version.
+3. You undefine PY_NO_RTLD_GLOBAL in auto/config.h after configuration.  This
+   may crash Vim though.
+
+							<b class="vimtag">*<a name="E880">E880</a>*</b>
+Raising SystemExit exception in python isn't endorsed way to quit vim, use:
+<code class="example">	:py vim.command("qall!")</code>
+
+
+							<b class="vimtag">*<a name="has-python">has-python</a>*</b>
+You can test what Python version is available with:
+<code class="example">	if has('python')</code>
+<code class="example">	  echo 'there is Python 2.x'</code>
+<code class="example">	endif</code>
+<code class="example">  	if has('python3')</code>
+<code class="example">	  echo 'there is Python 3.x'</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+<code class="note">Note</code> however, that when Python 2 and 3 are both available and loaded
+dynamically, these has() calls will try to load them.  If only one can be
+loaded at a time, just checking if Python 2 or 3 are available will prevent
+the other one from being available.
+
+To avoid loading the dynamic library, only check if Vim was compiled with
+python support:
+<code class="example">	if has('python_compiled')</code>
+<code class="example">	  echo 'compiled with Python 2.x support'</code>
+<code class="example">	  if has('python_dynamic')</code>
+<code class="example">	    echo 'Python 2.x dynamically loaded'</code>
+<code class="example">	  endif</code>
+<code class="example">	endif</code>
+<code class="example">  	if has('python3_compiled')</code>
+<code class="example">	  echo 'compiled with Python 3.x support'</code>
+<code class="example">	  if has('python3_dynamic')</code>
+<code class="example">	    echo 'Python 3.x dynamically loaded'</code>
+<code class="example">	  endif</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+This also tells you whether Python is dynamically loaded, which will fail if
+the runtime library cannot be found.
+
+</pre><hr/><pre>11. Python X						<b class="vimtag">*<a name="python_x">python_x</a>*</b> <b class="vimtag">*<a name="pythonx">pythonx</a>*</b>
+
+Because most python code can be written so that it works with python 2.6+ and
+python 3 the pyx* functions and commands have been written.  They work exactly
+the same as the Python 2 and 3 variants, but select the Python version using
+the 'pyxversion' setting.
+
+You should set 'pyxversion' in your |<a href="starting.html#.vimrc">.vimrc</a>| to prefer Python 2 or Python 3
+for Python commands. If you change this setting at runtime you may risk that
+state of plugins (such as initialization) may be lost.
+
+If you want to use a module, you can put it in the <code class="special">{rtp}</code>/pythonx directory.
+See |<a href="if_pyth.html#pythonx-directory">pythonx-directory</a>|.
+
+							<b class="vimtag">*<a name=":pyx">:pyx</a>*</b> <b class="vimtag">*<a name=":pythonx">:pythonx</a>*</b>
+The `:pyx` and `:pythonx` commands work similar to `:python`.  A simple check
+if the `:pyx` command is working:
+<code class="example">	:pyx print("Hello")</code>
+<code class="example"></code>
+To see what version of Python is being used:
+<code class="example">	:pyx import sys</code>
+<code class="example">	:pyx print(sys.version)</code>
+
+					<b class="vimtag">*<a name=":pyxfile">:pyxfile</a>*</b> <b class="vimtag">*<a name="python_x-special-comments">python_x-special-comments</a>*</b>
+The `:pyxfile` command works similar to `:pyfile`.  However you can add one of
+these comments to force Vim using `:pyfile` or `:py3file`:
+<code class="example">  #!/any string/python2		" Shebang. Must be the first line of the file.</code>
+<code class="example">  #!/any string/python3		" Shebang. Must be the first line of the file.</code>
+<code class="example">  # requires python 2.x		" Maximum lines depend on 'modelines'.</code>
+<code class="example">  # requires python 3.x		" Maximum lines depend on 'modelines'.</code>
+Unlike normal modelines, the bottom of the file is not checked.
+If none of them are found, the 'pyxversion' setting is used.
+							<b class="vimtag">*<a name="W20">W20</a>*</b> <b class="vimtag">*<a name="W21">W21</a>*</b>
+If Vim does not support the selected Python version a silent message will be
+printed.  Use `:messages` to read them.
+
+							<b class="vimtag">*<a name=":pyxdo">:pyxdo</a>*</b>
+The `:pyxdo` command works similar to `:pydo`.
+
+							<b class="vimtag">*<a name="has-pythonx">has-pythonx</a>*</b>
+You can test if pyx* commands are available with:
+<code class="example">	if has('pythonx')</code>
+<code class="example">	  echo 'pyx* commands are available. (Python ' . &amp;pyx . ')'</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+When compiled with only one of |<a href="various.html#+python">+python</a>| or |<a href="various.html#+python3">+python3</a>|, the has() returns 1.
+When compiled with both |<a href="various.html#+python">+python</a>| and |<a href="various.html#+python3">+python3</a>|, the test depends on the
+'pyxversion' setting.  If 'pyxversion' is 0, it tests Python 3 first, and if
+it is not available then Python 2.  If 'pyxversion' is 2 or 3, it tests only
+Python 2 or 3 respectively.
+
+<code class="note">Note</code> that for `has('pythonx')` to work it may try to dynamically load Python 3
+or 2.  This may have side effects, especially when Vim can only load one of
+the two.
+
+If a user prefers Python 2 and want to fallback to Python 3, he needs to set
+'pyxversion' explicitly in his |<a href="starting.html#.vimrc">.vimrc</a>|.  E.g.:
+<code class="example">	if has('python')</code>
+<code class="example">	  set pyx=2</code>
+<code class="example">	elseif has('python3')</code>
+<code class="example">	  set pyx=3</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+</pre><hr/><pre>12. Building with Python support			<b class="vimtag">*<a name="python-building">python-building</a>*</b>
+
+A few hints for building with Python 2 or 3 support.
+
+UNIX
+
+See src/Makefile for how to enable including the Python interface.
+
+On Ubuntu you will want to install these packages for Python 2:
+	python
+	python-dev
+For Python 3:
+	python3
+	python3-dev
+For Python 3.6:
+	python3.6
+	python3.6-dev
+
+If you have more than one version of Python 3, you need to link python3 to the
+one you prefer, before running configure.
+
+</pre><hr/><pre> vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

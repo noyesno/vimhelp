@@ -1,0 +1,392 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: testing</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>TESTING</h2>
+<pre>
+<b class="vimtag">*<a name="testing.txt">testing.txt</a>*</b>	For Vim version 8.2.  Last change: 2020 Feb 08
+
+
+		  VIM REFERENCE MANUAL	  by Bram Moolenaar
+
+
+Testing Vim and Vim script			<b class="vimtag">*<a name="testing-support">testing-support</a>*</b>
+
+Expression evaluation is explained in |<a href="eval.html#eval.txt">eval</a>|.  This file goes into details
+about writing tests in Vim script.  This can be used for testing Vim itself
+and for testing plugins.
+
+1. Testing Vim				|<a href="testing.html#testing">testing</a>|
+2. Test functions			|<a href="testing.html#test-functions-details">test-functions-details</a>|
+3. Assert functions			|<a href="testing.html#assert-functions-details">assert-functions-details</a>|
+
+</pre><hr/><pre>1. Testing Vim						<b class="vimtag">*<a name="testing">testing</a>*</b>
+
+Vim can be tested after building it, usually with "make test".
+The tests are located in the directory "src/testdir".
+
+There are several types of tests added over time:
+	test33.in		oldest, don't add any of these
+	test_something.in	old style tests
+	test_something.vim	new style tests
+
+						<b class="vimtag">*<a name="new-style-testing">new-style-testing</a>*</b>
+New tests should be added as new style tests.  These use functions such as
+|<a href="testing.html#assert_equal()">assert_equal()</a>| to keep the test commands and the expected result in one
+place.
+						<b class="vimtag">*<a name="old-style-testing">old-style-testing</a>*</b>
+In some cases an old style test needs to be used.  E.g. when testing Vim
+without the |<a href="various.html#+eval">+eval</a>| feature.
+
+Find more information in the file src/testdir/README.txt.
+
+</pre><hr/><pre>2. Test functions				<b class="vimtag">*<a name="test-functions-details">test-functions-details</a>*</b>
+
+test_alloc_fail(<code class="special">{id}</code>, <code class="special">{countdown}</code>, <code class="special">{repeat}</code>)		<b class="vimtag">*<a name="test_alloc_fail()">test_alloc_fail()</a>*</b>
+		This is for testing: If the memory allocation with <code class="special">{id}</code> is
+		called, then decrement <code class="special">{countdown}</code>, and when it reaches zero
+		let memory allocation fail <code class="special">{repeat}</code> times.  When <code class="special">{repeat}</code> is
+		smaller than one it fails one time.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetAllocId()-&gt;test_alloc_fail()</code>
+<code class="example"></code>
+test_autochdir()					<b class="vimtag">*<a name="test_autochdir()">test_autochdir()</a>*</b>
+		Set a flag to enable the effect of 'autochdir' before Vim
+		startup has finished.
+
+
+test_feedinput(<code class="special">{string}</code>)				<b class="vimtag">*<a name="test_feedinput()">test_feedinput()</a>*</b>
+		Characters in <code class="special">{string}</code> are queued for processing as if they
+		were typed by the user. This uses a low level input buffer.
+		This function works only when with |<a href="eval.html#+unix">+unix</a>| or GUI is running.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetText()-&gt;test_feedinput()</code>
+<code class="example"></code>
+test_garbagecollect_now()			 <b class="vimtag">*<a name="test_garbagecollect_now()">test_garbagecollect_now()</a>*</b>
+		Like garbagecollect(), but executed right away.  This must
+		only be called directly to avoid any structure to exist
+		internally, and |<a href="eval.html#v:testing">v:testing</a>| must have been set before calling
+		any function.
+
+
+test_garbagecollect_soon()			 <b class="vimtag">*<a name="test_garbagecollect_soon()">test_garbagecollect_soon()</a>*</b>
+		Set the flag to call the garbagecollector as if in the main
+		loop.  Only to be used in tests.
+
+
+test_getvalue(<code class="special">{name}</code>)					<b class="vimtag">*<a name="test_getvalue()">test_getvalue()</a>*</b>
+		Get the value of an internal variable.  These values for
+		<code class="special">{name}</code> are supported:
+			need_fileinfo
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetName()-&gt;test_getvalue()</code>
+<code class="example"></code>
+test_ignore_error(<code class="special">{expr}</code>)			 <b class="vimtag">*<a name="test_ignore_error()">test_ignore_error()</a>*</b>
+		Ignore any error containing <code class="special">{expr}</code>.  A normal message is given
+		instead.
+		This is only meant to be used in tests, where catching the
+		error with try/catch cannot be used (because it skips over
+		following code).
+		<code class="special">{expr}</code> is used literally, not as a pattern.
+		When the <code class="special">{expr}</code> is the string "RESET" then the list of ignored
+		errors is made empty.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetErrorText()-&gt;test_ignore_error()</code>
+<code class="example"></code>
+test_null_blob()					<b class="vimtag">*<a name="test_null_blob()">test_null_blob()</a>*</b>
+		Return a |<a href="eval.html#Blob">Blob</a>| that is null. Only useful for testing.
+
+
+test_null_channel()					<b class="vimtag">*<a name="test_null_channel()">test_null_channel()</a>*</b>
+		Return a |<a href="eval.html#Channel">Channel</a>| that is null. Only useful for testing.
+		<code class="special">{only available when compiled with the +channel feature}</code>
+
+
+test_null_dict()					<b class="vimtag">*<a name="test_null_dict()">test_null_dict()</a>*</b>
+		Return a |<a href="eval.html#Dict">Dict</a>| that is null. Only useful for testing.
+
+
+test_null_job()						<b class="vimtag">*<a name="test_null_job()">test_null_job()</a>*</b>
+		Return a |<a href="eval.html#Job">Job</a>| that is null. Only useful for testing.
+		<code class="special">{only available when compiled with the +job feature}</code>
+
+
+test_null_list()					<b class="vimtag">*<a name="test_null_list()">test_null_list()</a>*</b>
+		Return a |<a href="eval.html#List">List</a>| that is null. Only useful for testing.
+
+
+test_null_partial()					<b class="vimtag">*<a name="test_null_partial()">test_null_partial()</a>*</b>
+		Return a |<a href="eval.html#Partial">Partial</a>| that is null. Only useful for testing.
+
+
+test_null_string()					<b class="vimtag">*<a name="test_null_string()">test_null_string()</a>*</b>
+		Return a |<a href="eval.html#String">String</a>| that is null. Only useful for testing.
+
+
+test_unknown()						<b class="vimtag">*<a name="test_unknown()">test_unknown()</a>*</b>
+		Return a value with unknown type. Only useful for testing.
+
+test_void()						<b class="vimtag">*<a name="test_void()">test_void()</a>*</b>
+		Return a value with void type. Only useful for testing.
+
+
+test_option_not_set(<code class="special">{name}</code>)				<b class="vimtag">*<a name="test_option_not_set()">test_option_not_set()</a>*</b>
+		Reset the flag that indicates option <code class="special">{name}</code> was set.  Thus it
+		looks like it still has the default value. Use like this:
+<code class="example">			set ambiwidth=double</code>
+<code class="example">			call test_option_not_set('ambiwidth')</code>
+		Now the 'ambiwidth' option behaves like it was never changed,
+		even though the value is "double".
+		Only to be used for testing!
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetOptionName()-&gt;test_option_not_set()</code>
+<code class="example"></code>
+<code class="example"></code>
+test_override(<code class="special">{name}</code>, <code class="special">{val}</code>)				<b class="vimtag">*<a name="test_override()">test_override()</a>*</b>
+		Overrides certain parts of Vim's internal processing to be able
+		to run tests. Only to be used for testing Vim!
+		The override is enabled when <code class="special">{val}</code> is non-zero and removed
+		when <code class="special">{val}</code> is zero.
+		Current supported values for name are:
+
+<code class="section">		name	     effect when <code class="special">{val}</code> is non-zero </code>
+		redraw       disable the redrawing() function
+		redraw_flag  ignore the RedrawingDisabled flag
+		char_avail   disable the char_avail() function
+		starting     reset the "starting" variable, see below
+		nfa_fail     makes the NFA regexp engine fail to force a
+			     fallback to the old engine
+		no_query_mouse  do not query the mouse position for "dec"
+				terminals
+		no_wait_return	set the "no_wait_return" flag.  Not restored
+				with "ALL".
+		ALL	     clear all overrides (<code class="special">{val}</code> is not used)
+
+		"starting" is to be used when a test should behave like
+		startup was done.  Since the tests are run by sourcing a
+		script the "starting" variable is non-zero. This is usually a
+		good thing (tests run faster), but sometimes changes behavior
+		in a way that the test doesn't work properly.
+		When using:
+<code class="example">			call test_override('starting', 1)</code>
+&lt;		The value of "starting" is saved.  It is restored by:
+<code class="example">			call test_override('starting', 0)</code>
+<code class="example"></code>
+&lt;		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetOverrideVal()-&gt; test_override('starting')</code>
+<code class="example"></code>
+test_refcount(<code class="special">{expr}</code>)					<b class="vimtag">*<a name="test_refcount()">test_refcount()</a>*</b>
+		Return the reference count of <code class="special">{expr}</code>.  When <code class="special">{expr}</code> is of a
+		type that does not have a reference count, returns -1.  Only
+		to be used for testing.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetVarname()-&gt;test_refcount()</code>
+<code class="example"></code>
+<code class="example"></code>
+test_scrollbar(<code class="special">{which}</code>, <code class="special">{value}</code>, <code class="special">{dragging}</code>)		<b class="vimtag">*<a name="test_scrollbar()">test_scrollbar()</a>*</b>
+		Pretend using scrollbar <code class="special">{which}</code> to move it to position
+		<code class="special">{value}</code>.  <code class="special">{which}</code> can be:
+			left	Left scrollbar of the current window
+			right	Right scrollbar of the current window
+			hor	Horizontal scrollbar
+
+		For the vertical scrollbars <code class="special">{value}</code> can be 1 to the
+		line-count of the buffer.  For the horizontal scrollbar the
+		<code class="special">{value}</code> can be between 1 and the maximum line length, assuming
+		'wrap' is not set.
+
+		When <code class="special">{dragging}</code> is non-zero it's like dragging the scrollbar,
+		otherwise it's like clicking in the scrollbar.
+		Only works when the <code class="special">{which}</code> scrollbar actually exists,
+		obviously only when using the GUI.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetValue()-&gt;test_scrollbar('right', 0)</code>
+<code class="example"></code>
+test_setmouse(<code class="special">{row}</code>, <code class="special">{col}</code>)				<b class="vimtag">*<a name="test_setmouse()">test_setmouse()</a>*</b>
+		Set the mouse position to be used for the next mouse action.
+		<code class="special">{row}</code> and <code class="special">{col}</code> are one based.
+		For example:
+<code class="example">			call test_setmouse(4, 20)</code>
+<code class="example">			call feedkeys("\<code class="special">&lt;LeftMouse&gt;</code>", "xt")</code>
+<code class="example"></code>
+test_settime(<code class="special">{expr}</code>)					<b class="vimtag">*<a name="test_settime()">test_settime()</a>*</b>
+		Set the time Vim uses internally.  Currently only used for
+		timestamps in the history, as they are used in viminfo, and
+		for undo.
+		Using a value of 1 makes Vim not sleep after a warning or
+		error message.
+		<code class="special">{expr}</code> must evaluate to a number.  When the value is zero the
+		normal behavior is restored.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetTime()-&gt;test_settime()</code>
+<code class="example"></code>
+test_srand_seed([seed])					<b class="vimtag">*<a name="test_srand_seed()">test_srand_seed()</a>*</b>
+		When [seed] is given this sets the seed value used by
+		`srand()`.  When omitted the test seed is removed.
+
+</pre><hr/><pre>3. Assert functions				<b class="vimtag">*<a name="assert-functions-details">assert-functions-details</a>*</b>
+
+
+assert_beeps(<code class="special">{cmd}</code>)					<b class="vimtag">*<a name="assert_beeps()">assert_beeps()</a>*</b>
+		Run <code class="special">{cmd}</code> and add an error message to |<a href="eval.html#v:errors">v:errors</a>| if it does
+		NOT produce a beep or visual bell.
+		Also see |<a href="testing.html#assert_fails()">assert_fails()</a>| and |<a href="eval.html#assert-return">assert-return</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetCmd()-&gt;assert_beeps()</code>
+
+							<b class="vimtag">*<a name="assert_equal()">assert_equal()</a>*</b>
+assert_equal(<code class="special">{expected}</code>, <code class="special">{actual}</code> [, <code class="special">{msg}</code>])
+		When <code class="special">{expected}</code> and <code class="special">{actual}</code> are not equal an error message is
+		added to |<a href="eval.html#v:errors">v:errors</a>| and 1 is returned.  Otherwise zero is
+		returned |<a href="eval.html#assert-return">assert-return</a>|.
+		There is no automatic conversion, the String "4" is different
+		from the Number 4.  And the number 4 is different from the
+		Float 4.0.  The value of 'ignorecase' is not used here, case
+		always matters.
+		When <code class="special">{msg}</code> is omitted an error in the form "Expected
+		<code class="special">{expected}</code> but got <code class="special">{actual}</code>" is produced.
+		Example:
+<code class="example">	assert_equal('foo', 'bar')</code>
+		Will result in a string to be added to |<a href="eval.html#v:errors">v:errors</a>|:
+<code class="section">	test.vim line 12: Expected 'foo' but got 'bar' </code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			mylist-&gt;assert_equal([1, 2, 3])</code>
+<code class="example"></code>
+<code class="example"></code>
+							<b class="vimtag">*<a name="assert_equalfile()">assert_equalfile()</a>*</b>
+assert_equalfile(<code class="special">{fname-one}</code>, <code class="special">{fname-two}</code>)
+		When the files <code class="special">{fname-one}</code> and <code class="special">{fname-two}</code> do not contain
+		exactly the same text an error message is added to |<a href="eval.html#v:errors">v:errors</a>|.
+		Also see |<a href="eval.html#assert-return">assert-return</a>|.
+		When <code class="special">{fname-one}</code> or <code class="special">{fname-two}</code> does not exist the error will
+		mention that.
+		Mainly useful with |<a href="terminal.html#terminal-diff">terminal-diff</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetLog()-&gt;assert_equalfile('expected.log')</code>
+<code class="example"></code>
+<code class="example"></code>
+assert_exception(<code class="special">{error}</code> [, <code class="special">{msg}</code>])			<b class="vimtag">*<a name="assert_exception()">assert_exception()</a>*</b>
+		When v:exception does not contain the string <code class="special">{error}</code> an error
+		message is added to |<a href="eval.html#v:errors">v:errors</a>|.  Also see |<a href="eval.html#assert-return">assert-return</a>|.
+		This can be used to assert that a command throws an exception.
+		Using the error number, followed by a colon, avoids problems
+		with translations:
+<code class="example">			try</code>
+<code class="example">			  commandthatfails</code>
+<code class="example">			  call assert_false(1, 'command should have failed')</code>
+<code class="example">			catch</code>
+<code class="example">			  call assert_exception('E492:')</code>
+<code class="example">			endtry</code>
+<code class="example"></code>
+assert_fails(<code class="special">{cmd}</code> [, <code class="special">{error}</code> [, <code class="special">{msg}</code>]])			<b class="vimtag">*<a name="assert_fails()">assert_fails()</a>*</b>
+		Run <code class="special">{cmd}</code> and add an error message to |<a href="eval.html#v:errors">v:errors</a>| if it does
+		NOT produce an error.  Also see |<a href="eval.html#assert-return">assert-return</a>|.
+		When <code class="special">{error}</code> is given it must match in |<a href="eval.html#v:errmsg">v:errmsg</a>|.
+		<code class="note">Note</code> that beeping is not considered an error, and some failing
+		commands only beep.  Use |<a href="testing.html#assert_beeps()">assert_beeps()</a>| for those.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetCmd()-&gt;assert_fails('E99:')</code>
+<code class="example"></code>
+assert_false(<code class="special">{actual}</code> [, <code class="special">{msg}</code>])				<b class="vimtag">*<a name="assert_false()">assert_false()</a>*</b>
+		When <code class="special">{actual}</code> is not false an error message is added to
+		|<a href="eval.html#v:errors">v:errors</a>|, like with |<a href="testing.html#assert_equal()">assert_equal()</a>|.
+		Also see |<a href="eval.html#assert-return">assert-return</a>|.
+		A value is false when it is zero. When <code class="special">{actual}</code> is not a
+		number the assert fails.
+		When <code class="special">{msg}</code> is omitted an error in the form
+		"Expected False but got <code class="special">{actual}</code>" is produced.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetResult()-&gt;assert_false()</code>
+<code class="example"></code>
+assert_inrange(<code class="special">{lower}</code>, <code class="special">{upper}</code>, <code class="special">{actual}</code> [, <code class="special">{msg}</code>])	 <b class="vimtag">*<a name="assert_inrange()">assert_inrange()</a>*</b>
+		This asserts number and |<a href="eval.html#Float">Float</a>| values.  When <code class="special">{actual}</code>  is lower
+		than <code class="special">{lower}</code> or higher than <code class="special">{upper}</code> an error message is added
+		to |<a href="eval.html#v:errors">v:errors</a>|.  Also see |<a href="eval.html#assert-return">assert-return</a>|.
+		When <code class="special">{msg}</code> is omitted an error in the form
+		"Expected range <code class="special">{lower}</code> - <code class="special">{upper}</code>, but got <code class="special">{actual}</code>" is
+		produced.
+
+								<b class="vimtag">*<a name="assert_match()">assert_match()</a>*</b>
+assert_match(<code class="special">{pattern}</code>, <code class="special">{actual}</code> [, <code class="special">{msg}</code>])
+		When <code class="special">{pattern}</code> does not match <code class="special">{actual}</code> an error message is
+		added to |<a href="eval.html#v:errors">v:errors</a>|.  Also see |<a href="eval.html#assert-return">assert-return</a>|.
+
+		<code class="special">{pattern}</code> is used as with |<code class="badlink">=~</code>|: The matching is always done
+		like 'magic' was set and 'cpoptions' is empty, no matter what
+		the actual value of 'magic' or 'cpoptions' is.
+
+		<code class="special">{actual}</code> is used as a string, automatic conversion applies.
+		Use "^" and "$" to match with the start and end of the text.
+		Use both to match the whole text.
+
+		When <code class="special">{msg}</code> is omitted an error in the form
+		"Pattern <code class="special">{pattern}</code> does not match <code class="special">{actual}</code>" is produced.
+		Example:
+<code class="example">	assert_match('^f.*o$', 'foobar')</code>
+		Will result in a string to be added to |<a href="eval.html#v:errors">v:errors</a>|:
+<code class="section">	test.vim line 12: Pattern '^f.*o$' does not match 'foobar' </code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			getFile()-&gt;assert_match('foo.*')</code>
+
+							<b class="vimtag">*<a name="assert_notequal()">assert_notequal()</a>*</b>
+assert_<code class="note">note</code>qual(<code class="special">{expected}</code>, <code class="special">{actual}</code> [, <code class="special">{msg}</code>])
+		The opposite of `assert_equal()`: add an error message to
+		|<a href="eval.html#v:errors">v:errors</a>| when <code class="special">{expected}</code> and <code class="special">{actual}</code> are equal.
+		Also see |<a href="eval.html#assert-return">assert-return</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			mylist-&gt;assert_<code class="note">note</code>qual([1, 2, 3])</code>
+<code class="example"></code>
+							<b class="vimtag">*<a name="assert_notmatch()">assert_notmatch()</a>*</b>
+assert_notmatch(<code class="special">{pattern}</code>, <code class="special">{actual}</code> [, <code class="special">{msg}</code>])
+		The opposite of `assert_match()`: add an error message to
+		|<a href="eval.html#v:errors">v:errors</a>| when <code class="special">{pattern}</code> matches <code class="special">{actual}</code>.
+		Also see |<a href="eval.html#assert-return">assert-return</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			getFile()-&gt;assert_notmatch('bar.*')</code>
+<code class="example"></code>
+<code class="example"></code>
+assert_report(<code class="special">{msg}</code>)					<b class="vimtag">*<a name="assert_report()">assert_report()</a>*</b>
+		Report a test failure directly, using <code class="special">{msg}</code>.
+		Always returns one.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetMessage()-&gt;assert_report()</code>
+<code class="example"></code>
+<code class="example"></code>
+assert_true(<code class="special">{actual}</code> [, <code class="special">{msg}</code>])				<b class="vimtag">*<a name="assert_true()">assert_true()</a>*</b>
+		When <code class="special">{actual}</code> is not true an error message is added to
+		|<a href="eval.html#v:errors">v:errors</a>|, like with |<a href="testing.html#assert_equal()">assert_equal()</a>|.
+		Also see |<a href="eval.html#assert-return">assert-return</a>|.
+		A value is TRUE when it is a non-zero number.  When <code class="special">{actual}</code>
+		is not a number the assert fails.
+		When <code class="special">{msg}</code> is omitted an error in the form "Expected True but
+		got <code class="special">{actual}</code>" is produced.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetResult()-&gt;assert_true()</code>
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

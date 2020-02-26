@@ -1,0 +1,1338 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: motion</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>MOTION</h2>
+<pre>
+<b class="vimtag">*<a name="motion.txt">motion.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 Nov 16
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Cursor motions					<b class="vimtag">*<a name="cursor-motions">cursor-motions</a>*</b> <b class="vimtag">*<a name="navigation">navigation</a>*</b>
+
+These commands move the cursor position.  If the new position is off of the
+screen, the screen is scrolled to show the cursor (see also 'scrolljump' and
+'scrolloff' options).
+
+1. Motions and operators	|<a href="motion.html#operator">operator</a>|
+2. Left-right motions		|<a href="motion.html#left-right-motions">left-right-motions</a>|
+3. Up-down motions		|<a href="motion.html#up-down-motions">up-down-motions</a>|
+4. Word motions			|<a href="motion.html#word-motions">word-motions</a>|
+5. Text object motions		|<a href="motion.html#object-motions">object-motions</a>|
+6. Text object selection	|<a href="motion.html#object-select">object-select</a>|
+7. Marks			|<a href="motion.html#mark-motions">mark-motions</a>|
+8. Jumps			|<a href="motion.html#jump-motions">jump-motions</a>|
+9. Various motions		|<a href="motion.html#various-motions">various-motions</a>|
+
+General remarks:
+
+If you want to know where you are in the file use the "<code class="keystroke">CTRL-G</code>" command
+|<a href="editing.html#CTRL-G">CTRL-G</a>| or the "g <code class="keystroke">CTRL-G</code>" command |<a href="editing.html#g_CTRL-G">g_CTRL-G</a>|.  If you set the 'ruler' option,
+the cursor position is continuously shown in the status line (which slows down
+Vim a little).
+
+Experienced users prefer the hjkl keys because they are always right under
+their fingers.  Beginners often prefer the arrow keys, because they do not
+know what the hjkl keys do.  The mnemonic value of hjkl is clear from looking
+at the keyboard.  Think of j as an arrow pointing downwards.
+
+The 'virtualedit' option can be set to make it possible to move the cursor to
+positions where there is no character or halfway a character.
+
+</pre><hr/><pre>1. Motions and operators				<b class="vimtag">*<a name="operator">operator</a>*</b>
+
+The motion commands can be used after an operator command, to have the command
+operate on the text that was moved over.  That is the text between the cursor
+position before and after the motion.  Operators are generally used to delete
+or change text.  The following operators are available:
+
+	|<a href="change.html#c">c</a>|	c	change
+	|<a href="change.html#d">d</a>|	d	delete
+	|<a href="change.html#y">y</a>|	y	yank into register (does not change the text)
+	|<a href="change.html#%7E">~</a>|	~	swap case (only if 'tildeop' is set)
+	|<a href="change.html#g%7E">g~</a>|	g~	swap case
+	|<a href="change.html#gu">gu</a>|	gu	make lowercase
+	|<a href="change.html#gU">gU</a>|	gU	make uppercase
+	|<a href="change.html#!">!</a>|	!	filter through an external program
+	|<a href="change.html#%20">=</a>|	=	filter through 'equalprg' or C-indenting if empty
+	|<a href="change.html#gq">gq</a>|	gq	text formatting
+	|<a href="change.html#gw">gw</a>|	gw	text formatting with no cursor movement
+	|<a href="change.html#g?">g?</a>|	g?	ROT13 encoding
+	|<a href="change.html#%3E">&gt;</a>|	&gt;	shift right
+	|<a href="change.html#%3C">&lt;</a>|	&lt;	shift left
+	|<a href="fold.html#zf">zf</a>|	zf	define a fold
+	|<a href="map.html#g@">g@</a>|	g@	call function set with the 'operatorfunc' option
+
+If the motion includes a count and the operator also had a count before it,
+the two counts are multiplied.  For example: "2d3w" deletes six words.
+
+After applying the operator the cursor is mostly left at the start of the text
+that was operated upon.  For example, "yfe" doesn't move the cursor, but "yFe"
+moves the cursor leftwards to the "e" where the yank started.
+
+						<b class="vimtag">*<a name="linewise">linewise</a>*</b> <b class="vimtag">*<a name="characterwise">characterwise</a>*</b>
+The operator either affects whole lines, or the characters between the start
+and end position.  Generally, motions that move between lines affect lines
+(are linewise), and motions that move within a line affect characters (are
+characterwise).  However, there are some exceptions.
+
+						<b class="vimtag">*<a name="exclusive">exclusive</a>*</b> <b class="vimtag">*<a name="inclusive">inclusive</a>*</b>
+A character motion is either inclusive or exclusive.  When inclusive, the
+start and end position of the motion are included in the operation.  When
+exclusive, the last character towards the end of the buffer is not included.
+Linewise motions always include the start and end position.
+
+Which motions are linewise, inclusive or exclusive is mentioned with the
+command.  There are however, two general exceptions:
+1. If the motion is exclusive and the end of the motion is in column 1, the
+   end of the motion is moved to the end of the previous line and the motion
+   becomes inclusive.  Example: "}" moves to the first line after a paragraph,
+   but "d}" will not include that line.
+						<b class="vimtag">*<a name="exclusive-linewise">exclusive-linewise</a>*</b>
+2. If the motion is exclusive, the end of the motion is in column 1 and the
+   start of the motion was at or before the first non-blank in the line, the
+   motion becomes linewise.  Example: If a paragraph begins with some blanks
+   and you do "d}" while standing on the first non-blank, all the lines of
+   the paragraph are deleted, including the blanks.  If you do a put now, the
+   deleted lines will be inserted below the cursor position.
+
+<code class="note">Note</code> that when the operator is pending (the operator command is typed, but the
+motion isn't yet), a special set of mappings can be used.  See |<a href="map.html#:omap">:omap</a>|.
+
+Instead of first giving the operator and then a motion you can use Visual
+mode: mark the start of the text with "v", move the cursor to the end of the
+text that is to be affected and then hit the operator.  The text between the
+start and the cursor position is highlighted, so you can see what text will
+be operated upon.  This allows much more freedom, but requires more key
+strokes and has limited redo functionality.  See the chapter on Visual mode
+|<a href="visual.html#Visual-mode">Visual-mode</a>|.
+
+You can use a ":" command for a motion.  For example "d:call FindEnd()".
+But this can't be repeated with "." if the command is more than one line.
+This can be repeated:
+<code class="example">	d:call search("f")<code class="special">&lt;CR&gt;</code></code>
+This cannot be repeated:
+<code class="example">	d:if 1<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	   call search("f")<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	endif<code class="special">&lt;CR&gt;</code></code>
+<code class="note">Note</code> that when using ":" any motion becomes characterwise exclusive.
+
+								<b class="vimtag">*<a name="forced-motion">forced-motion</a>*</b>
+FORCING A MOTION TO BE LINEWISE, CHARACTERWISE OR BLOCKWISE
+
+When a motion is not of the type you would like to use, you can force another
+type by using "v", "V" or <code class="keystroke">CTRL-V</code> just after the operator.
+Example:
+<code class="example">	dj</code>
+deletes two lines
+<code class="example">	dvj</code>
+deletes from the cursor position until the character below the cursor
+<code class="example">	d<code class="special">&lt;C-V&gt;</code>j</code>
+deletes the character under the cursor and the character below the cursor.
+<code class="example"></code>
+Be careful with forcing a linewise movement to be used characterwise or
+blockwise, the column may not always be defined.
+
+							<b class="vimtag">*<a name="o_v">o_v</a>*</b>
+v		When used after an operator, before the motion command: Force
+		the operator to work characterwise, also when the motion is
+		linewise.  If the motion was linewise, it will become
+		|<a href="motion.html#exclusive">exclusive</a>|.
+		If the motion already was characterwise, toggle
+		inclusive/exclusive.  This can be used to make an exclusive
+		motion inclusive and an inclusive motion exclusive.
+
+							<b class="vimtag">*<a name="o_V">o_V</a>*</b>
+V		When used after an operator, before the motion command: Force
+		the operator to work linewise, also when the motion is
+		characterwise.
+
+							<b class="vimtag">*<a name="o_CTRL-V">o_CTRL-V</a>*</b>
+<code class="keystroke">CTRL-V</code>		When used after an operator, before the motion command: Force
+		the operator to work blockwise.  This works like Visual block
+		mode selection, with the corners defined by the cursor
+		position before and after the motion.
+
+</pre><hr/><pre>2. Left-right motions					<b class="vimtag">*<a name="left-right-motions">left-right-motions</a>*</b>
+
+These commands move the cursor to the specified column in the current line.
+They stop at the first column and at the end of the line, except "$", which
+may move to one of the next lines.  See 'whichwrap' option to make some of the
+commands move across line boundaries.
+
+h		or					<b class="vimtag">*<a name="h">h</a>*</b>
+<code class="special">&lt;Left&gt;</code>		or					<b class="vimtag">*<a name="%3CLeft%3E">&lt;Left&gt;</a>*</b>
+<code class="keystroke">CTRL-H</code>		or					<b class="vimtag">*<a name="CTRL-H">CTRL-H</a>*</b> <b class="vimtag">*<a name="%3CBS%3E">&lt;BS&gt;</a>*</b>
+<code class="special">&lt;BS&gt;</code>			<code class="special">[count]</code> characters to the left.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+			<code class="note">Note:</code> If you prefer <code class="special">&lt;BS&gt;</code> to delete a character, use
+			the mapping:
+				:map <code class="keystroke">CTRL-V</code><code class="special">&lt;BS&gt;</code>		X
+			(to enter "<code class="keystroke">CTRL-V</code><code class="special">&lt;BS&gt;</code>" type the <code class="keystroke">CTRL-V</code> key, followed
+			by the <code class="special">&lt;BS&gt;</code> key)
+			See |<a href="options.html#:fixdel">:fixdel</a>| if the <code class="special">&lt;BS&gt;</code> key does not do what you
+			want.
+
+l		or					<b class="vimtag">*<a name="l">l</a>*</b>
+<code class="special">&lt;Right&gt;</code>		or					<b class="vimtag">*<a name="%3CRight%3E">&lt;Right&gt;</a>*</b> <b class="vimtag">*<a name="%3CSpace%3E">&lt;Space&gt;</a>*</b>
+<code class="special">&lt;Space&gt;</code>			<code class="special">[count]</code> characters to the right.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+			See the 'whichwrap' option for adjusting the behavior
+			at end of line
+
+							<b class="vimtag">*<a name="0">0</a>*</b>
+0			To the first character of the line.  |<a href="motion.html#exclusive">exclusive</a>|
+			motion.
+
+							<b class="vimtag">*<a name="%3CHome%3E">&lt;Home&gt;</a>*</b> <b class="vimtag">*<a name="%3CkHome%3E">&lt;kHome&gt;</a>*</b>
+<code class="special">&lt;Home&gt;</code>			To the first character of the line.  |<a href="motion.html#exclusive">exclusive</a>|
+			motion.  When moving up or down next, stay in same
+			TEXT column (if possible).  Most other commands stay
+			in the same SCREEN column.  <code class="special">&lt;Home&gt;</code> works like "1|",
+			which differs from "0" when the line starts with a
+			<code class="special">&lt;Tab&gt;</code>.
+
+							<b class="vimtag">*<a name="^">^</a>*</b>
+^			To the first non-blank character of the line.
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name="$">$</a>*</b> <b class="vimtag">*<a name="%3CEnd%3E">&lt;End&gt;</a>*</b> <b class="vimtag">*<a name="%3CkEnd%3E">&lt;kEnd&gt;</a>*</b>
+$  or <code class="special">&lt;End&gt;</code>		To the end of the line.  When a count is given also go
+			[count - 1] lines downward. |<a href="motion.html#inclusive">inclusive</a>| motion.
+			In Visual mode the cursor goes to just after the last
+			character in the line.
+			When 'virtualedit' is active, "$" may move the cursor
+			back from past the end of the line to the last
+			character in the line.
+
+							<b class="vimtag">*<a name="g_">g_</a>*</b>
+g_			To the last non-blank character of the line and
+			[count - 1] lines downward |<a href="motion.html#inclusive">inclusive</a>|.
+
+							<b class="vimtag">*<a name="g0">g0</a>*</b> <b class="vimtag">*<a name="g%3CHome%3E">g&lt;Home&gt;</a>*</b>
+g0 or g<code class="special">&lt;Home&gt;</code>		When lines wrap ('wrap' on): To the first character of
+			the screen line.  |<a href="motion.html#exclusive">exclusive</a>| motion.  Differs from
+			"0" when a line is wider than the screen.
+			When lines don't wrap ('wrap' off): To the leftmost
+			character of the current line that is on the screen.
+			Differs from "0" when the first character of the line
+			is not on the screen.
+
+							<b class="vimtag">*<a name="g^">g^</a>*</b>
+g^			When lines wrap ('wrap' on): To the first non-blank
+			character of the screen line.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+			Differs from "^" when a line is wider than the screen.
+			When lines don't wrap ('wrap' off): To the leftmost
+			non-blank character of the current line that is on the
+			screen.  Differs from "^" when the first non-blank
+			character of the line is not on the screen.
+
+							<b class="vimtag">*<a name="gm">gm</a>*</b>
+gm			Like "g0", but half a screenwidth to the right (or as
+			much as possible).
+
+							<b class="vimtag">*<a name="gM">gM</a>*</b>
+gM			Like "g0", but to halfway the text of the line.
+			With a count: to this percentage of text in the line.
+			Thus "10gM" is near the start of the text and "90gM"
+			is near the end of the text.
+
+							<b class="vimtag">*<a name="g$">g$</a>*</b> <b class="vimtag">*<a name="g%3CEnd%3E">g&lt;End&gt;</a>*</b>
+g$ or g<code class="special">&lt;End&gt;</code>		When lines wrap ('wrap' on): To the last character of
+			the screen line and [count - 1] screen lines downward
+			|<a href="motion.html#inclusive">inclusive</a>|.  Differs from "$" when a line is wider
+			than the screen.
+			When lines don't wrap ('wrap' off): To the rightmost
+			character of the current line that is visible on the
+			screen.  Differs from "$" when the last character of
+			the line is not on the screen or when a count is used.
+			Additionally, vertical movements keep the column,
+			instead of going to the end of the line.
+			When 'virtualedit' is enabled moves to the end of the
+			screen line.
+
+							<b class="vimtag">*<a name="bar">bar</a>*</b>
+|			To screen column <code class="special">[count]</code> in the current line.
+			|<a href="motion.html#exclusive">exclusive</a>| motion.  Ceci n'est pas une pipe.
+
+							<b class="vimtag">*<a name="f">f</a>*</b>
+f<code class="special">{char}</code>			To <code class="special">[count]</code>'th occurrence of <code class="special">{char}</code> to the right.  The
+			cursor is placed on <code class="special">{char}</code> |<a href="motion.html#inclusive">inclusive</a>|.
+			<code class="special">{char}</code> can be entered as a digraph |<a href="change.html#digraph-arg">digraph-arg</a>|.
+			When 'encoding' is set to Unicode, composing
+			characters may be used, see |<a href="mbyte.html#utf-8-char-arg">utf-8-char-arg</a>|.
+			|<a href="map.html#:lmap">:lmap</a>| mappings apply to <code class="special">{char}</code>.  The CTRL-^ command
+			in Insert mode can be used to switch this on/off
+			|<a href="insert.html#i_CTRL-^">i_CTRL-^</a>|.
+
+							<b class="vimtag">*<a name="F">F</a>*</b>
+F<code class="special">{char}</code>			To the <code class="special">[count]</code>'th occurrence of <code class="special">{char}</code> to the left.
+			The cursor is placed on <code class="special">{char}</code> |<a href="motion.html#exclusive">exclusive</a>|.
+			<code class="special">{char}</code> can be entered like with the |<a href="motion.html#f">f</a>| command.
+
+							<b class="vimtag">*<a name="t">t</a>*</b>
+t<code class="special">{char}</code>			Till before <code class="special">[count]</code>'th occurrence of <code class="special">{char}</code> to the
+			right.  The cursor is placed on the character left of
+			<code class="special">{char}</code> |<a href="motion.html#inclusive">inclusive</a>|.
+			<code class="special">{char}</code> can be entered like with the |<a href="motion.html#f">f</a>| command.
+
+							<b class="vimtag">*<a name="T">T</a>*</b>
+T<code class="special">{char}</code>			Till after <code class="special">[count]</code>'th occurrence of <code class="special">{char}</code> to the
+			left.  The cursor is placed on the character right of
+			<code class="special">{char}</code> |<a href="motion.html#exclusive">exclusive</a>|.
+			<code class="special">{char}</code> can be entered like with the |<a href="motion.html#f">f</a>| command.
+
+							<b class="vimtag">*<a name=";">;</a>*</b>
+;			Repeat latest f, t, F or T <code class="special">[count]</code> times. See |<a href="options.html#cpo-;">cpo-;</a>|
+
+							<b class="vimtag">*<a name=",">,</a>*</b>
+,			Repeat latest f, t, F or T in opposite direction
+			<code class="special">[count]</code> times. See also |<a href="options.html#cpo-;">cpo-;</a>|
+
+</pre><hr/><pre>3. Up-down motions					<b class="vimtag">*<a name="up-down-motions">up-down-motions</a>*</b>
+
+k		or					<b class="vimtag">*<a name="k">k</a>*</b>
+<code class="special">&lt;Up&gt;</code>		or					<b class="vimtag">*<a name="%3CUp%3E">&lt;Up&gt;</a>*</b> <b class="vimtag">*<a name="CTRL-P">CTRL-P</a>*</b>
+<code class="keystroke">CTRL-P</code>			<code class="special">[count]</code> lines upward |<a href="motion.html#linewise">linewise</a>|.
+
+j		or					<b class="vimtag">*<a name="j">j</a>*</b>
+<code class="special">&lt;Down&gt;</code>		or					<b class="vimtag">*<a name="%3CDown%3E">&lt;Down&gt;</a>*</b>
+<code class="keystroke">CTRL-J</code>		or					<b class="vimtag">*<a name="CTRL-J">CTRL-J</a>*</b>
+<code class="special">&lt;NL&gt;</code>		or					<b class="vimtag">*<a name="%3CNL%3E">&lt;NL&gt;</a>*</b> <b class="vimtag">*<a name="CTRL-N">CTRL-N</a>*</b>
+<code class="keystroke">CTRL-N</code>			<code class="special">[count]</code> lines downward |<a href="motion.html#linewise">linewise</a>|.
+
+gk		or					<b class="vimtag">*<a name="gk">gk</a>*</b> <b class="vimtag">*<a name="g%3CUp%3E">g&lt;Up&gt;</a>*</b>
+g<code class="special">&lt;Up&gt;</code>			<code class="special">[count]</code> display lines upward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+			Differs from 'k' when lines wrap, and when used with
+			an operator, because it's not linewise.
+
+gj		or					<b class="vimtag">*<a name="gj">gj</a>*</b> <b class="vimtag">*<a name="g%3CDown%3E">g&lt;Down&gt;</a>*</b>
+g<code class="special">&lt;Down&gt;</code>			<code class="special">[count]</code> display lines downward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+			Differs from 'j' when lines wrap, and when used with
+			an operator, because it's not linewise.
+
+							<b class="vimtag">*<a name="-">-</a>*</b>
+-  <code class="special">&lt;minus&gt;</code>		<code class="special">[count]</code> lines upward, on the first non-blank
+			character |<a href="motion.html#linewise">linewise</a>|.
+
++		or					<b class="vimtag">*<a name="+">+</a>*</b>
+<code class="keystroke">CTRL-M</code>		or					<b class="vimtag">*<a name="CTRL-M">CTRL-M</a>*</b> <b class="vimtag">*<a name="%3CCR%3E">&lt;CR&gt;</a>*</b>
+<code class="special">&lt;CR&gt;</code>			<code class="special">[count]</code> lines downward, on the first non-blank
+			character |<a href="motion.html#linewise">linewise</a>|.
+
+							<b class="vimtag">*<a name="_">_</a>*</b>
+_  <code class="special">&lt;underscore&gt;</code>		<code class="special">[count]</code> - 1 lines downward, on the first non-blank
+			character |<a href="motion.html#linewise">linewise</a>|.
+
+							<b class="vimtag">*<a name="G">G</a>*</b>
+G			Goto line <code class="special">[count]</code>, default last line, on the first
+			non-blank character |<a href="motion.html#linewise">linewise</a>|.  If 'startofline' not
+			set, keep the same column.
+			G is one of the |<a href="motion.html#jump-motions">jump-motions</a>|.
+
+							<b class="vimtag">*<a name="%3CC-End%3E">&lt;C-End&gt;</a>*</b>
+<code class="special">&lt;C-End&gt;</code>			Goto line <code class="special">[count]</code>, default last line, on the last
+			character |<a href="motion.html#inclusive">inclusive</a>|.
+
+<code class="special">&lt;C-Home&gt;</code>	or					<b class="vimtag">*<a name="gg">gg</a>*</b> <b class="vimtag">*<a name="%3CC-Home%3E">&lt;C-Home&gt;</a>*</b>
+gg			Goto line <code class="special">[count]</code>, default first line, on the first
+			non-blank character |<a href="motion.html#linewise">linewise</a>|.  If 'startofline' not
+			set, keep the same column.
+
+							<b class="vimtag">*<a name=":[range]">:[range]</a>*</b>
+:<code class="special">[range]</code>		Set the cursor on the last line number in <code class="special">[range]</code>.
+			<code class="special">[range]</code> can also be just one line number, e.g., ":1"
+			or ":'m".
+			In contrast with |<a href="motion.html#G">G</a>| this command does not modify the
+			|<a href="motion.html#jumplist">jumplist</a>|.
+							<b class="vimtag">*<a name="N%">N%</a>*</b>
+<code class="special">{count}</code>%		Go to <code class="special">{count}</code> percentage in the file, on the first
+			non-blank in the line |<a href="motion.html#linewise">linewise</a>|.  To compute the new
+			line number this formula is used:
+			    (<code class="special">{count}</code> * number-of-lines + 99) / 100
+			See also 'startofline' option.
+
+:<code class="special">[range]</code>go[to] <code class="special">[count]</code>					<b class="vimtag">*<a name=":go">:go</a>*</b> <b class="vimtag">*<a name=":goto">:goto</a>*</b> <b class="vimtag">*<a name="go">go</a>*</b>
+<code class="special">[count]</code>go		Go to <code class="special">[count]</code> byte in the buffer.  Default <code class="special">[count]</code> is
+			one, start of the file.  When giving <code class="special">[range]</code>, the
+			last number in it used as the byte count.  End-of-line
+			characters are counted depending on the current
+			'fileformat' setting.
+			Also see the |<a href="eval.html#line2byte()">line2byte()</a>| function, and the 'o'
+			option in 'statusline'.
+			{not available when compiled without the
+			|<a href="various.html#+byte_offset">+byte_offset</a>| feature}
+
+These commands move to the specified line.  They stop when reaching the first
+or the last line.  The first two commands put the cursor in the same column
+(if possible) as it was after the last command that changed the column,
+except after the "$" command, then the cursor will be put on the last
+character of the line.
+
+If "k", "-" or <code class="keystroke">CTRL-P</code> is used with a <code class="special">[count]</code> and there are less than <code class="special">[count]</code>
+lines above the cursor and the 'cpo' option includes the "-" flag it is an
+error. |<a href="options.html#cpo--">cpo--</a>|.
+
+</pre><hr/><pre>4. Word motions						<b class="vimtag">*<a name="word-motions">word-motions</a>*</b>
+
+<code class="special">&lt;S-Right&gt;</code>	or					<b class="vimtag">*<a name="%3CS-Right%3E">&lt;S-Right&gt;</a>*</b> <b class="vimtag">*<a name="w">w</a>*</b>
+w			<code class="special">[count]</code> words forward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+<code class="special">&lt;C-Right&gt;</code>	or					<b class="vimtag">*<a name="%3CC-Right%3E">&lt;C-Right&gt;</a>*</b> <b class="vimtag">*<a name="W">W</a>*</b>
+W			<code class="special">[count]</code> WORDS forward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name="e">e</a>*</b>
+e			Forward to the end of word <code class="special">[count]</code> |<a href="motion.html#inclusive">inclusive</a>|.
+			Does not stop in an empty line.
+
+							<b class="vimtag">*<a name="E">E</a>*</b>
+E			Forward to the end of WORD <code class="special">[count]</code> |<a href="motion.html#inclusive">inclusive</a>|.
+			Does not stop in an empty line.
+
+<code class="special">&lt;S-Left&gt;</code>	or					<b class="vimtag">*<a name="%3CS-Left%3E">&lt;S-Left&gt;</a>*</b> <b class="vimtag">*<a name="b">b</a>*</b>
+b			<code class="special">[count]</code> words backward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+<code class="special">&lt;C-Left&gt;</code>	or					<b class="vimtag">*<a name="%3CC-Left%3E">&lt;C-Left&gt;</a>*</b> <b class="vimtag">*<a name="B">B</a>*</b>
+B			<code class="special">[count]</code> WORDS backward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name="ge">ge</a>*</b>
+ge			Backward to the end of word <code class="special">[count]</code> |<a href="motion.html#inclusive">inclusive</a>|.
+
+							<b class="vimtag">*<a name="gE">gE</a>*</b>
+gE			Backward to the end of WORD <code class="special">[count]</code> |<a href="motion.html#inclusive">inclusive</a>|.
+
+These commands move over words or WORDS.
+							<b class="vimtag">*<a name="word">word</a>*</b>
+A word consists of a sequence of letters, digits and underscores, or a
+sequence of other non-blank characters, separated with white space (spaces,
+tabs, <code class="special">&lt;EOL&gt;</code>).  This can be changed with the 'iskeyword' option.  An empty line
+is also considered to be a word.
+							<b class="vimtag">*<a name="WORD">WORD</a>*</b>
+A WORD consists of a sequence of non-blank characters, separated with white
+space.  An empty line is also considered to be a WORD.
+
+A sequence of folded lines is counted for one word of a single character.
+"w" and "W", "e" and "E" move to the start/end of the first word or WORD after
+a range of folded lines.  "b" and "B" move to the start of the first word or
+WORD before the fold.
+
+Special case: "cw" and "cW" are treated like "ce" and "cE" if the cursor is
+on a non-blank.  This is because "cw" is interpreted as change-word, and a
+word does not include the following white space.
+
+Another special case: When using the "w" motion in combination with an
+operator and the last word moved over is at the end of a line, the end of
+that word becomes the end of the operated text, not the first word in the
+next line.
+
+The original Vi implementation of "e" is buggy.  For example, the "e" command
+will stop on the first character of a line if the previous line was empty.
+But when you use "2e" this does not happen.  In Vim "ee" and "2e" are the
+same, which is more logical.  However, this causes a small incompatibility
+between Vi and Vim.
+
+</pre><hr/><pre>5. Text object motions					<b class="vimtag">*<a name="object-motions">object-motions</a>*</b>
+
+							<b class="vimtag">*<a name="(">(</a>*</b>
+(			<code class="special">[count]</code> sentences backward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name=")">)</a>*</b>
+)			<code class="special">[count]</code> sentences forward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name="{">{</a>*</b>
+{			<code class="special">[count]</code> paragraphs backward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name="}">}</a>*</b>
+}			<code class="special">[count]</code> paragraphs forward.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+							<b class="vimtag">*<a name="]]">]]</a>*</b>
+]]			<code class="special">[count]</code> sections forward or to the next '{' in the
+			first column.  When used after an operator, then also
+			stops below a '}' in the first column.  |<a href="motion.html#exclusive">exclusive</a>|
+			<code class="note">Note</code> that |<a href="motion.html#exclusive-linewise">exclusive-linewise</a>| often applies.
+
+							<b class="vimtag">*<a name="][">][</a>*</b>
+][			<code class="special">[count]</code> sections forward or to the next '}' in the
+			first column.  |<a href="motion.html#exclusive">exclusive</a>|
+			<code class="note">Note</code> that |<a href="motion.html#exclusive-linewise">exclusive-linewise</a>| often applies.
+
+							<b class="vimtag">*<a name="[[">[[</a>*</b>
+[[			<code class="special">[count]</code> sections backward or to the previous '{' in
+			the first column.  |<a href="motion.html#exclusive">exclusive</a>|
+			<code class="note">Note</code> that |<a href="motion.html#exclusive-linewise">exclusive-linewise</a>| often applies.
+
+							<b class="vimtag">*<a name="[]">[]</a>*</b>
+[]			<code class="special">[count]</code> sections backward or to the previous '}' in
+			the first column.  |<a href="motion.html#exclusive">exclusive</a>|
+			<code class="note">Note</code> that |<a href="motion.html#exclusive-linewise">exclusive-linewise</a>| often applies.
+
+These commands move over three kinds of text objects.
+
+							<b class="vimtag">*<a name="sentence">sentence</a>*</b>
+A sentence is defined as ending at a '.', '!' or '?' followed by either the
+end of a line, or by a space or tab.  Any number of closing ')', ']', '"'
+and ''' characters may appear after the '.', '!' or '?' before the spaces,
+tabs or end of line.  A paragraph and section boundary is also a sentence
+boundary.
+If the 'J' flag is present in 'cpoptions', at least two spaces have to
+follow the punctuation mark; <code class="special">&lt;Tab&gt;</code>s are not recognized as white space.
+The definition of a sentence cannot be changed.
+
+							<b class="vimtag">*<a name="paragraph">paragraph</a>*</b>
+A paragraph begins after each empty line, and also at each of a set of
+paragraph macros, specified by the pairs of characters in the 'paragraphs'
+option.  The default is "IPLPPPQPP TPHPLIPpLpItpplpipbp", which corresponds to
+the macros ".IP", ".LP", etc.  (These are nroff macros, so the dot must be in
+the first column).  A section boundary is also a paragraph boundary.
+<code class="note">Note</code> that a blank line (only containing white space) is NOT a paragraph
+boundary.
+Also <code class="note">note</code> that this does not include a '<code class="special">{' or '}</code>' in the first column.  When
+the '{' flag is in 'cpoptions' then '{' in the first column is used as a
+paragraph boundary |<a href="vi_diff.html#posix">posix</a>|.
+
+							<b class="vimtag">*<a name="section">section</a>*</b>
+A section begins after a form-feed (<code class="special">&lt;C-L&gt;</code>) in the first column and at each of
+a set of section macros, specified by the pairs of characters in the
+'sections' option.  The default is "SHNHH HUnhsh", which defines a section to
+start at the nroff macros ".SH", ".NH", ".H", ".HU", ".nh" and ".sh".
+
+The "]" and "[" commands stop at the '<code class="special">{' or '}</code>' in the first column.  This is
+useful to find the start or end of a function in a C program.  <code class="note">Note</code> that the
+first character of the command determines the search direction and the
+second character the type of brace found.
+
+If your '<code class="special">{' or '}</code>' are not in the first column, and you would like to use "[["
+and "]]" anyway, try these mappings:
+<code class="example">   :map [[ ?{<code class="special">&lt;CR&gt;</code>w99[{</code>
+<code class="example">   :map ][ /}<code class="special">&lt;CR&gt;</code>b99]}</code>
+<code class="example">   :map ]] j0[[%/{<code class="special">&lt;CR&gt;</code></code>
+<code class="example">   :map [] k$][%?}<code class="special">&lt;CR&gt;</code></code>
+[type these literally, see |<a href="intro.html#%3C%3E">&lt;&gt;</a>|]
+
+</pre><hr/><pre>6. Text object selection			<b class="vimtag">*<a name="object-select">object-select</a>*</b> <b class="vimtag">*<a name="text-objects">text-objects</a>*</b>
+						<b class="vimtag">*<a name="v_a">v_a</a>*</b> <b class="vimtag">*<a name="v_i">v_i</a>*</b>
+
+This is a series of commands that can only be used while in Visual mode or
+after an operator.  The commands that start with "a" select "a"n object
+including white space, the commands starting with "i" select an "inner" object
+without white space, or just the white space.  Thus the "inner" commands
+always select less text than the "a" commands.
+
+These commands are not available when the |<a href="various.html#+textobjects">+textobjects</a>| feature has been
+disabled at compile time.
+Also see `gn` and `gN`, operating on the last search pattern.
+
+							<b class="vimtag">*<a name="v_aw">v_aw</a>*</b> <b class="vimtag">*<a name="aw">aw</a>*</b>
+aw			"a word", select <code class="special">[count]</code> words (see |<a href="motion.html#word">word</a>|).
+			Leading or trailing white space is included, but not
+			counted.
+			When used in Visual linewise mode "aw" switches to
+			Visual characterwise mode.
+
+							<b class="vimtag">*<a name="v_iw">v_iw</a>*</b> <b class="vimtag">*<a name="iw">iw</a>*</b>
+iw			"inner word", select <code class="special">[count]</code> words (see |<a href="motion.html#word">word</a>|).
+			White space between words is counted too.
+			When used in Visual linewise mode "iw" switches to
+			Visual characterwise mode.
+
+							<b class="vimtag">*<a name="v_aW">v_aW</a>*</b> <b class="vimtag">*<a name="aW">aW</a>*</b>
+aW			"a WORD", select <code class="special">[count]</code> WORDs (see |<a href="motion.html#WORD">WORD</a>|).
+			Leading or trailing white space is included, but not
+			counted.
+			When used in Visual linewise mode "aW" switches to
+			Visual characterwise mode.
+
+							<b class="vimtag">*<a name="v_iW">v_iW</a>*</b> <b class="vimtag">*<a name="iW">iW</a>*</b>
+iW			"inner WORD", select <code class="special">[count]</code> WORDs (see |<a href="motion.html#WORD">WORD</a>|).
+			White space between words is counted too.
+			When used in Visual linewise mode "iW" switches to
+			Visual characterwise mode.
+
+							<b class="vimtag">*<a name="v_as">v_as</a>*</b> <b class="vimtag">*<a name="as">as</a>*</b>
+as			"a sentence", select <code class="special">[count]</code> sentences (see
+			|<a href="motion.html#sentence">sentence</a>|).
+			When used in Visual mode it is made characterwise.
+
+							<b class="vimtag">*<a name="v_is">v_is</a>*</b> <b class="vimtag">*<a name="is">is</a>*</b>
+is			"inner sentence", select <code class="special">[count]</code> sentences (see
+			|<a href="motion.html#sentence">sentence</a>|).
+			When used in Visual mode it is made characterwise.
+
+							<b class="vimtag">*<a name="v_ap">v_ap</a>*</b> <b class="vimtag">*<a name="ap">ap</a>*</b>
+ap			"a paragraph", select <code class="special">[count]</code> paragraphs (see
+			|<a href="motion.html#paragraph">paragraph</a>|).
+			Exception: a blank line (only containing white space)
+			is also a paragraph boundary.
+			When used in Visual mode it is made linewise.
+
+							<b class="vimtag">*<a name="v_ip">v_ip</a>*</b> <b class="vimtag">*<a name="ip">ip</a>*</b>
+ip			"inner paragraph", select <code class="special">[count]</code> paragraphs (see
+			|<a href="motion.html#paragraph">paragraph</a>|).
+			Exception: a blank line (only containing white space)
+			is also a paragraph boundary.
+			When used in Visual mode it is made linewise.
+
+a]						<b class="vimtag">*<a name="v_a]">v_a]</a>*</b> <b class="vimtag">*<a name="v_a[">v_a[</a>*</b> <b class="vimtag">*<a name="a]">a]</a>*</b> <b class="vimtag">*<a name="a[">a[</a>*</b>
+a[			"a [] block", select <code class="special">[count]</code> '[' ']' blocks.  This
+			goes backwards to the <code class="special">[count]</code> unclosed '[', and finds
+			the matching ']'.  The enclosed text is selected,
+			including the '[' and ']'.
+			When used in Visual mode it is made characterwise.
+
+i]						<b class="vimtag">*<a name="v_i]">v_i]</a>*</b> <b class="vimtag">*<a name="v_i[">v_i[</a>*</b> <b class="vimtag">*<a name="i]">i]</a>*</b> <b class="vimtag">*<a name="i[">i[</a>*</b>
+i[			"inner [] block", select <code class="special">[count]</code> '[' ']' blocks.  This
+			goes backwards to the <code class="special">[count]</code> unclosed '[', and finds
+			the matching ']'.  The enclosed text is selected,
+			excluding the '[' and ']'.
+			When used in Visual mode it is made characterwise.
+
+a)							<b class="vimtag">*<a name="v_a)">v_a)</a>*</b> <b class="vimtag">*<a name="a)">a)</a>*</b> <b class="vimtag">*<a name="a(">a(</a>*</b>
+a(							<b class="vimtag">*<a name="vab">vab</a>*</b> <b class="vimtag">*<a name="v_ab">v_ab</a>*</b> <b class="vimtag">*<a name="v_a(">v_a(</a>*</b> <b class="vimtag">*<a name="ab">ab</a>*</b>
+ab			"a block", select <code class="special">[count]</code> blocks, from "<code class="special">[count]</code> [(" to
+			the matching ')', including the '(' and ')' (see
+			|<a href="motion.html#[(">[(</a>|).  Does not include white space outside of the
+			parenthesis.
+			When used in Visual mode it is made characterwise.
+
+i)							<b class="vimtag">*<a name="v_i)">v_i)</a>*</b> <b class="vimtag">*<a name="i)">i)</a>*</b> <b class="vimtag">*<a name="i(">i(</a>*</b>
+i(							<b class="vimtag">*<a name="vib">vib</a>*</b> <b class="vimtag">*<a name="v_ib">v_ib</a>*</b> <b class="vimtag">*<a name="v_i(">v_i(</a>*</b> <b class="vimtag">*<a name="ib">ib</a>*</b>
+ib			"inner block", select <code class="special">[count]</code> blocks, from "<code class="special">[count]</code> [("
+			to the matching ')', excluding the '(' and ')' (see
+			|<a href="motion.html#[(">[(</a>|).
+			When used in Visual mode it is made characterwise.
+
+a&gt;						<b class="vimtag">*<a name="v_a%3E">v_a&gt;</a>*</b> <b class="vimtag">*<a name="v_a%3C">v_a&lt;</a>*</b> <b class="vimtag">*<a name="a%3E">a&gt;</a>*</b> <b class="vimtag">*<a name="a%3C">a&lt;</a>*</b>
+a<code class="special">&lt;			"a &lt;&gt;</code> block", select <code class="special">[count]</code> <code class="special">&lt;&gt;</code> blocks, from the
+			<code class="special">[count]</code>'th unmatched '&lt;' backwards to the matching
+			'&gt;', including the '<code class="special">&lt;' and '&gt;</code>'.
+			When used in Visual mode it is made characterwise.
+
+i&gt;						<b class="vimtag">*<a name="v_i%3E">v_i&gt;</a>*</b> <b class="vimtag">*<a name="v_i%3C">v_i&lt;</a>*</b> <b class="vimtag">*<a name="i%3E">i&gt;</a>*</b> <b class="vimtag">*<a name="i%3C">i&lt;</a>*</b>
+i<code class="special">&lt;			"inner &lt;&gt;</code> block", select <code class="special">[count]</code> <code class="special">&lt;&gt;</code> blocks, from
+			the <code class="special">[count]</code>'th unmatched '&lt;' backwards to the matching
+			'&gt;', excluding the '<code class="special">&lt;' and '&gt;</code>'.
+			When used in Visual mode it is made characterwise.
+
+						<b class="vimtag">*<a name="v_at">v_at</a>*</b> <b class="vimtag">*<a name="at">at</a>*</b>
+at			"a tag block", select <code class="special">[count]</code> tag blocks, from the
+			<code class="special">[count]</code>'th unmatched "<code class="special">&lt;aaa&gt;</code>" backwards to the matching
+			"<code class="special">&lt;/aaa&gt;</code>", including the "<code class="special">&lt;aaa&gt;</code>" and "<code class="special">&lt;/aaa&gt;</code>".
+			See |<a href="motion.html#tag-blocks">tag-blocks</a>| about the details.
+			When used in Visual mode it is made characterwise.
+
+						<b class="vimtag">*<a name="v_it">v_it</a>*</b> <b class="vimtag">*<a name="it">it</a>*</b>
+it			"inner tag block", select <code class="special">[count]</code> tag blocks, from the
+			<code class="special">[count]</code>'th unmatched "<code class="special">&lt;aaa&gt;</code>" backwards to the matching
+			"<code class="special">&lt;/aaa&gt;</code>", excluding the "<code class="special">&lt;aaa&gt;</code>" and "<code class="special">&lt;/aaa&gt;</code>".
+			See |<a href="motion.html#tag-blocks">tag-blocks</a>| about the details.
+			When used in Visual mode it is made characterwise.
+
+a}							<b class="vimtag">*<a name="v_a}">v_a}</a>*</b> <b class="vimtag">*<a name="a}">a}</a>*</b> <b class="vimtag">*<a name="a{">a{</a>*</b>
+a{							<b class="vimtag">*<a name="v_aB">v_aB</a>*</b> <b class="vimtag">*<a name="v_a{">v_a{</a>*</b> <b class="vimtag">*<a name="aB">aB</a>*</b>
+aB			"a Block", select <code class="special">[count]</code> Blocks, from "<code class="special">[count]</code> [{" to
+			the matching '}', including the '<code class="special">{' and '}</code>' (see
+			|<a href="motion.html#[{">[{</a>|).
+			When used in Visual mode it is made characterwise.
+
+i}							<b class="vimtag">*<a name="v_i}">v_i}</a>*</b> <b class="vimtag">*<a name="i}">i}</a>*</b> <b class="vimtag">*<a name="i{">i{</a>*</b>
+i{							<b class="vimtag">*<a name="v_iB">v_iB</a>*</b> <b class="vimtag">*<a name="v_i{">v_i{</a>*</b> <b class="vimtag">*<a name="iB">iB</a>*</b>
+iB			"inner Block", select <code class="special">[count]</code> Blocks, from "<code class="special">[count]</code> [{"
+			to the matching '}', excluding the '<code class="special">{' and '}</code>' (see
+			|<a href="motion.html#[{">[{</a>|).
+			When used in Visual mode it is made characterwise.
+
+a"							<b class="vimtag">*<a name="v_aquote">v_aquote</a>*</b> <b class="vimtag">*<a name="aquote">aquote</a>*</b>
+a'							<b class="vimtag">*<a name="v_a'">v_a'</a>*</b> <b class="vimtag">*<a name="a'">a'</a>*</b>
+a`							<b class="vimtag">*<a name="v_a`">v_a`</a>*</b> <b class="vimtag">*<a name="a`">a`</a>*</b>
+			"a quoted string".  Selects the text from the previous
+			quote until the next quote.  The 'quoteescape' option
+			is used to skip escaped quotes.
+			Only works within one line.
+			When the cursor starts on a quote, Vim will figure out
+			which quote pairs form a string by searching from the
+			start of the line.
+			Any trailing white space is included, unless there is
+			none, then leading white space is included.
+			When used in Visual mode it is made characterwise.
+			Repeating this object in Visual mode another string is
+			included.  A count is currently not used.
+
+i"							<b class="vimtag">*<a name="v_iquote">v_iquote</a>*</b> <b class="vimtag">*<a name="iquote">iquote</a>*</b>
+i'							<b class="vimtag">*<a name="v_i'">v_i'</a>*</b> <b class="vimtag">*<a name="i'">i'</a>*</b>
+i`							<b class="vimtag">*<a name="v_i`">v_i`</a>*</b> <b class="vimtag">*<a name="i`">i`</a>*</b>
+			Like a", a' and a`, but exclude the quotes and
+			repeating won't extend the Visual selection.
+			Special case: With a count of 2 the quotes are
+			included, but no extra white space as with a"/a'/a`.
+
+When used after an operator:
+For non-block objects:
+	For the "a" commands: The operator applies to the object and the white
+	space after the object.  If there is no white space after the object
+	or when the cursor was in the white space before the object, the white
+	space before the object is included.
+	For the "inner" commands: If the cursor was on the object, the
+	operator applies to the object.  If the cursor was on white space, the
+	operator applies to the white space.
+For a block object:
+	The operator applies to the block where the cursor is in, or the block
+	on which the cursor is on one of the braces.  For the "inner" commands
+	the surrounding braces are excluded.  For the "a" commands, the braces
+	are included.
+
+When used in Visual mode:
+When start and end of the Visual area are the same (just after typing "v"):
+	One object is selected, the same as for using an operator.
+When start and end of the Visual area are not the same:
+	For non-block objects the area is extended by one object or the white
+	space up to the next object, or both for the "a" objects.  The
+	direction in which this happens depends on which side of the Visual
+	area the cursor is.  For the block objects the block is extended one
+	level outwards.
+
+For illustration, here is a list of delete commands, grouped from small to big
+objects.  <code class="note">Note</code> that for a single character and a whole line the existing vi
+movement commands are used.
+	"dl"	delete character (alias: "x")		|<a href="change.html#dl">dl</a>|
+	"diw"	delete inner word			<b class="vimtag">*<a name="diw">diw</a>*</b>
+	"daw"	delete a word				<b class="vimtag">*<a name="daw">daw</a>*</b>
+	"diW"	delete inner WORD (see |<a href="motion.html#WORD">WORD</a>|)		<b class="vimtag">*<a name="diW">diW</a>*</b>
+	"daW"	delete a WORD (see |<a href="motion.html#WORD">WORD</a>|)		<b class="vimtag">*<a name="daW">daW</a>*</b>
+	"dgn"   delete the next search pattern match    <b class="vimtag">*<a name="dgn">dgn</a>*</b>
+	"dd"	delete one line				|<a href="change.html#dd">dd</a>|
+	"dis"	delete inner sentence			<b class="vimtag">*<a name="dis">dis</a>*</b>
+	"das"	delete a sentence			<b class="vimtag">*<a name="das">das</a>*</b>
+	"dib"	delete inner '(' ')' block		<b class="vimtag">*<a name="dib">dib</a>*</b>
+	"dab"	delete a '(' ')' block			<b class="vimtag">*<a name="dab">dab</a>*</b>
+	"dip"	delete inner paragraph			<b class="vimtag">*<a name="dip">dip</a>*</b>
+	"dap"	delete a paragraph			<b class="vimtag">*<a name="dap">dap</a>*</b>
+	"diB"	delete inner '<code class="special">{' '}</code>' block		<b class="vimtag">*<a name="diB">diB</a>*</b>
+	"daB"	delete a '<code class="special">{' '}</code>' block			<b class="vimtag">*<a name="daB">daB</a>*</b>
+
+<code class="note">Note</code> the difference between using a movement command and an object.  The
+movement command operates from here (cursor position) to where the movement
+takes us.  When using an object the whole object is operated upon, no matter
+where on the object the cursor is.  For example, compare "dw" and "daw": "dw"
+deletes from the cursor position to the start of the next word, "daw" deletes
+the word under the cursor and the space after or before it.
+
+
+Tag blocks						<b class="vimtag">*<a name="tag-blocks">tag-blocks</a>*</b>
+
+For the "it" and "at" text objects an attempt is done to select blocks between
+matching tags for HTML and XML.  But since these are not completely compatible
+there are a few restrictions.
+
+The normal method is to select a <code class="special">&lt;tag&gt;</code> until the matching <code class="special">&lt;/tag&gt;</code>.  For "at"
+the tags are included, for "it" they are excluded.  But when "it" is repeated
+the tags will be included (otherwise nothing would change).  Also, "it" used
+on a tag block with no contents will select the leading tag.
+
+"<code class="special">&lt;aaa/&gt;</code>" items are skipped.  Case is ignored, also for XML where case does
+matter.
+
+In HTML it is possible to have a tag like <code class="special">&lt;br&gt;</code> or <code class="special">&lt;meta ...&gt;</code> without a
+matching end tag.  These are ignored.
+
+The text objects are tolerant about mistakes.  Stray end tags are ignored.
+
+</pre><hr/><pre>7. Marks					<b class="vimtag">*<a name="mark-motions">mark-motions</a>*</b> <b class="vimtag">*<a name="E20">E20</a>*</b> <b class="vimtag">*<a name="E78">E78</a>*</b>
+
+Jumping to a mark can be done in two ways:
+1. With ` (backtick):	  The cursor is positioned at the specified location
+			  and the motion is |<a href="motion.html#exclusive">exclusive</a>|.
+2. With ' (single quote): The cursor is positioned on the first non-blank
+			  character in the line of the specified location and
+			  the motion is linewise.
+
+						<b class="vimtag">*<a name="m">m</a>*</b> <b class="vimtag">*<a name="mark">mark</a>*</b> <b class="vimtag">*<a name="Mark">Mark</a>*</b>
+m<code class="special">{a-zA-Z}</code>		Set mark <code class="special">{a-zA-Z}</code> at cursor position (does not move
+			the cursor, this is not a motion command).
+
+						<b class="vimtag">*<a name="m'">m'</a>*</b> <b class="vimtag">*<a name="m`">m`</a>*</b>
+m'  or  m`		Set the previous context mark.  This can be jumped to
+			with the "''" or "``" command (does not move the
+			cursor, this is not a motion command).
+
+						<b class="vimtag">*<a name="m[">m[</a>*</b> <b class="vimtag">*<a name="m]">m]</a>*</b>
+m[  or  m]		Set the |<a href="motion.html#'[">'[</a>| or |<a href="motion.html#']">']</a>| mark.  Useful when an operator is
+			to be simulated by multiple commands.  (does not move
+			the cursor, this is not a motion command).
+
+						<b class="vimtag">*<a name="m%3C">m&lt;</a>*</b> <b class="vimtag">*<a name="m%3E">m&gt;</a>*</b>
+m<code class="special">&lt;  or  m&gt;</code>		Set the |<a href="motion.html#'%3C">'&lt;</a>| or |<a href="motion.html#'%3E">'&gt;</a>| mark.  Useful to change what the
+			`gv` command selects.  (does not move the cursor, this
+			is not a motion command).
+			<code class="note">Note</code> that the Visual mode cannot be set, only the
+			start and end position.
+
+						<b class="vimtag">*<a name=":ma">:ma</a>*</b> <b class="vimtag">*<a name=":mark">:mark</a>*</b> <b class="vimtag">*<a name="E191">E191</a>*</b>
+:<code class="special">[range]</code>ma[rk] <code class="special">{a-zA-Z'}</code>
+			Set mark <code class="special">{a-zA-Z'}</code> at last line number in <code class="special">[range]</code>,
+			column 0.  Default is cursor line.
+
+						<b class="vimtag">*<a name=":k">:k</a>*</b>
+:<code class="special">[range]</code>k<code class="special">{a-zA-Z'}</code>	Same as :mark, but the space before the mark name can
+			be omitted.
+
+						<b class="vimtag">*<a name="'">'</a>*</b> <b class="vimtag">*<a name="'a">'a</a>*</b> <b class="vimtag">*<a name="`">`</a>*</b> <b class="vimtag">*<a name="`a">`a</a>*</b>
+'<code class="special">{a-z}</code>  `<code class="special">{a-z}</code>		Jump to the mark <code class="special">{a-z}</code> in the current buffer.
+
+						<b class="vimtag">*<a name="'A">'A</a>*</b> <b class="vimtag">*<a name="'0">'0</a>*</b> <b class="vimtag">*<a name="`A">`A</a>*</b> <b class="vimtag">*<a name="`0">`0</a>*</b>
+'<code class="special">{A-Z0-9}</code>  `<code class="special">{A-Z0-9}</code>	To the mark <code class="special">{A-Z0-9}</code> in the file where it was set (not
+			a motion command when in another file).
+
+						<b class="vimtag">*<a name="g'">g'</a>*</b> <b class="vimtag">*<a name="g'a">g'a</a>*</b> <b class="vimtag">*<a name="g`">g`</a>*</b> <b class="vimtag">*<a name="g`a">g`a</a>*</b>
+g'<code class="special">{mark}</code>  g`<code class="special">{mark}</code>
+			Jump to the <code class="special">{mark}</code>, but don't change the jumplist when
+			jumping within the current buffer.  Example:
+<code class="example">				g`"</code>
+			jumps to the last known position in a file.  See
+			$VIMRUNTIME/vimrc_example.vim.
+			Also see |<a href="motion.html#:keepjumps">:keepjumps</a>|.
+
+						<b class="vimtag">*<a name=":marks">:marks</a>*</b>
+:marks			List all the current marks (not a motion command).
+			The |<a href="motion.html#'(">'(</a>|, |<a href="motion.html#')">')</a>|, |<a href="motion.html#'{">'{</a>| and |<a href="motion.html#'}">'}</a>| marks are not listed.
+			The first column has number zero.
+
+						<b class="vimtag">*<a name="E283">E283</a>*</b>
+:marks <code class="special">{arg}</code>		List the marks that are mentioned in <code class="special">{arg}</code> (not a
+			motion command).  For example:
+<code class="example">				:marks aB</code>
+			to list marks 'a' and 'B'.
+
+							<b class="vimtag">*<a name=":delm">:delm</a>*</b> <b class="vimtag">*<a name=":delmarks">:delmarks</a>*</b>
+:delm[arks] <code class="special">{marks}</code>	Delete the specified marks.  Marks that can be deleted
+			include A-Z and 0-9.  You cannot delete the ' mark.
+			They can be specified by giving the list of mark
+			names, or with a range, separated with a dash.  Spaces
+			are ignored.  Examples:
+<code class="example">			   :delmarks a	      deletes mark a</code>
+<code class="example">			   :delmarks a b 1    deletes marks a, b and 1</code>
+<code class="example">			   :delmarks Aa       deletes marks A and a</code>
+<code class="example">			   :delmarks p-z      deletes marks in the range p to z</code>
+<code class="example">			   :delmarks ^.[]     deletes marks ^ . [ ]</code>
+<code class="example">			   :delmarks \"	      deletes mark "</code>
+<code class="example"></code>
+:delm[arks]!		Delete all marks for the current buffer, but not marks
+			A-Z or 0-9.
+
+A mark is not visible in any way.  It is just a position in the file that is
+remembered.  Do not confuse marks with named registers, they are totally
+unrelated.
+
+'a - 'z		lowercase marks, valid within one file
+'A - 'Z		uppercase marks, also called file marks, valid between files
+'0 - '9		numbered marks, set from .viminfo file
+
+Lowercase marks 'a to 'z are remembered as long as the file remains in the
+buffer list.  If you remove the file from the buffer list, all its marks are
+lost.  If you delete a line that contains a mark, that mark is erased.
+
+Lowercase marks can be used in combination with operators.  For example: "d't"
+deletes the lines from the cursor position to mark 't'.  Hint: Use mark 't' for
+Top, 'b' for Bottom, etc..  Lowercase marks are restored when using undo and
+redo.
+
+Uppercase marks 'A to 'Z include the file name.  You can use them to jump from
+file to file.  You can only use an uppercase mark with an operator if the mark
+is in the current file.  The line number of the mark remains correct, even if
+you insert/delete lines or edit another file for a moment.  When the 'viminfo'
+option is not empty, uppercase marks are kept in the .viminfo file.  See
+|<a href="starting.html#viminfo-file-marks">viminfo-file-marks</a>|.
+
+Numbered marks '0 to '9 are quite different.  They can not be set directly.
+They are only present when using a viminfo file |<a href="starting.html#viminfo-file">viminfo-file</a>|.  Basically '0
+is the location of the cursor when you last exited Vim, '1 the last but one
+time, etc.  Use the "r" flag in 'viminfo' to specify files for which no
+Numbered mark should be stored.  See |<a href="starting.html#viminfo-file-marks">viminfo-file-marks</a>|.
+
+
+							<b class="vimtag">*<a name="'[">'[</a>*</b> <b class="vimtag">*<a name="`[">`[</a>*</b>
+'[  `[			To the first character of the previously changed
+			or yanked text.
+
+							<b class="vimtag">*<a name="']">']</a>*</b> <b class="vimtag">*<a name="`]">`]</a>*</b>
+']  `]			To the last character of the previously changed or
+			yanked text.
+
+After executing an operator the Cursor is put at the beginning of the text
+that was operated upon.  After a put command ("p" or "P") the cursor is
+sometimes placed at the first inserted line and sometimes on the last inserted
+character.  The four commands above put the cursor at either end.  Example:
+After yanking 10 lines you want to go to the last one of them: "10Y']".  After
+inserting several lines with the "p" command you want to jump to the lowest
+inserted line: "p']".  This also works for text that has been inserted.
+
+<code class="note">Note:</code> After deleting text, the start and end positions are the same, except
+when using blockwise Visual mode.  These commands do not work when no change
+was made yet in the current file.
+
+							<b class="vimtag">*<a name="'%3C">'&lt;</a>*</b> <b class="vimtag">*<a name="`%3C">`&lt;</a>*</b>
+'&lt;  `&lt;			To the first line or character of the last selected
+			Visual area in the current buffer.  For block mode it
+			may also be the last character in the first line (to
+			be able to define the block).
+
+							<b class="vimtag">*<a name="'%3E">'&gt;</a>*</b> <b class="vimtag">*<a name="`%3E">`&gt;</a>*</b>
+'&gt;  `&gt;			To the last line or character of the last selected
+			Visual area in the current buffer.  For block mode it
+			may also be the first character of the last line (to
+			be able to define the block).  <code class="note">Note</code> that 'selection'
+			applies, the position may be just after the Visual
+			area.
+
+							<b class="vimtag">*<a name="''">''</a>*</b> <b class="vimtag">*<a name="``">``</a>*</b>
+''  ``			To the position before the latest jump, or where the
+			last "m'" or "m`" command was given.  Not set when the
+			|<a href="motion.html#:keepjumps">:keepjumps</a>| command modifier was used.
+			Also see |<a href="tips.html#restore-position">restore-position</a>|.
+
+							<b class="vimtag">*<a name="'quote">'quote</a>*</b> <b class="vimtag">*<a name="`quote">`quote</a>*</b>
+'"  `"			To the cursor position when last exiting the current
+			buffer.  Defaults to the first character of the first
+			line.  See |<a href="usr_05.html#last-position-jump">last-position-jump</a>| for how to use this
+			for each opened file.
+			Only one position is remembered per buffer, not one
+			for each window.  As long as the buffer is visible in
+			a window the position won't be changed.
+
+							<b class="vimtag">*<a name="'^">'^</a>*</b> <b class="vimtag">*<a name="`^">`^</a>*</b>
+'^  `^			To the position where the cursor was the last time
+			when Insert mode was stopped.  This is used by the
+			|<a href="insert.html#gi">gi</a>| command.  Not set when the |<a href="motion.html#:keepjumps">:keepjumps</a>| command
+			modifier was used.
+
+							<b class="vimtag">*<a name="'.">'.</a>*</b> <b class="vimtag">*<a name="`.">`.</a>*</b>
+'.  `.			To the position where the last change was made.  The
+			position is at or near where the change started.
+			Sometimes a command is executed as several changes,
+			then the position can be near the end of what the
+			command changed.  For example when inserting a word,
+			the position will be on the last character.
+			To jump to older changes use |<a href="motion.html#g;">g;</a>|.
+
+							<b class="vimtag">*<a name="'(">'(</a>*</b> <b class="vimtag">*<a name="`(">`(</a>*</b>
+'(  `(			To the start of the current sentence, like the |<a href="motion.html#(">(</a>|
+			command.
+
+							<b class="vimtag">*<a name="')">')</a>*</b> <b class="vimtag">*<a name="`)">`)</a>*</b>
+')  `)			To the end of the current sentence, like the |<a href="motion.html#)">)</a>|
+			command.
+
+							<b class="vimtag">*<a name="'{">'{</a>*</b> <b class="vimtag">*<a name="`{">`{</a>*</b>
+'{  `{			To the start of the current paragraph, like the |<a href="motion.html#{">{</a>|
+			command.
+
+							<b class="vimtag">*<a name="'}">'}</a>*</b> <b class="vimtag">*<a name="`}">`}</a>*</b>
+'}  `}			To the end of the current paragraph, like the |<a href="motion.html#}">}</a>|
+			command.
+
+These commands are not marks themselves, but jump to a mark:
+
+							<b class="vimtag">*<a name="]'">]'</a>*</b>
+]'			<code class="special">[count]</code> times to next line with a lowercase mark below
+			the cursor, on the first non-blank character in the
+			line.
+
+							<b class="vimtag">*<a name="]`">]`</a>*</b>
+]`			<code class="special">[count]</code> times to lowercase mark after the cursor. {not
+			in Vi}
+
+							<b class="vimtag">*<a name="['">['</a>*</b>
+['			<code class="special">[count]</code> times to previous line with a lowercase mark
+			before the cursor, on the first non-blank character in
+			the line.
+
+							<b class="vimtag">*<a name="[`">[`</a>*</b>
+[`			<code class="special">[count]</code> times to lowercase mark before the cursor.
+
+
+:loc[kmarks] <code class="special">{command}</code>				<b class="vimtag">*<a name=":loc">:loc</a>*</b> <b class="vimtag">*<a name=":lock">:lock</a>*</b> <b class="vimtag">*<a name=":lockmarks">:lockmarks</a>*</b>
+			Execute <code class="special">{command}</code> without adjusting marks.  This is
+			useful when changing text in a way that the line count
+			will be the same when the change has completed.
+			WARNING: When the line count does change, marks below
+			the change will keep their line number, thus move to
+			another text line.
+			These items will not be adjusted for deleted/inserted
+			lines:
+			- lower case letter marks 'a - 'z
+			- upper case letter marks 'A - 'Z
+			- numbered marks '0 - '9
+			- last insert position '^
+			- last change position '.
+			- last affected text area '[ and ']
+			- the Visual area '<code class="special">&lt; and '&gt;</code>
+			- line numbers in placed signs
+			- line numbers in quickfix positions
+			- positions in the |<a href="motion.html#jumplist">jumplist</a>|
+			- positions in the |<a href="tagsrch.html#tagstack">tagstack</a>|
+			These items will still be adjusted:
+			- previous context mark ''
+			- the cursor position
+			- the view of a window on a buffer
+			- folds
+			- diffs
+
+:kee[pmarks] <code class="special">{command}</code>				<b class="vimtag">*<a name=":kee">:kee</a>*</b> <b class="vimtag">*<a name=":keep">:keep</a>*</b> <b class="vimtag">*<a name=":keepmarks">:keepmarks</a>*</b>
+			Currently only has effect for the filter command
+			|<a href="change.html#:range!">:range!</a>|:
+			- When the number of lines after filtering is equal to
+			  or larger than before, all marks are kept at the
+			  same line number.
+			- When the number of lines decreases, the marks in the
+			  lines that disappeared are deleted.
+			In any case the marks below the filtered text have
+			their line numbers adjusted, thus stick to the text,
+			as usual.
+			When the 'R' flag is missing from 'cpoptions' this has
+			the same effect as using ":keepmarks".
+
+							<b class="vimtag">*<a name=":keepj">:keepj</a>*</b> <b class="vimtag">*<a name=":keepjumps">:keepjumps</a>*</b>
+:keepj[umps] <code class="special">{command}</code>
+			Moving around in <code class="special">{command}</code> does not change the |<a href="motion.html#''">''</a>|,
+			|<a href="motion.html#'.">'.</a>| and |<a href="motion.html#'^">'^</a>| marks, the |<a href="motion.html#jumplist">jumplist</a>| or the
+			|<a href="motion.html#changelist">changelist</a>|.
+			Useful when making a change or inserting text
+			automatically and the user doesn't want to go to this
+			position.  E.g., when updating a "Last change"
+			timestamp in the first line:
+<code class="example"></code>
+<code class="example">				:let lnum = line(".")</code>
+<code class="example">				:keepjumps normal gg</code>
+<code class="example">				:call SetLastChange()</code>
+<code class="example">				:keepjumps exe "normal " . lnum . "G"</code>
+
+			<code class="note">Note</code> that ":keepjumps" must be used for every command.
+			When invoking a function the commands in that function
+			can still change the jumplist.  Also, for
+			":keepjumps exe 'command '" the "command" won't keep
+			jumps.  Instead use: ":exe 'keepjumps command'"
+
+</pre><hr/><pre>8. Jumps					<b class="vimtag">*<a name="jump-motions">jump-motions</a>*</b>
+
+A "jump" is a command that normally moves the cursor several lines away.  If
+you make the cursor "jump" the position of the cursor before the jump is
+remembered.  You can return to that position with the "''" and "``" commands,
+unless the line containing that position was changed or deleted.  The
+following commands are "jump" commands: "'", "`", "G", "/", "?", "n", "N",
+"%", "(", ")", "[[", "]]", "<code class="special">{", "}</code>", ":s", ":tag", "L", "M", "H" and the
+commands that start editing a new file.
+
+							<b class="vimtag">*<a name="CTRL-O">CTRL-O</a>*</b>
+<code class="keystroke">CTRL-O</code>			Go to <code class="special">[count]</code> Older cursor position in jump list
+			(not a motion command).
+			{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+<code class="special">&lt;Tab&gt;</code>		or					<b class="vimtag">*<a name="CTRL-I">CTRL-I</a>*</b> <b class="vimtag">*<a name="%3CTab%3E">&lt;Tab&gt;</a>*</b>
+<code class="keystroke">CTRL-I</code>			Go to <code class="special">[count]</code> newer cursor position in jump list
+			(not a motion command).
+			{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+							<b class="vimtag">*<a name=":ju">:ju</a>*</b> <b class="vimtag">*<a name=":jumps">:jumps</a>*</b>
+:ju[mps]		Print the jump list (not a motion command).
+			{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+							<b class="vimtag">*<a name=":cle">:cle</a>*</b> <b class="vimtag">*<a name=":clearjumps">:clearjumps</a>*</b>
+:cle[arjumps]		Clear the jump list of the current window.
+			{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+							<b class="vimtag">*<a name="jumplist">jumplist</a>*</b>
+Jumps are remembered in a jump list.  With the <code class="keystroke">CTRL-O</code> and <code class="keystroke">CTRL-I</code> command you
+can go to cursor positions before older jumps, and back again.  Thus you can
+move up and down the list.  There is a separate jump list for each window.
+The maximum number of entries is fixed at 100.
+{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+For example, after three jump commands you have this jump list:
+
+<code class="section">  jump line  col file/text </code>
+<code class="section">    3	  1    0 some text </code>
+<code class="section">    2	 70    0 another line </code>
+<code class="section">    1  1154   23 end. </code>
+<code class="section"> &gt; </code>
+
+The "file/text" column shows the file name, or the text at the jump if it is
+in the current file (an indent is removed and a long line is truncated to fit
+in the window).
+
+You are currently in line 1167.  If you then use the <code class="keystroke">CTRL-O</code> command, the
+cursor is put in line 1154.  This results in:
+
+<code class="section">  jump line  col file/text </code>
+<code class="section">    2	  1    0 some text </code>
+<code class="section">    1	 70    0 another line </code>
+<code class="section"> &gt;  0  1154   23 end. </code>
+<code class="section">    1  1167    0 foo bar </code>
+
+The pointer will be set at the last used jump position.  The next <code class="keystroke">CTRL-O</code>
+command will use the entry above it, the next <code class="keystroke">CTRL-I</code> command will use the
+entry below it.  If the pointer is below the last entry, this indicates that
+you did not use a <code class="keystroke">CTRL-I</code> or <code class="keystroke">CTRL-O</code> before.  In this case the <code class="keystroke">CTRL-O</code> command
+will cause the cursor position to be added to the jump list, so you can get
+back to the position before the <code class="keystroke">CTRL-O</code>.  In this case this is line 1167.
+
+With more <code class="keystroke">CTRL-O</code> commands you will go to lines 70 and 1.  If you use <code class="keystroke">CTRL-I</code>
+you can go back to 1154 and 1167 again.  <code class="note">Note</code> that the number in the "jump"
+column indicates the count for the <code class="keystroke">CTRL-O</code> or <code class="keystroke">CTRL-I</code> command that takes you to
+this position.
+
+If you use a jump command, the current line number is inserted at the end of
+the jump list.  If the same line was already in the jump list, it is removed.
+The result is that when repeating <code class="keystroke">CTRL-O</code> you will get back to old positions
+only once.
+
+When the |<a href="motion.html#:keepjumps">:keepjumps</a>| command modifier is used, jumps are not stored in the
+jumplist.  Jumps are also not stored in other cases, e.g., in a |<a href="repeat.html#:global">:global</a>|
+command.  You can explicitly add a jump by setting the ' mark with "m'".  <code class="note">Note</code>
+that calling setpos() does not do this.
+
+After the <code class="keystroke">CTRL-O</code> command that got you into line 1154 you could give another
+jump command (e.g., "G").  The jump list would then become:
+
+<code class="section">  jump line  col file/text </code>
+<code class="section">    4	  1    0 some text </code>
+<code class="section">    3	 70    0 another line </code>
+<code class="section">    2  1167    0 foo bar </code>
+<code class="section">    1  1154   23 end. </code>
+<code class="section"> &gt; </code>
+
+The line numbers will be adjusted for deleted and inserted lines.  This fails
+if you stop editing a file without writing, like with ":n!".
+
+When you split a window, the jumplist will be copied to the new window.
+
+If you have included the ' item in the 'viminfo' option the jumplist will be
+stored in the viminfo file and restored when starting Vim.
+
+
+CHANGE LIST JUMPS			<b class="vimtag">*<a name="changelist">changelist</a>*</b> <b class="vimtag">*<a name="change-list-jumps">change-list-jumps</a>*</b> <b class="vimtag">*<a name="E664">E664</a>*</b>
+
+When making a change the cursor position is remembered.  One position is
+remembered for every change that can be undone, unless it is close to a
+previous change.  Two commands can be used to jump to positions of changes,
+also those that have been undone:
+
+							<b class="vimtag">*<a name="g;">g;</a>*</b> <b class="vimtag">*<a name="E662">E662</a>*</b>
+g;			Go to <code class="special">[count]</code> older position in change list.
+			If <code class="special">[count]</code> is larger than the number of older change
+			positions go to the oldest change.
+			If there is no older change an error message is given.
+			(not a motion command)
+			{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+							<b class="vimtag">*<a name="g,">g,</a>*</b> <b class="vimtag">*<a name="E663">E663</a>*</b>
+g,			Go to <code class="special">[count]</code> newer cursor position in change list.
+			Just like |<a href="motion.html#g;">g;</a>| but in the opposite direction.
+			(not a motion command)
+			{not available without the |<a href="various.html#+jumplist">+jumplist</a>| feature}
+
+When using a count you jump as far back or forward as possible.  Thus you can
+use "999g;" to go to the first change for which the position is still
+remembered.  The number of entries in the change list is fixed and is the same
+as for the |<a href="motion.html#jumplist">jumplist</a>|.
+
+When two undo-able changes are in the same line and at a column position less
+than 'textwidth' apart only the last one is remembered.  This avoids that a
+sequence of small changes in a line, for example "xxxxx", adds many positions
+to the change list.  When 'textwidth' is zero 'wrapmargin' is used.  When that
+also isn't set a fixed number of 79 is used.  Detail: For the computations
+bytes are used, not characters, to avoid a speed penalty (this only matters
+for multi-byte encodings).
+
+<code class="note">Note</code> that when text has been inserted or deleted the cursor position might be
+a bit different from the position of the change.  Especially when lines have
+been deleted.
+
+When the |<a href="motion.html#:keepjumps">:keepjumps</a>| command modifier is used the position of a change is not
+remembered.
+
+							<b class="vimtag">*<a name=":changes">:changes</a>*</b>
+:changes		Print the change list.  A "&gt;" character indicates the
+			current position.  Just after a change it is below the
+			newest entry, indicating that `g;` takes you to the
+			newest entry position.  The first column indicates the
+			count needed to take you to this position.  Example:
+
+<code class="section">				change line  col text </code>
+				    3     9    8 bla bla bla
+				    2    11   57 foo is a bar
+				    1    14   54 the latest changed line
+
+<code class="example"></code>
+<code class="example">			The `3g;` command takes you to line 9.  Then the</code>
+<code class="example">			output of `:changes` is:</code>
+<code class="example"></code>
+<code class="example"><code class="section">				change line  col text </code></code>
+<code class="example">				&gt;   0     9    8 bla bla bla</code>
+<code class="example">				    1    11   57 foo is a bar</code>
+<code class="example">				    2    14   54 the latest changed line</code>
+<code class="example"></code>
+<code class="example">			Now you can use "g," to go to line 11 and "2g," to go</code>
+<code class="example">			to line 14.</code>
+<code class="example"></code>
+</pre><hr/><pre>9. Various motions				<b class="vimtag">*<a name="various-motions">various-motions</a>*</b>
+
+							<b class="vimtag">*<a name="%">%</a>*</b>
+%			Find the next item in this line after or under the
+			cursor and jump to its match. |<a href="motion.html#inclusive">inclusive</a>| motion.
+			Items can be:
+			([<code class="special">{}</code>])		parenthesis or (curly/square) brackets
+					(this can be changed with the
+					'matchpairs' option)
+			/<b class="vimtag">*<a name=" "> </a>*</b>/		start or end of C-style comment
+			#if, #ifdef, #else, #elif, #endif
+					C preprocessor conditionals (when the
+					cursor is on the # or no ([{
+					following)
+			For other items the matchit plugin can be used, see
+			|<a href="usr_05.html#matchit-install">matchit-install</a>|.  This plugin also helps to skip
+			matches in comments.
+
+			When 'cpoptions' contains "M" |<a href="options.html#cpo-M">cpo-M</a>| backslashes
+			before parens and braces are ignored.  Without "M" the
+			number of backslashes matters: an even number doesn't
+			match with an odd number.  Thus in "( \) )" and "\( (
+			\)" the first and last parenthesis match.
+
+			When the '%' character is not present in 'cpoptions'
+			|<a href="options.html#cpo-%">cpo-%</a>|, parens and braces inside double quotes are
+			ignored, unless the number of parens/braces in a line
+			is uneven and this line and the previous one does not
+			end in a backslash.  '(', '<code class="special">{', '[', ']', '}</code>' and ')'
+			are also ignored (parens and braces inside single
+			quotes).  <code class="note">Note</code> that this works fine for C, but not for
+			Perl, where single quotes are used for strings.
+
+			Nothing special is done for matches in comments.  You
+			can either use the matchit plugin |<a href="usr_05.html#matchit-install">matchit-install</a>| or
+			put quotes around matches.
+
+			No count is allowed, <code class="special">{count}</code>% jumps to a line <code class="special">{count}</code>
+			percentage down the file |<a href="motion.html#N%">N%</a>|.  Using '%' on
+			#if/#else/#endif makes the movement linewise.
+
+						<b class="vimtag">*<a name="[(">[(</a>*</b>
+[(			go to <code class="special">[count]</code> previous unmatched '('.
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+						<b class="vimtag">*<a name="[{">[{</a>*</b>
+[{			go to <code class="special">[count]</code> previous unmatched '{'.
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+						<b class="vimtag">*<a name="])">])</a>*</b>
+])			go to <code class="special">[count]</code> next unmatched ')'.
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+						<b class="vimtag">*<a name="]}">]}</a>*</b>
+]}			go to <code class="special">[count]</code> next unmatched '}'.
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+The above four commands can be used to go to the start or end of the current
+code block.  It is like doing "%" on the '(', ')', '<code class="special">{' or '}</code>' at the other
+end of the code block, but you can do this from anywhere in the code block.
+Very useful for C programs.  Example: When standing on "case x:", "[{" will
+bring you back to the switch statement.
+
+						<b class="vimtag">*<a name="]m">]m</a>*</b>
+]m			Go to <code class="special">[count]</code> next start of a method (for Java or
+			similar structured language).  When not before the
+			start of a method, jump to the start or end of the
+			class.  When no '{' is found after the cursor, this is
+			an error.  |<a href="motion.html#exclusive">exclusive</a>| motion.
+						<b class="vimtag">*<a name="]M">]M</a>*</b>
+]M			Go to <code class="special">[count]</code> next end of a method (for Java or
+			similar structured language).  When not before the end
+			of a method, jump to the start or end of the class.
+			When no '}' is found after the cursor, this is an
+			error. |<a href="motion.html#exclusive">exclusive</a>| motion.
+						<b class="vimtag">*<a name="[m">[m</a>*</b>
+[m			Go to <code class="special">[count]</code> previous start of a method (for Java or
+			similar structured language).  When not after the
+			start of a method, jump to the start or end of the
+			class.  When no '{' is found before the cursor this is
+			an error. |<a href="motion.html#exclusive">exclusive</a>| motion.
+						<b class="vimtag">*<a name="[M">[M</a>*</b>
+[M			Go to <code class="special">[count]</code> previous end of a method (for Java or
+			similar structured language).  When not after the
+			end of a method, jump to the start or end of the
+			class.  When no '}' is found before the cursor this is
+			an error. |<a href="motion.html#exclusive">exclusive</a>| motion.
+
+The above two commands assume that the file contains a class with methods.
+The class definition is surrounded in '<code class="special">{' and '}</code>'.  Each method in the class
+is also surrounded with '<code class="special">{' and '}</code>'.  This applies to the Java language.  The
+file looks like this:
+<code class="example"></code>
+<code class="example">	// comment</code>
+<code class="example">	class foo {</code>
+<code class="example">		int method_one() {</code>
+<code class="example">			body_one();</code>
+<code class="example">		}</code>
+<code class="example">		int method_two() {</code>
+<code class="example">			body_two();</code>
+<code class="example">		}</code>
+<code class="example">	}</code>
+Starting with the cursor on "body_two()", using "[m" will jump to the '{' at
+the start of "method_two()" (obviously this is much more useful when the
+method is long!).  Using "2[m" will jump to the start of "method_one()".
+Using "3[m" will jump to the start of the class.
+
+						<b class="vimtag">*<a name="[%23">[#</a>*</b>
+[#			go to <code class="special">[count]</code> previous unmatched "#if" or "#else".
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+						<b class="vimtag">*<a name="]%23">]#</a>*</b>
+]#			go to <code class="special">[count]</code> next unmatched "#else" or "#endif".
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+These two commands work in C programs that contain #if/#else/#endif
+constructs.  It brings you to the start or end of the #if/#else/#endif where
+the current line is included.  You can then use "%" to go to the matching line.
+
+						<b class="vimtag">*<a name="[star">[star</a>*</b> <b class="vimtag">*<a name="[%2F">[/</a>*</b>
+[<b class="vimtag">*<a name="  or  [%2F		go to [count] previous start of a C comment %22%2F">  or  [/		go to [count] previous start of a C comment "/</a>*</b>".
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+						<b class="vimtag">*<a name="]star">]star</a>*</b> <b class="vimtag">*<a name="]%2F">]/</a>*</b>
+]<b class="vimtag">*<a name="  or  ]%2F		go to [count] next end of a C comment %22">  or  ]/		go to [count] next end of a C comment "</a>*</b>/".
+			|<a href="motion.html#exclusive">exclusive</a>| motion.
+
+
+						<b class="vimtag">*<a name="H">H</a>*</b>
+H			To line <code class="special">[count]</code> from top (Home) of window (default:
+			first line on the window) on the first non-blank
+			character |<a href="motion.html#linewise">linewise</a>|.  See also 'startofline' option.
+			Cursor is adjusted for 'scrolloff' option, unless an
+			operator is pending, in which case the text may
+			scroll.  E.g. "yH" yanks from the first visible line
+			until the cursor line (inclusive).
+
+						<b class="vimtag">*<a name="M">M</a>*</b>
+M			To Middle line of window, on the first non-blank
+			character |<a href="motion.html#linewise">linewise</a>|.  See also 'startofline' option.
+
+						<b class="vimtag">*<a name="L">L</a>*</b>
+L			To line <code class="special">[count]</code> from bottom of window (default: Last
+			line on the window) on the first non-blank character
+			|<a href="motion.html#linewise">linewise</a>|.  See also 'startofline' option.
+			Cursor is adjusted for 'scrolloff' option, unless an
+			operator is pending, in which case the text may
+			scroll.  E.g. "yL" yanks from the cursor to the last
+			visible line.
+
+<code class="special">&lt;LeftMouse&gt;</code>		Moves to the position on the screen where the mouse
+			click is |<a href="motion.html#exclusive">exclusive</a>|.  See also |<a href="visual.html#%3CLeftMouse%3E">&lt;LeftMouse&gt;</a>|.  If the
+			position is in a status line, that window is made the
+			active window and the cursor is not moved.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

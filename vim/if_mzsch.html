@@ -1,0 +1,320 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: if_mzsch</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>IF_MZSCH</h2>
+<pre>
+<b class="vimtag">*<a name="if_mzsch.txt">if_mzsch.txt</a>*</b>  For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL    by Sergey Khorev
+
+
+The MzScheme Interface to Vim				<b class="vimtag">*<a name="mzscheme">mzscheme</a>*</b> <b class="vimtag">*<a name="MzScheme">MzScheme</a>*</b>
+
+1. Commands				|<a href="if_mzsch.html#mzscheme-commands">mzscheme-commands</a>|
+2. Examples				|<a href="if_mzsch.html#mzscheme-examples">mzscheme-examples</a>|
+3. Threads				|<a href="if_mzsch.html#mzscheme-threads">mzscheme-threads</a>|
+4. Vim access from MzScheme		|<a href="if_mzsch.html#mzscheme-vim">mzscheme-vim</a>|
+5. mzeval() Vim function		|<a href="if_mzsch.html#mzscheme-mzeval">mzscheme-mzeval</a>|
+6. Using Function references		|<a href="if_mzsch.html#mzscheme-funcref">mzscheme-funcref</a>|
+7. Dynamic loading			|<a href="if_mzsch.html#mzscheme-dynamic">mzscheme-dynamic</a>|
+8. MzScheme setup			|<a href="if_mzsch.html#mzscheme-setup">mzscheme-setup</a>|
+
+{only available when Vim was compiled with the |<a href="various.html#+mzscheme">+mzscheme</a>| feature}
+
+Based on the work of Brent Fulgham.
+Dynamic loading added by Sergey Khorev
+
+MzScheme and PLT Scheme names have been rebranded as Racket. For more
+information please check http://racket-lang.org
+
+Futures and places of Racket version 5.x up to and including 5.3.1 do not
+work correctly with processes created by Vim.
+The simplest solution is to build Racket on your own with these features
+disabled:
+<code class="example">  ./configure --disable-futures --disable-places --prefix=your-install-prefix</code>
+<code class="example"></code>
+To speed up the process, you might also want to use --disable-gracket and
+--disable-docs
+
+</pre><hr/><pre>1. Commands						<b class="vimtag">*<a name="mzscheme-commands">mzscheme-commands</a>*</b>
+
+							<b class="vimtag">*<a name=":mzscheme">:mzscheme</a>*</b> <b class="vimtag">*<a name=":mz">:mz</a>*</b>
+:<code class="special">[range]</code>mz[scheme] <code class="special">{stmt}</code>
+			Execute MzScheme statement <code class="special">{stmt}</code>.
+
+:<code class="special">[range]</code>mz[scheme] &lt;&lt; [endmarker]
+<code class="special">{script}</code>
+<code class="special">{endmarker}</code>
+			Execute inlined MzScheme script <code class="special">{script}</code>.
+			<code class="note">Note:</code> This command doesn't work if the MzScheme
+			feature wasn't compiled in.  To avoid errors, see
+			|<a href="if_perl.html#script-here">script-here</a>|.
+
+			The <code class="special">{endmarker}</code> below the <code class="special">{script}</code> must NOT be
+			preceded by any white space.
+
+			If [endmarker] is omitted from after the "&lt;&lt;", a dot
+			'.' must be used after <code class="special">{script}</code>, like for the
+			|<a href="insert.html#:append">:append</a>| and |<a href="insert.html#:insert">:insert</a>| commands.
+
+							<b class="vimtag">*<a name=":mzfile">:mzfile</a>*</b> <b class="vimtag">*<a name=":mzf">:mzf</a>*</b>
+:<code class="special">[range]</code>mzf[ile] <code class="special">{file}</code>	Execute the MzScheme script in <code class="special">{file}</code>.
+
+All of these commands do essentially the same thing - they execute a piece of
+MzScheme code, with the "current range" set to the given line
+range.
+
+In the case of :mzscheme, the code to execute is in the command-line.
+In the case of :mzfile, the code to execute is the contents of the given file.
+
+MzScheme interface defines exception exn:vim, derived from exn.
+It is raised for various Vim errors.
+
+During compilation, the MzScheme interface will remember the current MzScheme
+collection path. If you want to specify additional paths use the
+'current-library-collection-paths' parameter. E.g., to cons the user-local
+MzScheme collection path:
+<code class="example">    :mz &lt;&lt; EOF</code>
+<code class="example">    (current-library-collection-paths</code>
+<code class="example">	(cons</code>
+<code class="example">	    (build-path (find-system-path 'addon-dir) (version) "collects")</code>
+<code class="example">	    (current-library-collection-paths)))</code>
+<code class="example">    EOF</code>
+
+
+All functionality is provided through module vimext.
+
+The exn:vim is available without explicit import.
+
+To avoid clashes with MzScheme, consider using prefix when requiring module,
+e.g.:
+<code class="example">	:mzscheme (require (prefix vim- vimext))</code>
+
+All the examples below assume this naming scheme.
+
+							<b class="vimtag">*<a name="mzscheme-sandbox">mzscheme-sandbox</a>*</b>
+When executed in the |<a href="eval.html#sandbox">sandbox</a>|, access to some filesystem and Vim interface
+procedures is restricted.
+
+</pre><hr/><pre>2. Examples						<b class="vimtag">*<a name="mzscheme-examples">mzscheme-examples</a>*</b>
+
+<code class="example">	:mzscheme (display "Hello")</code>
+<code class="example">	:mz (display (string-append "Using MzScheme version " (version)))</code>
+<code class="example">	:mzscheme (require (prefix vim- vimext)) ; for MzScheme &lt; 4.x</code>
+<code class="example">	:mzscheme (require (prefix-in vim- 'vimext)) ; MzScheme 4.x</code>
+<code class="example">	:mzscheme (vim-set-buff-line 10 "This is line #10")</code>
+<code class="example"></code>
+To see what version of MzScheme you have:
+<code class="example">	:mzscheme (display (version))</code>
+
+Inline script usage:
+<code class="example">	function! <code class="special">&lt;SID&gt;</code>SetFirstLine()</code>
+<code class="example">	    :mz &lt;&lt; EOF</code>
+<code class="example">	    (display "!!!")</code>
+<code class="example">	    (require (prefix vim- vimext))</code>
+<code class="example">	    ; for newer versions (require (prefix-in vim- 'vimext))</code>
+<code class="example">	    (vim-set-buff-line 1 "This is line #1")</code>
+<code class="example">	    (vim-beep)</code>
+<code class="example">	EOF</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+<code class="example">	nmap <code class="special">&lt;F9&gt;</code> :call <code class="special">&lt;SID&gt;</code>SetFirstLine() <code class="special">&lt;CR&gt;</code></code>
+
+File execution:
+<code class="example">	:mzfile supascript.scm</code>
+
+Vim exception handling:
+<code class="example">	:mz &lt;&lt; EOF</code>
+<code class="example">	(require (prefix vim- vimext))</code>
+<code class="example">	; for newer versions (require (prefix-in vim- 'vimext))</code>
+<code class="example">	(with-handlers</code>
+<code class="example">	  ([exn:vim? (lambda (e) (display (exn-message e)))])</code>
+<code class="example">	  (vim-eval "nonsense-string"))</code>
+<code class="example">	EOF</code>
+
+Auto-instantiation of vimext module (can be placed in your |<a href="starting.html#vimrc">vimrc</a>|):
+<code class="example">    function! MzRequire()</code>
+<code class="example">	:redir =&gt; l:mzversion</code>
+<code class="example">	:mz (version)</code>
+<code class="example">	:redir END</code>
+<code class="example">	if strpart(l:mzversion, 1, 1) &lt; "4"</code>
+<code class="example">	    " MzScheme versions &lt; 4.x:</code>
+<code class="example">	    :mz (require (prefix vim- vimext))</code>
+<code class="example">	else</code>
+<code class="example">	    " newer versions:</code>
+<code class="example">	    :mz (require (prefix-in vim- 'vimext))</code>
+<code class="example">	endif</code>
+<code class="example">    endfunction</code>
+<code class="example"></code>
+<code class="example">    if has("mzscheme")</code>
+<code class="example">	silent call MzRequire()</code>
+<code class="example">    endif</code>
+
+</pre><hr/><pre>3. Threads						<b class="vimtag">*<a name="mzscheme-threads">mzscheme-threads</a>*</b>
+
+The MzScheme interface supports threads. They are independent from OS threads,
+thus scheduling is required. The option 'mzquantum' determines how often
+Vim should poll for available MzScheme threads.
+<code class="note">NOTE</code>
+Thread scheduling in the console version of Vim is less reliable than in the
+GUI version.
+
+</pre><hr/><pre>4. Vim access from MzScheme				<b class="vimtag">*<a name="mzscheme-vim">mzscheme-vim</a>*</b>
+
+							<b class="vimtag">*<a name="mzscheme-vimext">mzscheme-vimext</a>*</b>
+The 'vimext' module provides access to procedures defined in the MzScheme
+interface.
+
+Common
+</pre><hr/><pre>    (command <code class="special">{command-string}</code>)	    Perform the vim ":Ex" style command.
+    (eval <code class="special">{expr-string}</code>)	    Evaluate the vim expression into
+				    respective MzScheme object: |<a href="eval.html#Lists">Lists</a>| are
+				    represented as Scheme lists,
+				    |<a href="eval.html#Dictionaries">Dictionaries</a>| as hash tables,
+				    |<a href="eval.html#Funcref">Funcref</a>|s as functions (see also
+				    |<a href="if_mzsch.html#mzscheme-funcref">mzscheme-funcref</a>|)
+				    <code class="note">NOTE</code> the name clashes with MzScheme eval,
+				    use module qualifiers to overcome this.
+    (range-start)		    Start/End of the range passed with
+    (range-end)			    the Scheme command.
+    (beep)			    beep
+    (get-option <code class="special">{option-name}</code> [buffer-or-window]) Get Vim option value (either
+				    local or global, see set-option).
+    (set-option <code class="special">{string}</code> [buffer-or-window])
+				    Set a Vim option. String must have option
+				    setting form (like optname=optval, or
+				    optname+=optval, etc.) When called with
+				    <code class="special">{buffer}</code> or <code class="special">{window}</code> the local option will
+				    be set. The symbol 'global can be passed
+				    as <code class="special">{buffer-or-window}</code>. Then |<a href="options.html#:setglobal">:setglobal</a>|
+				    will be used.
+
+Buffers							 <b class="vimtag">*<a name="mzscheme-buffer">mzscheme-buffer</a>*</b>
+</pre><hr/><pre>    (buff? <code class="special">{object}</code>)		    Is object a buffer?
+    (buff-valid? <code class="special">{object}</code>)	    Is object a valid buffer? (i.e.
+				    corresponds to the real Vim buffer)
+    (get-buff-line <code class="special">{linenr}</code> [buffer])
+				    Get line from a buffer.
+    (set-buff-line <code class="special">{linenr}</code> <code class="special">{string}</code> [buffer])
+				    Set a line in a buffer. If <code class="special">{string}</code> is #f,
+				    the line gets deleted.  The [buffer]
+				    argument is optional. If omitted, the
+				    current buffer will be used.
+    (get-buff-line-list <code class="special">{start}</code> <code class="special">{end}</code> [buffer])
+				    Get a list of lines in a buffer. <code class="special">{Start}</code>
+				    and <code class="special">{end}</code> are 1-based and inclusive.
+    (set-buff-line-list <code class="special">{start}</code> <code class="special">{end}</code> <code class="special">{string-list}</code> [buffer])
+				    Set a list of lines in a buffer. If
+				    string-list is #f or null, the lines get
+				    deleted. If a list is shorter than
+				    <code class="special">{end}</code>-<code class="special">{start}</code> the remaining lines will
+				    be deleted.
+    (get-buff-name [buffer])	    Get a buffer's text name.
+    (get-buff-num [buffer])	    Get a buffer's number.
+    (get-buff-size [buffer])	    Get buffer line count.
+    (insert-buff-line-list <code class="special">{linenr}</code> <code class="special">{string/string-list}</code> [buffer])
+				    Insert a list of lines into a buffer after
+				    <code class="special">{linenr}</code>. If <code class="special">{linenr}</code> is 0, lines will be
+				    inserted at start.
+    (curr-buff)			    Get the current buffer. Use other MzScheme
+				    interface procedures to change it.
+    (buff-count)		    Get count of total buffers in the editor.
+    (get-next-buff [buffer])	    Get next buffer.
+    (get-prev-buff [buffer])	    Get previous buffer. Return #f when there
+				    are no more buffers.
+    (open-buff <code class="special">{filename}</code>)	    Open a new buffer (for file "name")
+    (get-buff-by-name <code class="special">{buffername}</code>) Get a buffer by its filename or #f
+					if there is no such buffer.
+    (get-buff-by-num <code class="special">{buffernum}</code>)   Get a buffer by its number (return #f if
+				    there is no buffer with this number).
+
+Windows							    <b class="vimtag">*<a name="mzscheme-window">mzscheme-window</a>*</b>
+</pre><hr/><pre>    (win? <code class="special">{object}</code>)		    Is object a window?
+    (win-valid? <code class="special">{object}</code>)	    Is object a valid window (i.e. corresponds
+				    to the real Vim window)?
+    (curr-win)			    Get the current window.
+    (win-count)			    Get count of windows.
+    (get-win-num [window])	    Get window number.
+    (get-win-by-num <code class="special">{windownum}</code>)    Get window by its number.
+    (get-win-buffer	[window])   Get the buffer for a given window.
+    (get-win-height [window])
+    (set-win-height <code class="special">{height}</code> [window])  Get/Set height of window.
+    (get-win-width [window])
+    (set-win-width <code class="special">{width}</code> [window])Get/Set width of window.
+    (get-win-list [buffer])	    Get list of windows for a buffer.
+    (get-cursor [window])	    Get cursor position in a window as
+				    a pair (linenr . column).
+    (set-cursor (line . col) [window])  Set cursor position.
+
+</pre><hr/><pre>5. mzeval() Vim function				    <b class="vimtag">*<a name="mzscheme-mzeval">mzscheme-mzeval</a>*</b>
+
+To facilitate bi-directional interface, you can use |<a href="eval.html#mzeval()">mzeval()</a>| function to
+evaluate MzScheme expressions and pass their values to Vim script.
+
+</pre><hr/><pre>6. Using Function references				    <b class="vimtag">*<a name="mzscheme-funcref">mzscheme-funcref</a>*</b>
+
+MzScheme interface allows use of |<a href="eval.html#Funcref">Funcref</a>|s so you can call Vim functions
+directly from Scheme. For instance:
+<code class="example">    function! MyAdd2(arg)</code>
+<code class="example">	return a:arg + 2</code>
+<code class="example">    endfunction</code>
+<code class="example">    mz (define f2 (vim-eval "function(\"MyAdd2\")"))</code>
+<code class="example">    mz (f2 7)</code>
+&lt; or :
+<code class="example">    :mz (define indent (vim-eval "function('indent')"))</code>
+<code class="example">    " return Vim indent for line 12</code>
+<code class="example">    :mz (indent 12)</code>
+
+
+</pre><hr/><pre>7. Dynamic loading				<b class="vimtag">*<a name="mzscheme-dynamic">mzscheme-dynamic</a>*</b> <b class="vimtag">*<a name="E815">E815</a>*</b>
+
+On MS-Windows the MzScheme libraries can be loaded dynamically. The |<a href="various.html#:version">:version</a>|
+output then includes |<a href="various.html#+mzscheme%2Fdyn">+mzscheme/dyn</a>|.
+
+This means that Vim will search for the MzScheme DLL files only when needed.
+When you don't use the MzScheme interface you don't need them, thus you can
+use Vim without these DLL files.
+<code class="note">NOTE:</code> Newer version of MzScheme (Racket) require earlier (trampolined)
+initialisation via scheme_main_setup.  So Vim always loads the MzScheme DLL at
+startup if possible.  This may make Vim startup slower.
+
+To use the MzScheme interface the MzScheme DLLs must be in your search path.
+In a console window type "path" to see what directories are used.
+
+On MS-Windows the options 'mzschemedll' and 'mzschemegcdll' are used for the
+name of the library to load.  The initial value is specified at build time.
+
+The version of the DLL must match the MzScheme version Vim was compiled with.
+For MzScheme version 209 they will be "libmzsch209_000.dll" and
+"libmzgc209_000.dll". To know for sure look at the output of the ":version"
+command, look for -DDYNAMIC_MZSCH_DLL="something" and
+-DDYNAMIC_MZGC_DLL="something" in the "Compilation" info.
+
+For example, if MzScheme (Racket) is installed at C:\Racket63, you may need
+to set the environment variable as the following:
+<code class="example"></code>
+<code class="example">  PATH=%PATH%;C:\Racket63\lib</code>
+<code class="example">  PLTCOLLECTS=C:\Racket63\collects</code>
+<code class="example">  PLTCONFIGDIR=C:\Racket63\etc</code>
+
+</pre><hr/><pre>8. MzScheme setup				    <b class="vimtag">*<a name="mzscheme-setup">mzscheme-setup</a>*</b> <b class="vimtag">*<a name="E895">E895</a>*</b>
+
+Vim requires "racket/base" module for if_mzsch core (fallback to "scheme/base"
+if it doesn't exist), "r5rs" module for test and "raco ctool" command for
+building Vim.  If MzScheme did not have them, you can install them with
+MzScheme's raco command:
+
+<code class="example">  raco pkg install scheme-lib       # scheme/base module</code>
+<code class="example">  raco pkg install r5rs-lib         # r5rs module</code>
+<code class="example">  raco pkg install cext-lib         # raco ctool command</code>
+
+</pre><hr/><pre>  vim:tw=78:ts=8:noet:sts=4:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

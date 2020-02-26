@@ -1,0 +1,248 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: help</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>HELP</h2>
+<pre>
+<b class="vimtag">*<a name="help.txt">help.txt</a>*</b>	For Vim version 8.2.  Last change: 2019 Jul 21
+
+			VIM - main help file
+									 k
+      Move around:  Use the cursor keys, or "h" to go left,	       h   l
+		    "j" to go down, "k" to go up, "l" to go right.	 j
+Close this window:  Use ":q<code class="special">&lt;Enter&gt;</code>".
+   Get out of Vim:  Use ":qa!<code class="special">&lt;Enter&gt;</code>" (careful, all changes are lost!).
+
+Jump to a subject:  Position the cursor on a tag (e.g. |<a href="help.html#bars">bars</a>|) and hit CTRL-].
+   With the mouse:  ":set mouse=a" to enable the mouse (in xterm or GUI).
+		    Double-click the left mouse button on a tag, e.g. |<a href="help.html#bars">bars</a>|.
+	Jump back:  Type <code class="keystroke">CTRL-O</code>.  Repeat to go further back.
+
+Get specific help:  It is possible to go directly to whatever you want help
+		    on, by giving an argument to the |<a href="helphelp.html#:help">:help</a>| command.
+		    Prepend something to specify the context:  <b class="vimtag">*<a name="help-context">help-context</a>*</b>
+
+<code class="section">			  WHAT			PREPEND    EXAMPLE	</code>
+		      Normal mode command		   :help x
+		      Visual mode command	  v_	   :help v_u
+		      Insert mode command	  i_	   :help i_<code class="special">&lt;Esc&gt;</code>
+		      Command-line command	  :	   :help :quit
+		      Command-line editing	  c_	   :help c_<code class="special">&lt;Del&gt;</code>
+		      Vim command argument	  -	   :help -r
+		      Option			  '	   :help 'textwidth'
+		      Regular expression	  /	   :help /[
+		    See |<a href="usr_02.html#help-summary">help-summary</a>| for more contexts and an explanation.
+
+  Search for help:  Type ":help word", then hit <code class="keystroke">CTRL-D</code> to see matching
+		    help entries for "word".
+		    Or use ":helpgrep word". |<a href="helphelp.html#:helpgrep">:helpgrep</a>|
+
+  Getting started:  Do the Vim tutor, a 20 minute interactive training for the
+		    basic commands, see |<a href="usr_01.html#vimtutor">vimtutor</a>|.
+		    Read the user manual from start to end: |<a href="usr_01.html#usr_01.txt">usr_01</a>|
+
+Vim stands for Vi IMproved.  Most of Vim was made by Bram Moolenaar, but only
+through the help of many others.  See |<a href="intro.html#credits">credits</a>|.
+</pre><hr/><pre>						<b class="vimtag">*<a name="doc-file-list">doc-file-list</a>*</b> <b class="vimtag">*<a name="Q_ct">Q_ct</a>*</b>
+BASIC:
+|<a href="quickref.html#quickref">quickref</a>|	Overview of the most common commands you will use
+|<a href="usr_01.html#tutor">tutor</a>|		20 minutes training course for beginners
+|<a href="uganda.html#copying">copying</a>|	About copyrights
+|<a href="uganda.html#iccf">iccf</a>|		Helping poor children in Uganda
+|<a href="sponsor.html#sponsor">sponsor</a>|	Sponsor Vim development, become a registered Vim user
+|<a href="intro.html#www">www</a>|		Vim on the World Wide Web
+|<a href="intro.html#bugs">bugs</a>|		Where to send bug reports
+
+USER MANUAL: These files explain how to accomplish an editing task.
+
+|<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|	Table Of Contents
+
+<code class="section">Getting Started </code>
+|<a href="usr_01.html#usr_01.txt">usr_01</a>|  About the manuals
+|<a href="usr_02.html#usr_02.txt">usr_02</a>|  The first steps in Vim
+|<a href="usr_03.html#usr_03.txt">usr_03</a>|  Moving around
+|<a href="usr_04.html#usr_04.txt">usr_04</a>|  Making small changes
+|<a href="usr_05.html#usr_05.txt">usr_05</a>|  Set your settings
+|<a href="usr_06.html#usr_06.txt">usr_06</a>|  Using syntax highlighting
+|<a href="usr_07.html#usr_07.txt">usr_07</a>|  Editing more than one file
+|<a href="usr_08.html#usr_08.txt">usr_08</a>|  Splitting windows
+|<a href="usr_09.html#usr_09.txt">usr_09</a>|  Using the GUI
+|<a href="usr_10.html#usr_10.txt">usr_10</a>|  Making big changes
+|<a href="usr_11.html#usr_11.txt">usr_11</a>|  Recovering from a crash
+|<a href="usr_12.html#usr_12.txt">usr_12</a>|  Clever tricks
+
+<code class="section">Editing Effectively </code>
+|<a href="usr_20.html#usr_20.txt">usr_20</a>|  Typing command-line commands quickly
+|<a href="usr_21.html#usr_21.txt">usr_21</a>|  Go away and come back
+|<a href="usr_22.html#usr_22.txt">usr_22</a>|  Finding the file to edit
+|<a href="usr_23.html#usr_23.txt">usr_23</a>|  Editing other files
+|<a href="usr_24.html#usr_24.txt">usr_24</a>|  Inserting quickly
+|<a href="usr_25.html#usr_25.txt">usr_25</a>|  Editing formatted text
+|<a href="usr_26.html#usr_26.txt">usr_26</a>|  Repeating
+|<a href="usr_27.html#usr_27.txt">usr_27</a>|  Search commands and patterns
+|<a href="usr_28.html#usr_28.txt">usr_28</a>|  Folding
+|<a href="usr_29.html#usr_29.txt">usr_29</a>|  Moving through programs
+|<a href="usr_30.html#usr_30.txt">usr_30</a>|  Editing programs
+|<a href="usr_31.html#usr_31.txt">usr_31</a>|  Exploiting the GUI
+|<a href="usr_32.html#usr_32.txt">usr_32</a>|  The undo tree
+
+<code class="section">Tuning Vim </code>
+|<a href="usr_40.html#usr_40.txt">usr_40</a>|  Make new commands
+|<a href="usr_41.html#usr_41.txt">usr_41</a>|  Write a Vim script
+|<a href="usr_42.html#usr_42.txt">usr_42</a>|  Add new menus
+|<a href="usr_43.html#usr_43.txt">usr_43</a>|  Using filetypes
+|<a href="usr_44.html#usr_44.txt">usr_44</a>|  Your own syntax highlighted
+|<a href="usr_45.html#usr_45.txt">usr_45</a>|  Select your language
+
+<code class="section">Making Vim Run </code>
+|<a href="usr_90.html#usr_90.txt">usr_90</a>|  Installing Vim
+
+
+REFERENCE MANUAL: These files explain every detail of Vim.	<b class="vimtag">*<a name="reference_toc">reference_toc</a>*</b>
+
+<code class="section">General subjects </code>
+|<a href="intro.html#intro.txt">intro</a>|	general introduction to Vim; notation used in help files
+|<a href="help.html#help.txt">help</a>|	overview and quick reference (this file)
+|<a href="helphelp.html#helphelp.txt">helphelp</a>|	about using the help files
+|<a href="index.html#index.txt">index</a>|	alphabetical index of all commands
+|<a href="tags#help-tags">help-tags</a>|	all the tags you can jump to (index of tags)
+|<a href="howto.html#howto.txt">howto</a>|	how to do the most common editing tasks
+|<a href="tips.html#tips.txt">tips</a>|	various tips on using Vim
+|<a href="message.html#message.txt">message</a>|	(error) messages and explanations
+|<a href="quotes.html#quotes.txt">quotes</a>|	remarks from users of Vim
+|<a href="todo.html#todo.txt">todo</a>|	known problems and desired extensions
+|<a href="develop.html#develop.txt">develop</a>|	development of Vim
+|<a href="debug.html#debug.txt">debug</a>|	debugging Vim itself
+|<a href="uganda.html#uganda.txt">uganda</a>|	Vim distribution conditions and what to do with your money
+
+<code class="section">Basic editing </code>
+|<a href="starting.html#starting.txt">starting</a>|	starting Vim, Vim command arguments, initialisation
+|<a href="editing.html#editing.txt">editing</a>|	editing and writing files
+|<a href="motion.html#motion.txt">motion</a>|	commands for moving around
+|<a href="scroll.html#scroll.txt">scroll</a>|	scrolling the text in the window
+|<a href="insert.html#insert.txt">insert</a>|	Insert and Replace mode
+|<a href="change.html#change.txt">change</a>|	deleting and replacing text
+|<a href="undo.html#undo.txt">undo</a>|	Undo and Redo
+|<a href="repeat.html#repeat.txt">repeat</a>|	repeating commands, Vim scripts and debugging
+|<a href="visual.html#visual.txt">visual</a>|	using the Visual mode (selecting a text area)
+|<a href="various.html#various.txt">various</a>|	various remaining commands
+|<a href="recover.html#recover.txt">recover</a>|	recovering from a crash
+
+<code class="section">Advanced editing </code>
+|<a href="cmdline.html#cmdline.txt">cmdline</a>|	Command-line editing
+|<a href="options.html#options.txt">options</a>|	description of all options
+|<a href="pattern.html#pattern.txt">pattern</a>|	regexp patterns and search commands
+|<a href="map.html#map.txt">map</a>|	key mapping and abbreviations
+|<a href="tagsrch.html#tagsrch.txt">tagsrch</a>|	tags and special searches
+|<a href="windows.html#windows.txt">windows</a>|	commands for using multiple windows and buffers
+|<a href="tabpage.html#tabpage.txt">tabpage</a>|	commands for using multiple tab pages
+|<a href="spell.html#spell.txt">spell</a>|	spell checking
+|<a href="diff.html#diff.txt">diff</a>|	working with two to four versions of the same file
+|<a href="autocmd.html#autocmd.txt">autocmd</a>|	automatically executing commands on an event
+|<a href="eval.html#eval.txt">eval</a>|	expression evaluation, conditional commands
+|<a href="channel.html#channel.txt">channel</a>|	Jobs, Channels, inter-process communication
+|<a href="fold.html#fold.txt">fold</a>|	hide (fold) ranges of lines
+
+<code class="section">Special issues </code>
+|<a href="testing.html#testing.txt">testing</a>|	testing Vim and Vim scripts
+|<a href="print.html#print.txt">print</a>|	printing
+|<a href="remote.html#remote.txt">remote</a>|	using Vim as a server or client
+|<a href="term.html#term.txt">term</a>|	using different terminals and mice
+|<a href="terminal.html#terminal.txt">terminal</a>|	Terminal window support
+|<a href="popup.html#popup.txt">popup</a>|	popop window support
+
+<code class="section">Programming language support </code>
+|<a href="indent.html#indent.txt">indent</a>|	automatic indenting for C and other languages
+|<a href="syntax.html#syntax.txt">syntax</a>|	syntax highlighting
+|<a href="textprop.html#textprop.txt">textprop</a>|	Attaching properties to text for highlighting or other
+|<a href="filetype.html#filetype.txt">filetype</a>|	settings done specifically for a type of file
+|<a href="quickfix.html#quickfix.txt">quickfix</a>|	commands for a quick edit-compile-fix cycle
+|<a href="ft_ada.html#ft_ada.txt">ft_ada</a>|	Ada (the programming language) support
+|<a href="ft_rust.html#ft_rust.txt">ft_rust</a>|	Filetype plugin for Rust
+|<a href="ft_sql.html#ft_sql.txt">ft_sql</a>|	about the SQL filetype plugin
+
+<code class="section">Language support </code>
+|<a href="digraph.html#digraph.txt">digraph</a>|	list of available digraphs
+|<a href="mbyte.html#mbyte.txt">mbyte</a>|	multi-byte text support
+|<a href="mlang.html#mlang.txt">mlang</a>|	non-English language support
+|<a href="rileft.html#rileft.txt">rileft</a>|	right-to-left editing mode
+|<a href="arabic.html#arabic.txt">arabic</a>|	Arabic language support and editing
+|<a href="farsi.html#farsi.txt">farsi</a>|	Farsi (Persian) editing
+|<a href="hebrew.html#hebrew.txt">hebrew</a>|	Hebrew language support and editing
+|<a href="russian.html#russian.txt">russian</a>|	Russian language support and editing
+|<a href="hangulin.html#hangulin.txt">hangulin</a>|	Hangul (Korean) input mode
+
+<code class="section">GUI </code>
+|<a href="gui.html#gui.txt">gui</a>|	Graphical User Interface (GUI)
+|<a href="gui_w32.html#gui_w32.txt">gui_w32</a>|	Win32 GUI
+|<a href="gui_x11.html#gui_x11.txt">gui_x11</a>|	X11 GUI
+
+<code class="section">Interfaces </code>
+|<a href="if_cscop.html#if_cscop.txt">if_cscop</a>|	using Cscope with Vim
+|<a href="if_lua.html#if_lua.txt">if_lua</a>|	Lua interface
+|<a href="if_mzsch.html#if_mzsch.txt">if_mzsch</a>|	MzScheme interface
+|<a href="if_perl.html#if_perl.txt">if_perl</a>|	Perl interface
+|<a href="if_pyth.html#if_pyth.txt">if_pyth</a>|	Python interface
+|<a href="if_tcl.html#if_tcl.txt">if_tcl</a>|	Tcl interface
+|<a href="if_ole.html#if_ole.txt">if_ole</a>|	OLE automation interface for Win32
+|<a href="if_ruby.html#if_ruby.txt">if_ruby</a>|	Ruby interface
+|<a href="debugger.html#debugger.txt">debugger</a>|	Interface with a debugger
+|<a href="netbeans.html#netbeans.txt">netbeans</a>|	NetBeans External Editor interface
+|<a href="sign.html#sign.txt">sign</a>|	debugging signs
+
+<code class="section">Versions </code>
+|<a href="vi_diff.html#vi_diff.txt">vi_diff</a>|	Main differences between Vim and Vi
+|<a href="version4.html#version4.txt">version4</a>|	Differences between Vim version 3.0 and 4.x
+|<a href="version5.html#version5.txt">version5</a>|	Differences between Vim version 4.6 and 5.x
+|<a href="version6.html#version6.txt">version6</a>|	Differences between Vim version 5.7 and 6.x
+|<a href="version7.html#version7.txt">version7</a>|	Differences between Vim version 6.4 and 7.x
+|<a href="version8.html#version8.txt">version8</a>|	Differences between Vim version 7.4 and 8.x
+						<b class="vimtag">*<a name="sys-file-list">sys-file-list</a>*</b>
+<code class="section">Remarks about specific systems </code>
+|<a href="os_390.html#os_390.txt">os_390</a>|	OS/390 Unix
+|<a href="os_amiga.html#os_amiga.txt">os_amiga</a>|	Amiga
+|<a href="os_beos.html#os_beos.txt">os_beos</a>|	BeOS and BeBox
+|<a href="os_dos.html#os_dos.txt">os_dos</a>|	MS-DOS and MS-Windows common items
+|<a href="os_mac.html#os_mac.txt">os_mac</a>|	Macintosh
+|<a href="os_mint.html#os_mint.txt">os_mint</a>|	Atari MiNT
+|<a href="os_msdos.html#os_msdos.txt">os_msdos</a>|	MS-DOS (plain DOS and DOS box under Windows)
+|<a href="os_os2.html#os_os2.txt">os_os2</a>|	OS/2
+|<a href="os_qnx.html#os_qnx.txt">os_qnx</a>|	QNX
+|<a href="os_risc.html#os_risc.txt">os_risc</a>|	RISC-OS
+|<a href="os_unix.html#os_unix.txt">os_unix</a>|	Unix
+|<a href="os_vms.html#os_vms.txt">os_vms</a>|	VMS
+|<a href="os_win32.html#os_win32.txt">os_win32</a>|	MS-Windows
+						<b class="vimtag">*<a name="standard-plugin-list">standard-plugin-list</a>*</b>
+<code class="section">Standard plugins </code>
+|<a href="pi_getscript.html#pi_getscript.txt">pi_getscript</a>| Downloading latest version of Vim scripts
+|<a href="pi_gzip.html#pi_gzip.txt">pi_gzip</a>|      Reading and writing compressed files
+|<a href="pi_logipat.html#pi_logipat.txt">pi_logipat</a>|   Logical operators on patterns
+|<a href="pi_netrw.html#pi_netrw.txt">pi_netrw</a>|     Reading and writing files over a network
+|<a href="pi_paren.html#pi_paren.txt">pi_paren</a>|     Highlight matching parens
+|<a href="pi_spec.html#pi_spec.txt">pi_spec</a>|      Filetype plugin to work with rpm spec files
+|<a href="pi_tar.html#pi_tar.txt">pi_tar</a>|       Tar file explorer
+|<a href="pi_vimball.html#pi_vimball.txt">pi_vimball</a>|   Create a self-installing Vim script
+|<a href="pi_zip.html#pi_zip.txt">pi_zip</a>|       Zip archive explorer
+
+LOCAL ADDITIONS:				<b class="vimtag">*<a name="local-additions">local-additions</a>*</b>
+
+</pre><hr/><pre><b class="vimtag">*<a name="bars">bars</a>*</b>		Bars example
+
+Now that you've jumped here with CTRL-] or a double mouse click, you can use
+<code class="keystroke">CTRL-T</code>, <code class="keystroke">CTRL-O</code>, g<code class="special">&lt;RightMouse&gt;</code>, or <code class="special">&lt;C-RightMouse&gt;</code> to go back to where you were.
+
+<code class="note">Note</code> that tags are within | characters, but when highlighting is enabled these
+characters are hidden.  That makes it easier to read a command.
+
+Anyway, you can use CTRL-] on any word, also when it is not within |, and Vim
+will try to find help for it.  Especially for options in single quotes, e.g.
+'compatible'.
+
+</pre><hr/><pre> vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

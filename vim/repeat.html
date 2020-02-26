@@ -1,0 +1,1054 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: repeat</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>REPEAT</h2>
+<pre>
+<b class="vimtag">*<a name="repeat.txt">repeat.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Repeating commands, Vim scripts and debugging			<b class="vimtag">*<a name="repeating">repeating</a>*</b>
+
+Chapter 26 of the user manual introduces repeating |<a href="usr_26.html#usr_26.txt">usr_26</a>|.
+
+1. Single repeats		|<a href="repeat.html#single-repeat">single-repeat</a>|
+2. Multiple repeats		|<a href="repeat.html#multi-repeat">multi-repeat</a>|
+3. Complex repeats		|<a href="repeat.html#complex-repeat">complex-repeat</a>|
+4. Using Vim scripts		|<a href="repeat.html#using-scripts">using-scripts</a>|
+5. Using Vim packages		|<a href="repeat.html#packages">packages</a>|
+6. Creating Vim packages	|<a href="repeat.html#package-create">package-create</a>|
+7. Debugging scripts		|<a href="repeat.html#debug-scripts">debug-scripts</a>|
+8. Profiling			|<a href="repeat.html#profiling">profiling</a>|
+
+</pre><hr/><pre>1. Single repeats					<b class="vimtag">*<a name="single-repeat">single-repeat</a>*</b>
+
+							<b class="vimtag">*<a name=".">.</a>*</b>
+.			Repeat last change, with count replaced with <code class="special">[count]</code>.
+			Also repeat a yank command, when the 'y' flag is
+			included in 'cpoptions'.  Does not repeat a
+			command-line command.
+
+Simple changes can be repeated with the "." command.  Without a count, the
+count of the last change is used.  If you enter a count, it will replace the
+last one.  |<a href="eval.html#v:count">v:count</a>| and |<a href="eval.html#v:count1">v:count1</a>| will be set.
+
+If the last change included a specification of a numbered register, the
+register number will be incremented.  See |<a href="undo.html#redo-register">redo-register</a>| for an example how
+to use this.
+
+<code class="note">Note</code> that when repeating a command that used a Visual selection, the same SIZE
+of area is used, see |<a href="visual.html#visual-repeat">visual-repeat</a>|.
+
+							<b class="vimtag">*<a name="@:">@:</a>*</b>
+@:			Repeat last command-line <code class="special">[count]</code> times.
+			{not available when compiled without the
+			|<a href="various.html#+cmdline_hist">+cmdline_hist</a>| feature}
+
+
+</pre><hr/><pre>2. Multiple repeats					<b class="vimtag">*<a name="multi-repeat">multi-repeat</a>*</b>
+
+						<b class="vimtag">*<a name=":g">:g</a>*</b> <b class="vimtag">*<a name=":global">:global</a>*</b> <b class="vimtag">*<a name="E148">E148</a>*</b>
+:<code class="special">[range]</code>g[lobal]/<code class="special">{pattern}</code>/<code class="special">[cmd]</code>
+			Execute the Ex command <code class="special">[cmd]</code> (default ":p") on the
+			lines within <code class="special">[range]</code> where <code class="special">{pattern}</code> matches.
+
+:<code class="special">[range]</code>g[lobal]!/<code class="special">{pattern}</code>/<code class="special">[cmd]</code>
+			Execute the Ex command <code class="special">[cmd]</code> (default ":p") on the
+			lines within <code class="special">[range]</code> where <code class="special">{pattern}</code> does NOT match.
+
+							<b class="vimtag">*<a name=":v">:v</a>*</b> <b class="vimtag">*<a name=":vglobal">:vglobal</a>*</b>
+:<code class="special">[range]</code>v[global]/<code class="special">{pattern}</code>/<code class="special">[cmd]</code>
+			Same as :g!.
+
+Instead of the '/' which surrounds the <code class="special">{pattern}</code>, you can use any other
+single byte character, but not an alphabetic character, '\', '"' or '|'.
+This is useful if you want to include a '/' in the search pattern or
+replacement string.
+
+For the definition of a pattern, see |<a href="pattern.html#pattern">pattern</a>|.
+
+<code class="note">NOTE</code> <code class="special">[cmd]</code> may contain a range; see |<a href="tips.html#collapse">collapse</a>| and |<a href="usr_25.html#edit-paragraph-join">edit-paragraph-join</a>| for
+examples.
+
+The global commands work by first scanning through the <code class="special">[range]</code> lines and
+marking each line where a match occurs (for a multi-line pattern, only the
+start of the match matters).
+In a second scan the <code class="special">[cmd]</code> is executed for each marked line, as if the cursor
+was in that line.  For ":v" and ":g!" the command is executed for each not
+marked line.  If a line is deleted its mark disappears.
+The default for <code class="special">[range]</code> is the whole buffer (1,$).  Use "<code class="keystroke">CTRL-C</code>" to interrupt
+the command.  If an error message is given for a line, the command for that
+line is aborted and the global command continues with the next marked or
+unmarked line.
+								<b class="vimtag">*<a name="E147">E147</a>*</b>
+When the command is used recursively, it only works on one line.  Giving a
+range is then not allowed. This is useful to find all lines that match a
+pattern and do not match another pattern:
+<code class="example">	:g/found/v/notfound/<code class="special">{cmd}</code></code>
+This first finds all lines containing "found", but only executes <code class="special">{cmd}</code> when
+there is no match for "notfound".
+
+To execute a non-Ex command, you can use the `:normal` command:
+<code class="example">	:g/pat/normal <code class="special">{commands}</code></code>
+Make sure that <code class="special">{commands}</code> ends with a whole command, otherwise Vim will wait
+for you to type the rest of the command for each match.  The screen will not
+have been updated, so you don't know what you are doing.  See |<a href="various.html#:normal">:normal</a>|.
+
+The undo/redo command will undo/redo the whole global command at once.
+The previous context mark will only be set once (with "''" you go back to
+where the cursor was before the global command).
+
+The global command sets both the last used search pattern and the last used
+substitute pattern (this is vi compatible).  This makes it easy to globally
+replace a string:
+	:g/pat/s//PAT/g
+This replaces all occurrences of "pat" with "PAT".  The same can be done with:
+	:%s/pat/PAT/g
+Which is two characters shorter!
+
+When using "global" in Ex mode, a special case is using ":visual" as a
+command.  This will move to a matching line, go to Normal mode to let you
+execute commands there until you use |<a href="intro.html#Q">Q</a>| to return to Ex mode.  This will be
+repeated for each matching line.  While doing this you cannot use ":global".
+To abort this type <code class="keystroke">CTRL-C</code> twice.
+
+</pre><hr/><pre>3. Complex repeats					<b class="vimtag">*<a name="complex-repeat">complex-repeat</a>*</b>
+
+							<b class="vimtag">*<a name="q">q</a>*</b> <b class="vimtag">*<a name="recording">recording</a>*</b>
+q<code class="special">{0-9a-zA-Z"}</code>		Record typed characters into register <code class="special">{0-9a-zA-Z"}</code>
+			(uppercase to append).  The 'q' command is disabled
+			while executing a register, and it doesn't work inside
+			a mapping and |<a href="various.html#:normal">:normal</a>|.
+
+			<code class="note">Note:</code> If the register being used for recording is also
+			used for |<a href="change.html#y">y</a>| and |<a href="change.html#p">p</a>| the result is most likely not
+			what is expected, because the put will paste the
+			recorded macro and the yank will overwrite the
+			recorded macro.
+
+q			Stops recording.  (Implementation <code class="note">note:</code> The 'q' that
+			stops recording is not stored in the register, unless
+			it was the result of a mapping)
+
+							<b class="vimtag">*<a name="@">@</a>*</b>
+@{0-9a-z".=<b class="vimtag">*<a name="+}		Execute the contents of register {0-9a-z%22.%20">+}		Execute the contents of register {0-9a-z".=</a>*</b>+} <code class="special">[count]</code>
+			times.  <code class="note">Note</code> that register '%' (name of the current
+			file) and '#' (name of the alternate file) cannot be
+			used.
+			The register is executed like a mapping, that means
+			that the difference between 'wildchar' and 'wildcharm'
+			applies.
+			For "@=" you are prompted to enter an expression.  The
+			result of the expression is then executed.
+			See also |<a href="repeat.html#@:">@:</a>|.
+
+							<b class="vimtag">*<a name="@@">@@</a>*</b> <b class="vimtag">*<a name="E748">E748</a>*</b>
+@@			Repeat the previous @<code class="special">{0-9a-z":*}</code> <code class="special">[count]</code> times.
+
+:[addr]<b class="vimtag">*<a name="{0-9a-z%22.%20+}						">{0-9a-z".=+}						</a>*</b>:@<b class="vimtag">*<a name=" "> </a>*</b>:star*
+:[addr]@{0-9a-z".=<b class="vimtag">*<a name="+}	Execute the contents of register {0-9a-z%22.%20">+}	Execute the contents of register {0-9a-z".=</a>*</b>+} as an Ex
+			command.  First set cursor at line [addr] (default is
+			current line).  When the last line in the register does
+			not have a <code class="special">&lt;CR&gt;</code> it will be added automatically when
+			the 'e' flag is present in 'cpoptions'.
+			<code class="note">Note</code> that the ":*" command is only recognized when the
+			'*' flag is present in 'cpoptions'.  This is NOT the
+			default when 'nocompatible' is used.
+			For ":@=" the last used expression is used.  The
+			result of evaluating the expression is executed as an
+			Ex command.
+			Mappings are not recognized in these commands.
+			Future: Will execute the register for each line in the
+			address range.
+
+							<b class="vimtag">*<a name=":@:">:@:</a>*</b>
+:[addr]@:		Repeat last command-line.  First set cursor at line
+			[addr] (default is current line).
+
+:[addr]@							<b class="vimtag">*<a name=":@@">:@@</a>*</b>
+:[addr]@@		Repeat the previous :@<code class="special">{0-9a-z"}</code>.  First set cursor at
+			line [addr] (default is current line).
+
+</pre><hr/><pre>4. Using Vim scripts					<b class="vimtag">*<a name="using-scripts">using-scripts</a>*</b>
+
+For writing a Vim script, see chapter 41 of the user manual |<a href="usr_41.html#usr_41.txt">usr_41</a>|.
+
+					<b class="vimtag">*<a name=":so">:so</a>*</b> <b class="vimtag">*<a name=":source">:source</a>*</b> <b class="vimtag">*<a name="load-vim-script">load-vim-script</a>*</b>
+:so[urce] <code class="special">{file}</code>	Read Ex commands from <code class="special">{file}</code>.  These are commands that
+			start with a ":".
+			Triggers the |<a href="autocmd.html#SourcePre">SourcePre</a>| autocommand.
+							<b class="vimtag">*<a name=":source!">:source!</a>*</b>
+:so[urce]! <code class="special">{file}</code>	Read Vim commands from <code class="special">{file}</code>.  These are commands
+			that are executed from Normal mode, like you type
+			them.
+			When used after |<a href="repeat.html#:global">:global</a>|, |<a href="editing.html#:argdo">:argdo</a>|, |<a href="windows.html#:windo">:windo</a>|,
+			|<a href="windows.html#:bufdo">:bufdo</a>|, in a loop or when another command follows
+			the display won't be updated while executing the
+			commands.
+			Cannot be used in the |<a href="eval.html#sandbox">sandbox</a>|.
+
+							<b class="vimtag">*<a name=":ru">:ru</a>*</b> <b class="vimtag">*<a name=":runtime">:runtime</a>*</b>
+:ru[ntime][!] [where] <code class="special">{file}</code> ..
+			Read Ex commands from <code class="special">{file}</code> in each directory given
+			by 'runtimepath' and/or 'packpath'.  There is no error
+			for non-existing files.
+
+			Example:
+<code class="example">				:runtime syntax/c.vim</code>
+<code class="example"></code>
+			There can be multiple <code class="special">{file}</code> arguments, separated by
+			spaces.  Each <code class="special">{file}</code> is searched for in the first
+			directory from 'runtimepath', then in the second
+			directory, etc.  Use a backslash to include a space
+			inside <code class="special">{file}</code> (although it's better not to use spaces
+			in file names, it causes trouble).
+
+			When [!] is included, all found files are sourced.
+			When it is not included only the first found file is
+			sourced.
+
+			When [where] is omitted only 'runtimepath' is used.
+			Other values:
+				START	search under "start" in 'packpath'
+				OPT 	search under "opt" in 'packpath'
+				PACK	search under "start" and "opt" in
+					'packpath'
+				ALL	first use 'runtimepath', then search
+					under "start" and "opt" in 'packpath'
+
+			When <code class="special">{file}</code> contains wildcards it is expanded to all
+			matching files.  Example:
+<code class="example">				:runtime! plugin/*<b class="vimtag">*<a name="%2F">/</a>*</b>.vim</code>
+			This is what Vim uses to load the plugin files when
+			starting up.  This similar command:
+<code class="example">				:runtime plugin/*<b class="vimtag">*<a name="%2F">/</a>*</b>.vim</code>
+			would source the first file only.
+
+			When 'verbose' is one or higher, there is a message
+			when no file could be found.
+			When 'verbose' is two or higher, there is a message
+			about each searched file.
+
+							<b class="vimtag">*<a name=":pa">:pa</a>*</b> <b class="vimtag">*<a name=":packadd">:packadd</a>*</b> <b class="vimtag">*<a name="E919">E919</a>*</b>
+:pa[ckadd][!] <code class="special">{name}</code>	Search for an optional plugin directory in 'packpath'
+			and source any plugin files found.  The directory must
+			match:
+<code class="section">				pack/*/opt/<code class="special">{name}</code> </code>
+			The directory is added to 'runtimepath' if it wasn't
+			there yet.
+			If the directory pack/*/opt/<code class="special">{name}</code>/after exists it is
+			added at the end of 'runtimepath'.
+
+			If loading packages from "pack/*/start" was skipped,
+			then this directory is searched first:
+<code class="section">				pack/*/start/<code class="special">{name}</code> </code>
+
+			<code class="note">Note</code> that <code class="special">{name}</code> is the directory name, not the name
+			of the .vim file.  All the files matching the pattern
+				pack/<b class="vimtag">*<a name="%2Fopt%2F{name}%2Fplugin%2F">/opt/{name}/plugin/</a>*</b><b class="vimtag">*<a name="%2F">/</a>*</b><code class="section">.vim </code>
+			will be sourced.  This allows for using subdirectories
+			below "plugin", just like with plugins in
+			'runtimepath'.
+
+			If the filetype detection was not enabled yet (this
+			is usually done with a "syntax enable" or "filetype
+			on" command in your .vimrc file), this will also look
+			for "<code class="special">{name}</code>/ftdetect/*.vim" files.
+
+			When the optional ! is added no plugin files or
+			ftdetect scripts are loaded, only the matching
+			directories are added to 'runtimepath'.  This is
+			useful in your .vimrc.  The plugins will then be
+			loaded during initialization, see |<a href="starting.html#load-plugins">load-plugins</a>|.
+
+			Also see |<a href="repeat.html#pack-add">pack-add</a>|.
+			{only available when compiled with |<a href="various.html#+eval">+eval</a>|}
+
+						<b class="vimtag">*<a name=":packl">:packl</a>*</b> <b class="vimtag">*<a name=":packloadall">:packloadall</a>*</b>
+:packl[oadall][!]	Load all packages in the "start" directory under each
+			entry in 'packpath'.
+
+			First all the directories found are added to
+			'runtimepath', then the plugins found in the
+			directories are sourced.  This allows for a plugin to
+			depend on something of another plugin, e.g. an
+			"autoload" directory.  See |<a href="repeat.html#packload-two-steps">packload-two-steps</a>| for
+			how this can be useful.
+
+			This is normally done automatically during startup,
+			after loading your .vimrc file.  With this command it
+			can be done earlier.
+
+			Packages will be loaded only once.  Using
+			`:packloadall` a second time will have no effect.
+			When the optional ! is added this command will load
+			packages even when done before.
+
+			<code class="note">Note</code> that when using `:packloadall` in the |<a href="starting.html#vimrc">vimrc</a>|
+			file, the 'runtimepath' option is updated, and later
+			all plugins in 'runtimepath' will be loaded, which
+			means they are loaded again.  Plugins are expected to
+			handle that.
+
+			An error only causes sourcing the script where it
+			happens to be aborted, further plugins will be loaded.
+			See |<a href="repeat.html#packages">packages</a>|.
+			{only available when compiled with |<a href="various.html#+eval">+eval</a>|}
+
+:scripte[ncoding] [encoding]		<b class="vimtag">*<a name=":scripte">:scripte</a>*</b> <b class="vimtag">*<a name=":scriptencoding">:scriptencoding</a>*</b> <b class="vimtag">*<a name="E167">E167</a>*</b>
+			Specify the character encoding used in the script.
+			The following lines will be converted from [encoding]
+			to the value of the 'encoding' option, if they are
+			different.  Examples:
+<code class="example">				scriptencoding iso-8859-5</code>
+<code class="example">				scriptencoding cp932</code>
+
+			When [encoding] is empty, no conversion is done.  This
+			can be used to restrict conversion to a sequence of
+			lines:
+<code class="example">				scriptencoding euc-jp</code>
+<code class="example">				... lines to be converted ...</code>
+<code class="example">				scriptencoding</code>
+<code class="example">				... not converted ...</code>
+<code class="example"></code>
+			When conversion isn't supported by the system, there
+			is no error message and no conversion is done.  When a
+			line can't be converted there is no error and the
+			original line is kept.
+
+			Don't use "ucs-2" or "ucs-4", scripts cannot be in
+			these encodings (they would contain NUL bytes).
+			When a sourced script starts with a BOM (Byte Order
+			Mark) in utf-8 format Vim will recognize it, no need
+			to use ":scriptencoding utf-8" then.
+
+			If you set the 'encoding' option in your |<a href="starting.html#.vimrc">.vimrc</a>|,
+			`:scriptencoding` must be placed after that. E.g.:
+<code class="example">				set encoding=utf-8</code>
+<code class="example">				scriptencoding utf-8</code>
+
+
+:scriptv[ersion] <code class="special">{version}</code>		<b class="vimtag">*<a name=":scriptv">:scriptv</a>*</b> <b class="vimtag">*<a name=":scriptversion">:scriptversion</a>*</b>
+								<b class="vimtag">*<a name="E999">E999</a>*</b> <b class="vimtag">*<a name="E984">E984</a>*</b>
+			Specify the version of Vim for the lines that follow
+			in the same file.  Only applies at the toplevel of
+			sourced scripts, not inside functions.
+
+			If <code class="special">{version}</code> is higher than what the current Vim
+			version supports E999 will be given.  You either need
+			to rewrite the script to make it work with an older
+			Vim version, or update Vim to a newer version.  See
+			|<a href="eval.html#vimscript-version">vimscript-version</a>| for what changed between versions.
+
+						<b class="vimtag">*<a name=":scr">:scr</a>*</b> <b class="vimtag">*<a name=":scriptnames">:scriptnames</a>*</b>
+:scr[iptnames]		List all sourced script names, in the order they were
+			first sourced.  The number is used for the script ID
+			|<a href="map.html#%3CSID%3E">&lt;SID&gt;</a>|.
+			{not available when compiled without the |<a href="various.html#+eval">+eval</a>|
+			feature}
+
+:scr[iptnames][!] <code class="special">{scriptId}</code>			<b class="vimtag">*<a name=":script">:script</a>*</b>
+			Edit script <code class="special">{scriptId}</code>.  Although ":scriptnames name"
+			works, using ":script name" is recommended.
+			When the current buffer can't be |<a href="editing.html#abandon">abandon</a>|ed and the !
+			is not present, the command fails.
+
+						<b class="vimtag">*<a name=":fini">:fini</a>*</b> <b class="vimtag">*<a name=":finish">:finish</a>*</b> <b class="vimtag">*<a name="E168">E168</a>*</b>
+:fini[sh]		Stop sourcing a script.  Can only be used in a Vim
+			script file.  This is a quick way to skip the rest of
+			the file.  If it is used after a |<a href="eval.html#:try">:try</a>| but before the
+			matching |<a href="eval.html#:finally">:finally</a>| (if present), the commands
+			following the ":finally" up to the matching |<a href="eval.html#:endtry">:endtry</a>|
+			are executed first.  This process applies to all
+			nested ":try"s in the script.  The outermost ":endtry"
+			then stops sourcing the script.
+
+All commands and command sequences can be repeated by putting them in a named
+register and then executing it.  There are two ways to get the commands in the
+register:
+- Use the record command "q".  You type the commands once, and while they are
+  being executed they are stored in a register.  Easy, because you can see
+  what you are doing.  If you make a mistake, "p"ut the register into the
+  file, edit the command sequence, and then delete it into the register
+  again.  You can continue recording by appending to the register (use an
+  uppercase letter).
+- Delete or yank the command sequence into the register.
+
+Often used command sequences can be put under a function key with the ':map'
+command.
+
+An alternative is to put the commands in a file, and execute them with the
+':source!' command.  Useful for long command sequences.  Can be combined with
+the ':map' command to put complicated commands under a function key.
+
+The ':source' command reads Ex commands from a file line by line.  You will
+have to type any needed keyboard input.  The ':source!' command reads from a
+script file character by character, interpreting each character as if you
+typed it.
+
+Example: When you give the ":!ls" command you get the |<a href="message.html#hit-enter">hit-enter</a>| prompt.  If
+you ':source' a file with the line "!ls" in it, you will have to type the
+<code class="special">&lt;Enter&gt;</code> yourself.  But if you ':source!' a file with the line ":!ls" in it,
+the next characters from that file are read until a <code class="special">&lt;CR&gt;</code> is found.  You will
+not have to type <code class="special">&lt;CR&gt;</code> yourself, unless ":!ls" was the last line in the file.
+
+It is possible to put ':source[!]' commands in the script file, so you can
+make a top-down hierarchy of script files.  The ':source' command can be
+nested as deep as the number of files that can be opened at one time (about
+15).  The ':source!' command can be nested up to 15 levels deep.
+
+You can use the "<code class="special">&lt;sfile&gt;</code>" string (literally, this is not a special key) inside
+of the sourced file, in places where a file name is expected.  It will be
+replaced by the file name of the sourced file.  For example, if you have a
+"other.vimrc" file in the same directory as your ".vimrc" file, you can source
+it from your ".vimrc" file with this command:
+<code class="example">	:source <code class="special">&lt;sfile&gt;</code>:h/other.vimrc</code>
+<code class="example"></code>
+In script files terminal-dependent key codes are represented by
+terminal-independent two character codes.  This means that they can be used
+in the same way on different kinds of terminals.  The first character of a
+key code is 0x80 or 128, shown on the screen as "~@".  The second one can be
+found in the list |<a href="intro.html#key-notation">key-notation</a>|.  Any of these codes can also be entered
+with <code class="keystroke">CTRL-V</code> followed by the three digit decimal code.  This does NOT work for
+the <code class="special">&lt;t_xx&gt;</code> termcap codes, these can only be used in mappings.
+
+							<b class="vimtag">*<a name=":source_crnl">:source_crnl</a>*</b> <b class="vimtag">*<a name="W15">W15</a>*</b>
+Win32: Files that are read with ":source" normally have <code class="special">&lt;CR&gt;</code><code class="special">&lt;NL&gt;</code> <code class="special">&lt;EOL&gt;</code>s.
+These always work.  If you are using a file with <code class="special">&lt;NL&gt;</code> <code class="special">&lt;EOL&gt;</code>s (for example, a
+file made on Unix), this will be recognized if 'fileformats' is not empty and
+the first line does not end in a <code class="special">&lt;CR&gt;</code>.  This fails if the first line has
+something like ":map <code class="special">&lt;F1&gt;</code> :help^M", where "^M" is a <code class="special">&lt;CR&gt;</code>.  If the first line
+ends in a <code class="special">&lt;CR&gt;</code>, but following ones don't, you will get an error message,
+because the <code class="special">&lt;CR&gt;</code> from the first lines will be lost.
+
+Mac Classic: Files that are read with ":source" normally have <code class="special">&lt;CR&gt;</code> <code class="special">&lt;EOL&gt;</code>s.
+These always work.  If you are using a file with <code class="special">&lt;NL&gt;</code> <code class="special">&lt;EOL&gt;</code>s (for example, a
+file made on Unix), this will be recognized if 'fileformats' is not empty and
+the first line does not end in a <code class="special">&lt;CR&gt;</code>.  Be careful not to use a file with <code class="special">&lt;NL&gt;</code>
+linebreaks which has a <code class="special">&lt;CR&gt;</code> in first line.
+
+On other systems, Vim expects ":source"ed files to end in a <code class="special">&lt;NL&gt;</code>.  These
+always work.  If you are using a file with <code class="special">&lt;CR&gt;</code><code class="special">&lt;NL&gt;</code> <code class="special">&lt;EOL&gt;</code>s (for example, a
+file made on MS-Windows), all lines will have a trailing <code class="special">&lt;CR&gt;</code>.  This may cause
+problems for some commands (e.g., mappings).  There is no automatic <code class="special">&lt;EOL&gt;</code>
+detection, because it's common to start with a line that defines a mapping
+that ends in a <code class="special">&lt;CR&gt;</code>, which will confuse the automaton.
+
+							<b class="vimtag">*<a name="line-continuation">line-continuation</a>*</b>
+Long lines in a ":source"d Ex command script file can be split by inserting
+a line continuation symbol "\" (backslash) at the start of the next line.
+There can be white space before the backslash, which is ignored.
+
+Example: the lines
+<code class="example">	:set comments=sr:/<b class="vimtag">*<a name=",mb:">,mb:</a>*</b>,el:*/,</code>
+<code class="example">		     \://,</code>
+<code class="example">		     \b:#,</code>
+<code class="example">		     \:%,</code>
+<code class="example">		     \n:&gt;,</code>
+<code class="example">		     \fb:-</code>
+are interpreted as if they were given in one line:
+	:set comments=sr:/<b class="vimtag">*<a name=",mb:">,mb:</a>*</b>,el:*/,://,b:#,:%,n:&gt;,fb:-
+
+All leading whitespace characters in the line before a backslash are ignored.
+<code class="note">Note</code> however that trailing whitespace in the line before it cannot be
+inserted freely; it depends on the position where a command is split up
+whether additional whitespace is allowed or not.
+
+When a space is required it's best to put it right after the backslash.  A
+space at the end of a line is hard to see and may be accidentally deleted.
+<code class="example">	:syn match Comment</code>
+<code class="example">		\ "very long regexp"</code>
+<code class="example">		\ keepend</code>
+<code class="example"></code>
+There is a problem with the ":append" and ":insert" commands:
+<code class="example">   :1append</code>
+<code class="example">   \asdf</code>
+<code class="example">   .</code>
+The backslash is seen as a line-continuation symbol, thus this results in the
+command:
+<code class="example">   :1appendasdf</code>
+<code class="example">   .</code>
+To avoid this, add the 'C' flag to the 'cpoptions' option:
+<code class="example">   :set cpo+=C</code>
+<code class="example">   :1append</code>
+<code class="example">   \asdf</code>
+<code class="example">   .</code>
+<code class="example">   :set cpo-=C</code>
+<code class="example"></code>
+<code class="note">Note</code> that when the commands are inside a function, you need to add the 'C'
+flag when defining the function, it is not relevant when executing it.
+<code class="example">   :set cpo+=C</code>
+<code class="example">   :function Foo()</code>
+<code class="example">   :1append</code>
+<code class="example">   \asdf</code>
+<code class="example">   .</code>
+<code class="example">   :endfunction</code>
+<code class="example">   :set cpo-=C</code>
+
+					<b class="vimtag">*<a name="line-continuation-comment">line-continuation-comment</a>*</b>
+To add a comment in between the lines start with '"\ '.  Notice the space
+after the backslash.  Example:
+<code class="example">	let array = [</code>
+<code class="example">		"\ first entry comment</code>
+<code class="example">		\ 'first',</code>
+<code class="example">		"\ second entry comment</code>
+<code class="example">		\ 'second',</code>
+<code class="example">		\ ]</code>
+<code class="example"></code>
+Rationale:
+	Most programs work with a trailing backslash to indicate line
+	continuation.  Using this in Vim would cause incompatibility with Vi.
+	For example for this Vi mapping:
+<code class="example">		:map xx  asdf\</code>
+	Therefore the unusual leading backslash is used.
+
+	Starting a comment in a continuation line results in all following
+	continuation lines to be part of the comment.  Since it was like this
+	for a long time, when making it possible to add a comment halfway a
+	sequence of continuation lines, it was not possible to use \", since
+	that was a valid continuation line.  Using '"\ ' comes closest, even
+	though it may look a bit weird.  Requiring the space after the
+	backslash is to make it very unlikely this is a normal comment line.
+
+</pre><hr/><pre>5. Using Vim packages					<b class="vimtag">*<a name="packages">packages</a>*</b>
+
+A Vim package is a directory that contains one or more plugins.  The
+advantages over normal plugins:
+- A package can be downloaded as an archive and unpacked in its own directory.
+  Thus the files are not mixed with files of other plugins.  That makes it
+  easy to update and remove.
+- A package can be a git, mercurial, etc. repository.  That makes it really
+  easy to update.
+- A package can contain multiple plugins that depend on each other.
+- A package can contain plugins that are automatically loaded on startup and
+  ones that are only loaded when needed with `:packadd`.
+
+
+<code class="section">Using a package and loading automatically </code>
+
+Let's assume your Vim files are in the "~/.vim" directory and you want to add a
+package from a zip archive "/tmp/foopack.zip":
+	% mkdir -p ~/.vim/pack/foo
+	% cd ~/.vim/pack/foo
+	% unzip /tmp/foopack.zip
+
+The directory name "foo" is arbitrary, you can pick anything you like.
+
+You would now have these files under ~/.vim:
+	pack/foo/README.txt
+	pack/foo/start/foobar/plugin/foo.vim
+	pack/foo/start/foobar/syntax/some.vim
+	pack/foo/opt/foodebug/plugin/debugger.vim
+
+When Vim starts up, after processing your .vimrc, it scans all directories in
+'packpath' for plugins under the "pack/*/start" directory.  First all those
+directories are added to 'runtimepath'.  Then all the plugins are loaded.
+See |<a href="repeat.html#packload-two-steps">packload-two-steps</a>| for how these two steps can be useful.
+
+In the example Vim will find "pack/foo/start/foobar/plugin/foo.vim" and adds
+"~/.vim/pack/foo/start/foobar" to 'runtimepath'.
+
+If the "foobar" plugin kicks in and sets the 'filetype' to "some", Vim will
+find the syntax/some.vim file, because its directory is in 'runtimepath'.
+
+Vim will also load ftdetect files, if there are any.
+
+<code class="note">Note</code> that the files under "pack/foo/opt" are not loaded automatically, only the
+ones under "pack/foo/start".  See |<a href="repeat.html#pack-add">pack-add</a>| below for how the "opt" directory
+is used.
+
+Loading packages automatically will not happen if loading plugins is disabled,
+see |<a href="starting.html#load-plugins">load-plugins</a>|.
+
+To load packages earlier, so that 'runtimepath' gets updated:
+<code class="example">	:packloadall</code>
+This also works when loading plugins is disabled.  The automatic loading will
+only happen once.
+
+If the package has an "after" directory, that directory is added to the end of
+'runtimepath', so that anything there will be loaded later.
+
+
+<code class="section">Using a single plugin and loading it automatically </code>
+
+If you don't have a package but a single plugin, you need to create the extra
+directory level:
+	% mkdir -p ~/.vim/pack/foo/start/foobar
+	% cd ~/.vim/pack/foo/start/foobar
+	% unzip /tmp/someplugin.zip
+
+You would now have these files:
+	pack/foo/start/foobar/plugin/foo.vim
+	pack/foo/start/foobar/syntax/some.vim
+
+From here it works like above.
+
+
+<code class="section">Optional plugins </code>
+							<b class="vimtag">*<a name="pack-add">pack-add</a>*</b>
+To load an optional plugin from a pack use the `:packadd` command:
+<code class="example">	:packadd foodebug</code>
+This searches for "pack/*/opt/foodebug" in 'packpath' and will find
+~/.vim/pack/foo/opt/foodebug/plugin/debugger.vim and source it.
+
+This could be done if some conditions are met.  For example, depending on
+whether Vim supports a feature or a dependency is missing.
+
+You can also load an optional plugin at startup, by putting this command in
+your |<a href="starting.html#.vimrc">.vimrc</a>|:
+<code class="example">	:packadd! foodebug</code>
+The extra "!" is so that the plugin isn't loaded if Vim was started with
+|<a href="starting.html#--noplugin">--noplugin</a>|.
+
+It is perfectly normal for a package to only have files in the "opt"
+directory.  You then need to load each plugin when you want to use it.
+
+
+<code class="section">Where to put what </code>
+
+Since color schemes, loaded with `:colorscheme`, are found below
+"pack/<b class="vimtag">*<a name="%2Fstart%22 and %22pack%2F">/start" and "pack/</a>*</b>/opt", you could put them anywhere.  We recommend
+you put them below "pack/*/opt", for example
+".vim/pack/mycolors/opt/dark/colors/very_dark.vim".
+
+Filetype plugins should go under "pack/*/start", so that they are always
+found.  Unless you have more than one plugin for a file type and want to
+select which one to load with `:packadd`.  E.g. depending on the compiler
+version:
+<code class="example">	if foo_compiler_version &gt; 34</code>
+<code class="example">	  packadd foo_new</code>
+<code class="example">	else</code>
+<code class="example">	  packadd foo_old</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+The "after" directory is most likely not useful in a package.  It's not
+disallowed though.
+
+</pre><hr/><pre>6. Creating Vim packages				<b class="vimtag">*<a name="package-create">package-create</a>*</b>
+
+This assumes you write one or more plugins that you distribute as a package.
+
+If you have two unrelated plugins you would use two packages, so that Vim
+users can chose what they include or not.  Or you can decide to use one
+package with optional plugins, and tell the user to add the ones he wants with
+`:packadd`.
+
+Decide how you want to distribute the package.  You can create an archive or
+you could use a repository.  An archive can be used by more users, but is a
+bit harder to update to a new version.  A repository can usually be kept
+up-to-date easily, but it requires a program like "git" to be available.
+You can do both, github can automatically create an archive for a release.
+
+Your directory layout would be like this:
+   start/foobar/plugin/foo.vim    	" always loaded, defines commands
+   start/foobar/plugin/bar.vim    	" always loaded, defines commands
+   start/foobar/autoload/foo.vim  	" loaded when foo command used
+   start/foobar/doc/foo.txt       	" help for foo.vim
+   start/foobar/doc/tags          	" help tags
+   opt/fooextra/plugin/extra.vim  	" optional plugin, defines commands
+   opt/fooextra/autoload/extra.vim  	" loaded when extra command used
+   opt/fooextra/doc/extra.txt  	        " help for extra.vim
+   opt/fooextra/doc/tags  	        " help tags
+
+This allows for the user to do:
+<code class="example">	mkdir ~/.vim/pack/myfoobar</code>
+<code class="example">	cd ~/.vim/pack/myfoobar</code>
+<code class="example">	git clone https://github.com/you/foobar.git</code>
+<code class="example"></code>
+Here "myfoobar" is a name that the user can choose, the only condition is that
+it differs from other packages.
+
+In your documentation you explain what the plugins do, and tell the user how
+to load the optional plugin:
+<code class="example">	:packadd! fooextra</code>
+<code class="example"></code>
+You could add this packadd command in one of your plugins, to be executed when
+the optional plugin is needed.
+
+Run the `:helptags` command to generate the doc/tags file.  Including this
+generated file in the package means that the user can drop the package in his
+pack directory and the help command works right away.  Don't forget to re-run
+the command after changing the plugin help:
+<code class="example">	:helptags path/start/foobar/doc</code>
+<code class="example">	:helptags path/opt/fooextra/doc</code>
+<code class="example"></code>
+<code class="example"></code>
+<code class="section">Dependencies between plugins </code>
+							<b class="vimtag">*<a name="packload-two-steps">packload-two-steps</a>*</b>
+Suppose you have two plugins that depend on the same functionality. You can
+put the common functionality in an autoload directory, so that it will be
+found automatically.  Your package would have these files:
+
+	pack/foo/start/one/plugin/one.vim
+<code class="example">		call foolib#getit()</code>
+&lt;	pack/foo/start/two/plugin/two.vim
+<code class="example">		call foolib#getit()</code>
+&lt;	pack/foo/start/lib/autoload/foolib.vim
+<code class="example">		func foolib#getit()</code>
+<code class="example"></code>
+This works, because loading packages will first add all found directories to
+'runtimepath' before sourcing the plugins.
+
+</pre><hr/><pre>7. Debugging scripts					<b class="vimtag">*<a name="debug-scripts">debug-scripts</a>*</b>
+
+Besides the obvious messages that you can add to your scripts to find out what
+they are doing, Vim offers a debug mode.  This allows you to step through a
+sourced file or user function and set breakpoints.
+
+<code class="note">NOTE:</code> The debugging mode is far from perfect.  Debugging will have side
+effects on how Vim works.  You cannot use it to debug everything.  For
+example, the display is messed up by the debugging messages.
+
+An alternative to debug mode is setting the 'verbose' option.  With a bigger
+number it will give more verbose messages about what Vim is doing.
+
+
+STARTING DEBUG MODE						<b class="vimtag">*<a name="debug-mode">debug-mode</a>*</b>
+
+To enter debugging mode use one of these methods:
+1. Start Vim with the |<a href="starting.html#-D">-D</a>| argument:
+<code class="example">	vim -D file.txt</code>
+  Debugging will start as soon as the first vimrc file is sourced.  This is
+   useful to find out what is happening when Vim is starting up.  A side
+   effect is that Vim will switch the terminal mode before initialisations
+   have finished, with unpredictable results.
+   For a GUI-only version (Windows, Macintosh) the debugging will start as
+   soon as the GUI window has been opened.  To make this happen early, add a
+   ":gui" command in the vimrc file.
+								<b class="vimtag">*<a name=":debug">:debug</a>*</b>
+2. Run a command with ":debug" prepended.  Debugging will only be done while
+   this command executes.  Useful for debugging a specific script or user
+   function.  And for scripts and functions used by autocommands.  Example:
+<code class="example">	:debug edit test.txt.gz</code>
+<code class="example"></code>
+3. Set a breakpoint in a sourced file or user function.  You could do this in
+   the command line:
+<code class="example">	vim -c "breakadd file */explorer.vim" .</code>
+  This will run Vim and stop in the first line of the "explorer.vim" script.
+   Breakpoints can also be set while in debugging mode.
+
+In debugging mode every executed command is displayed before it is executed.
+Comment lines, empty lines and lines that are not executed are skipped.  When
+a line contains two commands, separated by "|", each command will be displayed
+separately.
+
+
+DEBUG MODE
+
+Once in debugging mode, the usual Ex commands can be used.  For example, to
+inspect the value of a variable:
+<code class="example">	echo idx</code>
+When inside a user function, this will print the value of the local variable
+"idx".  Prepend "g:" to get the value of a global variable:
+<code class="example">	echo g:idx</code>
+All commands are executed in the context of the current function or script.
+You can also set options, for example setting or resetting 'verbose' will show
+what happens, but you might want to set it just before executing the lines you
+are interested in:
+<code class="example">	:set verbose=20</code>
+<code class="example"></code>
+Commands that require updating the screen should be avoided, because their
+effect won't be noticed until after leaving debug mode.  For example:
+<code class="example">	:help</code>
+won't be very helpful.
+
+There is a separate command-line history for debug mode.
+
+The line number for a function line is relative to the start of the function.
+If you have trouble figuring out where you are, edit the file that defines
+the function in another Vim, search for the start of the function and do
+"99j".  Replace "99" with the line number.
+
+Additionally, these commands can be used:
+							<b class="vimtag">*<a name="%3Econt">&gt;cont</a>*</b>
+	cont		Continue execution until the next breakpoint is hit.
+							<b class="vimtag">*<a name="%3Equit">&gt;quit</a>*</b>
+	quit		Abort execution.  This is like using <code class="keystroke">CTRL-C</code>, some
+			things might still be executed, doesn't abort
+			everything.  Still stops at the next breakpoint.
+							<b class="vimtag">*<a name="%3Enext">&gt;next</a>*</b>
+	next		Execute the command and come back to debug mode when
+			it's finished.  This steps over user function calls
+			and sourced files.
+							<b class="vimtag">*<a name="%3Estep">&gt;step</a>*</b>
+	step		Execute the command and come back to debug mode for
+			the next command.  This steps into called user
+			functions and sourced files.
+							<b class="vimtag">*<a name="%3Einterrupt">&gt;interrupt</a>*</b>
+	interrupt	This is like using <code class="keystroke">CTRL-C</code>, but unlike "&gt;quit" comes
+			back to debug mode for the next command that is
+			executed.  Useful for testing |<a href="eval.html#:finally">:finally</a>| and |<a href="eval.html#:catch">:catch</a>|
+			on interrupt exceptions.
+							<b class="vimtag">*<a name="%3Efinish">&gt;finish</a>*</b>
+	finish		Finish the current script or user function and come
+			back to debug mode for the command after the one that
+			sourced or called it.
+							<b class="vimtag">*<a name="%3Ebt">&gt;bt</a>*</b>
+							<b class="vimtag">*<a name="%3Ebacktrace">&gt;backtrace</a>*</b>
+							<b class="vimtag">*<a name="%3Ewhere">&gt;where</a>*</b>
+	backtrace	Show the call stacktrace for current debugging session.
+	bt
+	where
+							<b class="vimtag">*<a name="%3Eframe">&gt;frame</a>*</b>
+	frame N		Goes to N backtrace level. + and - signs make movement
+			relative.  E.g., ":frame +3" goes three frames up.
+							<b class="vimtag">*<a name="%3Eup">&gt;up</a>*</b>
+	up		Goes one level up from call stacktrace.
+							<b class="vimtag">*<a name="%3Edown">&gt;down</a>*</b>
+	down		Goes one level down from call stacktrace.
+
+About the additional commands in debug mode:
+- There is no command-line completion for them, you get the completion for the
+  normal Ex commands only.
+- You can shorten them, up to a single character, unless more than one command
+  starts with the same letter.  "f" stands for "finish", use "fr" for "frame".
+- Hitting <code class="special">&lt;CR&gt;</code> will repeat the previous one.  When doing another command, this
+  is reset (because it's not clear what you want to repeat).
+- When you want to use the Ex command with the same name, prepend a colon:
+  ":cont", ":next", ":finish" (or shorter).
+
+The backtrace shows the hierarchy of function calls, e.g.:
+<code class="section">	&gt;bt </code>
+<code class="section">	  3 function One[3] </code>
+<code class="section">	  2 Two[3] </code>
+<code class="section">	-&gt;1 Three[3] </code>
+<code class="section">	  0 Four </code>
+<code class="section">	line 1: let four = 4 </code>
+
+The "-&gt;" points to the current frame.  Use "up", "down" and "frame N" to
+select another frame.
+
+In the current frame you can evaluate the local function variables.  There is
+no way to see the command at the current line yet.
+
+
+DEFINING BREAKPOINTS
+							<b class="vimtag">*<a name=":breaka">:breaka</a>*</b> <b class="vimtag">*<a name=":breakadd">:breakadd</a>*</b>
+:breaka[dd] func [lnum] <code class="special">{name}</code>
+		Set a breakpoint in a function.  Example:
+<code class="example">			:breakadd func Explore</code>
+		Doesn't check for a valid function name, thus the breakpoint
+		can be set before the function is defined.
+
+:breaka[dd] file [lnum] <code class="special">{name}</code>
+		Set a breakpoint in a sourced file.  Example:
+<code class="example">			:breakadd file 43 .vimrc</code>
+<code class="example"></code>
+:breaka[dd] here
+		Set a breakpoint in the current line of the current file.
+		Like doing:
+<code class="example">			:breakadd file <code class="special">&lt;cursor-line&gt;</code> <code class="special">&lt;current-file&gt;</code></code>
+		<code class="note">Note</code> that this only works for commands that are executed when
+		sourcing the file, not for a function defined in that file.
+
+:breaka[dd] expr <code class="special">{expression}</code>
+		Sets a breakpoint, that will break whenever the <code class="special">{expression}</code>
+		evaluates to a different value. Example:
+<code class="example">			:breakadd expr g:lnum</code>
+<code class="example"></code>
+		Will break, whenever the global variable lnum changes.
+		<code class="note">Note</code> if you watch a |<a href="eval.html#script-variable">script-variable</a>| this will break
+		when switching scripts, since the script variable is only
+		valid in the script where it has been defined and if that
+		script is called from several other scripts, this will stop
+		whenever that particular variable will become visible or
+		unaccessible again.
+
+The [lnum] is the line number of the breakpoint.  Vim will stop at or after
+this line.  When omitted line 1 is used.
+
+							<b class="vimtag">*<a name=":debug-name">:debug-name</a>*</b>
+<code class="special">{name}</code> is a pattern that is matched with the file or function name.  The
+pattern is like what is used for autocommands.  There must be a full match (as
+if the pattern starts with "^" and ends in "$").  A "*" matches any sequence
+of characters.  'ignorecase' is not used, but "\c" can be used in the pattern
+to ignore case |<a href="pattern.html#%2F\c">/\c</a>|.  Don't include the () for the function name!
+
+The match for sourced scripts is done against the full file name.  If no path
+is specified the current directory is used.  Examples:
+<code class="example">	breakadd file explorer.vim</code>
+matches "explorer.vim" in the current directory.
+<code class="example">	breakadd file *explorer.vim</code>
+matches ".../plugin/explorer.vim", ".../plugin/iexplorer.vim", etc.
+<code class="example">	breakadd file */explorer.vim</code>
+matches ".../plugin/explorer.vim" and "explorer.vim" in any other directory.
+
+The match for functions is done against the name as it's shown in the output
+of ":function".  For local functions this means that something like "<code class="special">&lt;SNR&gt;</code>99_"
+is prepended.
+
+<code class="note">Note</code> that functions are first loaded and later executed.  When they are loaded
+the "file" breakpoints are checked, when they are executed the "func"
+breakpoints.
+
+
+DELETING BREAKPOINTS
+						<b class="vimtag">*<a name=":breakd">:breakd</a>*</b> <b class="vimtag">*<a name=":breakdel">:breakdel</a>*</b> <b class="vimtag">*<a name="E161">E161</a>*</b>
+:breakd[el] <code class="special">{nr}</code>
+		Delete breakpoint <code class="special">{nr}</code>.  Use |<a href="repeat.html#:breaklist">:breaklist</a>| to see the number of
+		each breakpoint.
+
+:breakd[el] *
+		Delete all breakpoints.
+
+:breakd[el] func [lnum] <code class="special">{name}</code>
+		Delete a breakpoint in a function.
+
+:breakd[el] file [lnum] <code class="special">{name}</code>
+		Delete a breakpoint in a sourced file.
+
+:breakd[el] here
+		Delete a breakpoint at the current line of the current file.
+
+When [lnum] is omitted, the first breakpoint in the function or file is
+deleted.
+The <code class="special">{name}</code> must be exactly the same as what was typed for the ":breakadd"
+command.  "explorer", "<b class="vimtag">*<a name="explorer.vim%22 and %22">explorer.vim" and "</a>*</b>explorer*" are different.
+
+
+LISTING BREAKPOINTS
+							<b class="vimtag">*<a name=":breakl">:breakl</a>*</b> <b class="vimtag">*<a name=":breaklist">:breaklist</a>*</b>
+:breakl[ist]
+		List all breakpoints.
+
+
+OBSCURE
+
+						<b class="vimtag">*<a name=":debugg">:debugg</a>*</b> <b class="vimtag">*<a name=":debuggreedy">:debuggreedy</a>*</b>
+:debugg[reedy]
+		Read debug mode commands from the normal input stream, instead
+		of getting them directly from the user.  Only useful for test
+		scripts.  Example:
+<code class="example">		  echo 'q^Mq' | vim -e -s -c debuggreedy -c 'breakadd file script.vim' -S script.vim</code>
+<code class="example"></code>
+:0debugg[reedy]
+		Undo ":debuggreedy": get debug mode commands directly from the
+		user, don't use typeahead for debug commands.
+
+</pre><hr/><pre>8. Profiling						<b class="vimtag">*<a name="profile">profile</a>*</b> <b class="vimtag">*<a name="profiling">profiling</a>*</b>
+
+Profiling means that Vim measures the time that is spent on executing
+functions and/or scripts.  The |<a href="various.html#+profile">+profile</a>| feature is required for this.
+It is only included when Vim was compiled with "huge" features.
+
+You can also use the |<a href="eval.html#reltime()">reltime()</a>| function to measure time.  This only requires
+the |<a href="various.html#+reltime">+reltime</a>| feature, which is present more often.
+
+For profiling syntax highlighting see |<a href="syntax.html#:syntime">:syntime</a>|.
+
+For example, to profile the one_script.vim script file:
+<code class="example">	:profile start /tmp/one_script_profile</code>
+<code class="example">	:profile file one_script.vim</code>
+<code class="example">	:source one_script.vim</code>
+<code class="example">	:exit</code>
+<code class="example"></code>
+<code class="example"></code>
+:prof[ile] start <code class="special">{fname}</code>			<b class="vimtag">*<a name=":prof">:prof</a>*</b> <b class="vimtag">*<a name=":profile">:profile</a>*</b> <b class="vimtag">*<a name="E750">E750</a>*</b>
+		Start profiling, write the output in <code class="special">{fname}</code> upon exit.
+		"~/" and environment variables in <code class="special">{fname}</code> will be expanded.
+		If <code class="special">{fname}</code> already exists it will be silently overwritten.
+		The variable |<a href="eval.html#v:profiling">v:profiling</a>| is set to one.
+
+:prof[ile] pause
+		Don't profile until the following ":profile continue".  Can be
+		used when doing something that should not be counted (e.g., an
+		external command).  Does not nest.
+
+:prof[ile] continue
+		Continue profiling after ":profile pause".
+
+:prof[ile] func <code class="special">{pattern}</code>
+		Profile function that matches the pattern <code class="special">{pattern}</code>.
+		See |<a href="repeat.html#:debug-name">:debug-name</a>| for how <code class="special">{pattern}</code> is used.
+
+:prof[ile][!] file <code class="special">{pattern}</code>
+		Profile script file that matches the pattern <code class="special">{pattern}</code>.
+		See |<a href="repeat.html#:debug-name">:debug-name</a>| for how <code class="special">{pattern}</code> is used.
+		This only profiles the script itself, not the functions
+		defined in it.
+		When the [!] is added then all functions defined in the script
+		will also be profiled.
+		<code class="note">Note</code> that profiling only starts when the script is loaded
+		after this command.  A :profile command in the script itself
+		won't work.
+
+
+:profd[el] ...						<b class="vimtag">*<a name=":profd">:profd</a>*</b> <b class="vimtag">*<a name=":profdel">:profdel</a>*</b>
+		Stop profiling for the arguments specified. See |<a href="repeat.html#:breakdel">:breakdel</a>|
+		for the arguments.
+
+
+You must always start with a ":profile start fname" command.  The resulting
+file is written when Vim exits.  Here is an example of the output, with line
+numbers prepended for the explanation:
+
+<code class="section">  1 FUNCTION  Test2() </code>
+<code class="section">  2 Called 1 time </code>
+<code class="section">  3 Total time:   0.155251 </code>
+<code class="section">  4  Self time:   0.002006 </code>
+<code class="section">  5  </code>
+<code class="section">  6 count  total (s)   self (s) </code>
+<code class="section">  7	9	       0.000096   for i in range(8) </code>
+<code class="section">  8	8   0.153655   0.000410     call Test3() </code>
+<code class="section">  9	8	       0.000070   endfor </code>
+<code class="section"> 10				  " Ask a question </code>
+<code class="section"> 11	1	       0.001341   echo input("give me an answer: ") </code>
+
+The header (lines 1-4) gives the time for the whole function.  The "Total"
+time is the time passed while the function was executing.  The "Self" time is
+the "Total" time reduced by time spent in:
+- other user defined functions
+- sourced scripts
+- executed autocommands
+- external (shell) commands
+
+Lines 7-11 show the time spent in each executed line.  Lines that are not
+executed do not count.  Thus a comment line is never counted.
+
+The Count column shows how many times a line was executed.  <code class="note">Note</code> that the
+"for" command in line 7 is executed one more time as the following lines.
+That is because the line is also executed to detect the end of the loop.
+
+The time Vim spends waiting for user input isn't counted at all.  Thus how
+long you take to respond to the input() prompt is irrelevant.
+
+Profiling should give a good indication of where time is spent, but keep in
+mind there are various things that may clobber the results:
+
+- The accuracy of the time measured depends on the gettimeofday() system
+  function.  It may only be as accurate as 1/100 second, even though the times
+  are displayed in micro seconds.
+
+- Real elapsed time is measured, if other processes are busy they may cause
+  delays at unpredictable moments.  You may want to run the profiling several
+  times and use the lowest results.
+
+- If you have several commands in one line you only get one time.  Split the
+  line to see the time for the individual commands.
+
+- The time of the lines added up is mostly less than the time of the whole
+  function.  There is some overhead in between.
+
+- Functions that are deleted before Vim exits will not produce profiling
+  information.  You can check the |<a href="eval.html#v:profiling">v:profiling</a>| variable if needed:
+<code class="example">	:if !v:profiling</code>
+<code class="example">	:   delfunc MyFunc</code>
+<code class="example">	:endif</code>
+
+- Profiling may give weird results on multi-processor systems, when sleep
+  mode kicks in or the processor frequency is reduced to save power.
+
+- The "self" time is wrong when a function is used recursively.
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

@@ -1,0 +1,738 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: sign</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>SIGN</h2>
+<pre>
+<b class="vimtag">*<a name="sign.txt">sign.txt</a>*</b>      For Vim version 8.2.  Last change: 2019 Nov 30
+
+
+		  VIM REFERENCE MANUAL    by Gordon Prieur
+					  and Bram Moolenaar
+
+
+Sign Support Features				<b class="vimtag">*<a name="sign-support">sign-support</a>*</b>
+
+1. Introduction				|<a href="sign.html#sign-intro">sign-intro</a>|
+2. Commands				|<a href="sign.html#sign-commands">sign-commands</a>|
+3. Functions				|<a href="sign.html#sign-functions-details">sign-functions-details</a>|
+
+{only available when compiled with the |<a href="various.html#+signs">+signs</a>| feature}
+
+</pre><hr/><pre>1. Introduction					<b class="vimtag">*<a name="sign-intro">sign-intro</a>*</b> <b class="vimtag">*<a name="signs">signs</a>*</b>
+
+When a debugger or other IDE tool is driving an editor it needs to be able
+to give specific highlights which quickly tell the user useful information
+about the file.  One example of this would be a debugger which had an icon
+in the left-hand column denoting a breakpoint.  Another example might be an
+arrow representing the Program Counter (PC).  The sign features allow both
+placement of a sign, or icon, in the left-hand side of the window and
+definition of a highlight which will be applied to that line.  Displaying the
+sign as an image is most likely only feasible in gvim (although Sun
+Microsystem's dtterm does support this it's the only terminal emulator I know
+of which does).  A text sign and the highlight should be feasible in any color
+terminal emulator.
+
+Signs and highlights are not useful just for debuggers.  Sun's Visual
+WorkShop uses signs and highlights to mark build errors and SourceBrowser
+hits.  Additionally, the debugger supports 8 to 10 different signs and
+highlight colors, see |<a href="netbeans.html#NetBeans">NetBeans</a>|.
+
+There are two steps in using signs:
+
+1. Define the sign.  This specifies the image, text and highlighting.  For
+   example, you can define a "break" sign with an image of a stop roadsign and
+   text "!!".
+
+2. Place the sign.  This specifies the file and line number where the sign is
+   displayed.  A defined sign can be placed several times in different lines
+   and files.
+
+							<b class="vimtag">*<a name="sign-column">sign-column</a>*</b>
+When signs are defined for a file, Vim will automatically add a column of two
+characters to display them in.  When the last sign is unplaced the column
+disappears again.  This behavior can be changed with the 'signcolumn' option.
+
+The color of the column is set with the SignColumn highlight group
+|<a href="syntax.html#hl-SignColumn">hl-SignColumn</a>|.  Example to set the color:
+<code class="example"></code>
+<code class="example">	:highlight SignColumn guibg=darkgrey</code>
+
+							<b class="vimtag">*<a name="sign-identifier">sign-identifier</a>*</b>
+Each placed sign is identified by a number called the sign identifier. This
+identifier is used to jump to the sign or to remove the sign. The identifier
+is assigned when placing the sign using the |<a href="sign.html#:sign-place">:sign-place</a>| command or the
+|<a href="sign.html#sign_place()">sign_place()</a>| function. Each sign identifier should be a unique number. If
+multiple placed signs use the same identifier, then jumping to or removing a
+sign becomes unpredictable. To avoid overlapping identifiers, sign groups can
+be used. The |<a href="sign.html#sign_place()">sign_place()</a>| function can be called with a zero sign identifier
+to allocate the next available identifier.
+
+							<b class="vimtag">*<a name="sign-group">sign-group</a>*</b>
+Each placed sign can be assigned to either the global group or a named group.
+When placing a sign, if a group name is not supplied, or an empty string is
+used, then the sign is placed in the global group. Otherwise the sign is
+placed in the named group. The sign identifier is unique within a group. The
+sign group allows Vim plugins to use unique signs without interfering with
+other plugins using signs.
+
+To place a sign in a popup window the group name must start with "PopUp".
+Other signs will not show in a popup window.  The group name "PopUpMenu" is
+used by popup windows where 'cursorline' is set.
+
+							<b class="vimtag">*<a name="sign-priority">sign-priority</a>*</b>
+Each placed sign is assigned a priority value. When multiple signs are placed
+on the same line, the attributes of the sign with the highest priority is used
+independent of the sign group. The default priority for a sign is 10. The
+priority is assigned at the time of placing a sign.
+
+When the line on which the sign is placed is deleted, the sign is moved to the
+next line (or the last line of the buffer, if there is no next line).  When
+the delete is undone the sign does not move back.
+
+</pre><hr/><pre>2. Commands					<b class="vimtag">*<a name="sign-commands">sign-commands</a>*</b> <b class="vimtag">*<a name=":sig">:sig</a>*</b> <b class="vimtag">*<a name=":sign">:sign</a>*</b>
+
+Here is an example that places a sign "piet", displayed with the text "&gt;&gt;", in
+line 23 of the current file:
+<code class="example">	:sign define piet text=&gt;&gt; texthl=Search</code>
+<code class="example">	:exe ":sign place 2 line=23 name=piet file=" . expand("%:p")</code>
+<code class="example"></code>
+And here is the command to delete it again:
+<code class="example">	:sign unplace 2</code>
+<code class="example"></code>
+<code class="note">Note</code> that the ":sign" command cannot be followed by another command or a
+comment.  If you do need that, use the |<a href="eval.html#:execute">:execute</a>| command.
+
+
+DEFINING A SIGN.			<b class="vimtag">*<a name=":sign-define">:sign-define</a>*</b> <b class="vimtag">*<a name="E255">E255</a>*</b> <b class="vimtag">*<a name="E160">E160</a>*</b> <b class="vimtag">*<a name="E612">E612</a>*</b>
+
+See |<a href="sign.html#sign_define()">sign_define()</a>| for the equivalent Vim script function.
+
+:sign define <code class="special">{name}</code> <code class="special">{argument}</code>...
+		Define a new sign or set attributes for an existing sign.
+		The <code class="special">{name}</code> can either be a number (all digits) or a name
+		starting with a non-digit.  Leading zeros are ignored, thus
+		"0012", "012" and "12" are considered the same name.
+		About 120 different signs can be defined.
+
+		Accepted arguments:
+
+	icon=<code class="special">{bitmap}</code>
+		Define the file name where the bitmap can be found.  Should be
+		a full path.  The bitmap should fit in the place of two
+		characters.  This is not checked.  If the bitmap is too big it
+		will cause redraw problems.  Only GTK 2 can scale the bitmap
+		to fit the space available.
+<code class="section">			toolkit		supports </code>
+			GTK 1		pixmap (.xpm)
+			GTK 2		many
+			Motif		pixmap (.xpm)
+			Win32		.bmp, .ico, .cur
+					pixmap (.xpm) |<a href="various.html#+xpm_w32">+xpm_w32</a>|
+
+	linehl=<code class="special">{group}</code>
+		Highlighting group used for the whole line the sign is placed
+		in.  Most useful is defining a background color.
+
+	text=<code class="special">{text}</code>						<b class="vimtag">*<a name="E239">E239</a>*</b>
+		Define the text that is displayed when there is no icon or the
+		GUI is not being used.  Only printable characters are allowed
+		and they must occupy one or two display cells.
+
+	texthl=<code class="special">{group}</code>
+		Highlighting group used for the text item.
+
+
+DELETING A SIGN						<b class="vimtag">*<a name=":sign-undefine">:sign-undefine</a>*</b> <b class="vimtag">*<a name="E155">E155</a>*</b>
+
+See |<a href="sign.html#sign_undefine()">sign_undefine()</a>| for the equivalent Vim script function.
+
+:sign undefine <code class="special">{name}</code>
+		Deletes a previously defined sign.  If signs with this <code class="special">{name}</code>
+		are still placed this will cause trouble.
+
+
+
+LISTING SIGNS						<b class="vimtag">*<a name=":sign-list">:sign-list</a>*</b> <b class="vimtag">*<a name="E156">E156</a>*</b>
+
+See |<a href="sign.html#sign_getdefined()">sign_getdefined()</a>| for the equivalent Vim script function.
+
+:sign list	Lists all defined signs and their attributes.
+
+:sign list <code class="special">{name}</code>
+		Lists one defined sign and its attributes.
+
+
+PLACING SIGNS						<b class="vimtag">*<a name=":sign-place">:sign-place</a>*</b> <b class="vimtag">*<a name="E158">E158</a>*</b>
+
+See |<a href="sign.html#sign_place()">sign_place()</a>| for the equivalent Vim script function.
+
+:sign place <code class="special">{id}</code> line=<code class="special">{lnum}</code> name=<code class="special">{name}</code> file=<code class="special">{fname}</code>
+		Place sign defined as <code class="special">{name}</code> at line <code class="special">{lnum}</code> in file <code class="special">{fname}</code>.
+							<b class="vimtag">*<a name=":sign-fname">:sign-fname</a>*</b>
+		The file <code class="special">{fname}</code> must already be loaded in a buffer.  The
+		exact file name must be used, wildcards, $ENV and ~ are not
+		expanded, white space must not be escaped.  Trailing white
+		space is ignored.
+
+		The sign is remembered under <code class="special">{id}</code>, this can be used for
+		further manipulation.  <code class="special">{id}</code> must be a number.
+		It's up to the user to make sure the <code class="special">{id}</code> is used only once in
+		each file (if it's used several times unplacing will also have
+		to be done several times and making changes may not work as
+		expected).
+
+		The following optional sign attributes can be specified before
+		"file=":
+			group=<code class="special">{group}</code>	Place sign in sign group <code class="special">{group}</code>
+			priority=<code class="special">{prio}</code>	Assign priority <code class="special">{prio}</code> to sign
+
+		By default, the sign is placed in the global sign group.
+
+		By default, the sign is assigned a default priority of 10. To
+		assign a different priority value, use "priority=<code class="special">{prio}</code>" to
+		specify a value.  The priority is used to determine the sign
+		that is displayed when multiple signs are placed on the same
+		line.
+
+		Examples:
+<code class="example">			:sign place 5 line=3 name=sign1 file=a.py</code>
+<code class="example">			:sign place 6 group=g2 line=2 name=sign2 file=x.py</code>
+<code class="example">			:sign place 9 group=g2 priority=50 line=5</code>
+<code class="example">							\ name=sign1 file=a.py</code>
+
+:sign place <code class="special">{id}</code> line=<code class="special">{lnum}</code> name=<code class="special">{name}</code> [buffer=<code class="special">{nr}</code>]
+		Same, but use buffer <code class="special">{nr}</code>.  If the buffer argument is not
+		given, place the sign in the current buffer.
+
+							<b class="vimtag">*<a name="E885">E885</a>*</b>
+:sign place <code class="special">{id}</code> name=<code class="special">{name}</code> file=<code class="special">{fname}</code>
+		Change the placed sign <code class="special">{id}</code> in file <code class="special">{fname}</code> to use the defined
+		sign <code class="special">{name}</code>.  See remark above about <code class="special">{fname}</code> |<a href="sign.html#:sign-fname">:sign-fname</a>|.
+		This can be used to change the displayed sign without moving
+		it (e.g., when the debugger has stopped at a breakpoint).
+
+		The optional "group=<code class="special">{group}</code>" attribute can be used before
+		"file=" to select a sign in a particular group.  The optional
+		"priority=<code class="special">{prio}</code>" attribute can be used to change the priority
+		of an existing sign.
+
+:sign place <code class="special">{id}</code> name=<code class="special">{name}</code> [buffer=<code class="special">{nr}</code>]
+		Same, but use buffer <code class="special">{nr}</code>.  If the buffer argument is not
+		given, use the current buffer.
+
+
+REMOVING SIGNS						<b class="vimtag">*<a name=":sign-unplace">:sign-unplace</a>*</b> <b class="vimtag">*<a name="E159">E159</a>*</b>
+
+See |<a href="sign.html#sign_unplace()">sign_unplace()</a>| for the equivalent Vim script function.
+
+:sign unplace <code class="special">{id}</code> file=<code class="special">{fname}</code>
+		Remove the previously placed sign <code class="special">{id}</code> from file <code class="special">{fname}</code>.
+		See remark above about <code class="special">{fname}</code> |<a href="sign.html#:sign-fname">:sign-fname</a>|.
+
+:sign unplace <code class="special">{id}</code> group=<code class="special">{group}</code> file=<code class="special">{fname}</code>
+		Same but remove the sign <code class="special">{id}</code> in sign group <code class="special">{group}</code>.
+
+:sign unplace <code class="special">{id}</code> group=* file=<code class="special">{fname}</code>
+		Same but remove the sign <code class="special">{id}</code> from all the sign groups.
+
+:sign unplace * file=<code class="special">{fname}</code>
+		Remove all placed signs in file <code class="special">{fname}</code>.
+
+:sign unplace * group=<code class="special">{group}</code> file=<code class="special">{fname}</code>
+		Remove all placed signs in group <code class="special">{group}</code> from file <code class="special">{fname}</code>.
+
+:sign unplace <b class="vimtag">*<a name=" group%20"> group=</a>*</b> file=<code class="special">{fname}</code>
+		Remove all placed signs in all the groups from file <code class="special">{fname}</code>.
+
+:sign unplace <code class="special">{id}</code> buffer=<code class="special">{nr}</code>
+		Remove the previously placed sign <code class="special">{id}</code> from buffer <code class="special">{nr}</code>.
+
+:sign unplace <code class="special">{id}</code> group=<code class="special">{group}</code> buffer=<code class="special">{nr}</code>
+		Remove the previously placed sign <code class="special">{id}</code> in group <code class="special">{group}</code> from
+		buffer <code class="special">{nr}</code>.
+
+:sign unplace <code class="special">{id}</code> group=* buffer=<code class="special">{nr}</code>
+		Remove the previously placed sign <code class="special">{id}</code> in all the groups from
+		buffer <code class="special">{nr}</code>.
+
+:sign unplace * buffer=<code class="special">{nr}</code>
+		Remove all placed signs in buffer <code class="special">{nr}</code>.
+
+:sign unplace * group=<code class="special">{group}</code> buffer=<code class="special">{nr}</code>
+		Remove all placed signs in group <code class="special">{group}</code> from buffer <code class="special">{nr}</code>.
+
+:sign unplace <b class="vimtag">*<a name=" group%20"> group=</a>*</b> buffer=<code class="special">{nr}</code>
+		Remove all placed signs in all the groups from buffer <code class="special">{nr}</code>.
+
+:sign unplace <code class="special">{id}</code>
+		Remove the previously placed sign <code class="special">{id}</code> from all files it
+		appears in.
+
+:sign unplace <code class="special">{id}</code> group=<code class="special">{group}</code>
+		Remove the previously placed sign <code class="special">{id}</code> in group <code class="special">{group}</code> from
+		all files it appears in.
+
+:sign unplace <code class="special">{id}</code> group=*
+		Remove the previously placed sign <code class="special">{id}</code> in all the groups from
+		all the files it appears in.
+
+:sign unplace *
+		Remove all placed signs in the global group from all the files.
+
+:sign unplace * group=<code class="special">{group}</code>
+		Remove all placed signs in group <code class="special">{group}</code> from all the files.
+
+:sign unplace <b class="vimtag">*<a name=" group%20"> group=</a>*</b>
+		Remove all placed signs in all the groups from all the files.
+
+:sign unplace
+		Remove a placed sign at the cursor position. If multiple signs
+		are placed in the line, then only one is removed.
+
+:sign unplace group=<code class="special">{group}</code>
+		Remove a placed sign in group <code class="special">{group}</code> at the cursor
+		position.
+
+:sign unplace group=*
+		Remove a placed sign in any group at the cursor position.
+
+
+LISTING PLACED SIGNS					<b class="vimtag">*<a name=":sign-place-list">:sign-place-list</a>*</b>
+
+See |<a href="sign.html#sign_getplaced()">sign_getplaced()</a>| for the equivalent Vim script function.
+
+:sign place file=<code class="special">{fname}</code>
+		List signs placed in file <code class="special">{fname}</code>.
+		See remark above about <code class="special">{fname}</code> |<a href="sign.html#:sign-fname">:sign-fname</a>|.
+
+:sign place group=<code class="special">{group}</code> file=<code class="special">{fname}</code>
+		List signs in group <code class="special">{group}</code> placed in file <code class="special">{fname}</code>.
+
+:sign place group=* file=<code class="special">{fname}</code>
+		List signs in all the groups placed in file <code class="special">{fname}</code>.
+
+:sign place buffer=<code class="special">{nr}</code>
+		List signs placed in buffer <code class="special">{nr}</code>.
+
+:sign place group=<code class="special">{group}</code> buffer=<code class="special">{nr}</code>
+		List signs in group <code class="special">{group}</code> placed in buffer <code class="special">{nr}</code>.
+
+:sign place group=* buffer=<code class="special">{nr}</code>
+		List signs in all the groups placed in buffer <code class="special">{nr}</code>.
+
+:sign place	List placed signs in the global group in all files.
+
+:sign place group=<code class="special">{group}</code>
+		List placed signs with sign group <code class="special">{group}</code> in all files.
+
+:sign place group=*
+		List placed signs in all sign groups in all files.
+
+
+JUMPING TO A SIGN					<b class="vimtag">*<a name=":sign-jump">:sign-jump</a>*</b> <b class="vimtag">*<a name="E157">E157</a>*</b>
+
+See |<a href="sign.html#sign_jump()">sign_jump()</a>| for the equivalent Vim script function.
+
+:sign jump <code class="special">{id}</code> file=<code class="special">{fname}</code>
+		Open the file <code class="special">{fname}</code> or jump to the window that contains
+		<code class="special">{fname}</code> and position the cursor at sign <code class="special">{id}</code>.
+		See remark above about <code class="special">{fname}</code> |<a href="sign.html#:sign-fname">:sign-fname</a>|.
+		If the file isn't displayed in window and the current file can
+		not be |<a href="editing.html#abandon">abandon</a>|ed this fails.
+
+:sign jump <code class="special">{id}</code> group=<code class="special">{group}</code> file=<code class="special">{fname}</code>
+		Same but jump to the sign in group <code class="special">{group}</code>
+
+:sign jump <code class="special">{id}</code> [buffer=<code class="special">{nr}</code>]					<b class="vimtag">*<a name="E934">E934</a>*</b>
+		Same, but use buffer <code class="special">{nr}</code>.  This fails if buffer <code class="special">{nr}</code> does not
+		have a name. If the buffer argument is not given, use the
+		current buffer.
+
+:sign jump <code class="special">{id}</code> group=<code class="special">{group}</code> [buffer=<code class="special">{nr}</code>]
+		Same but jump to the sign in group <code class="special">{group}</code>
+
+
+</pre><hr/><pre>3. Functions					<b class="vimtag">*<a name="sign-functions-details">sign-functions-details</a>*</b>
+
+sign_define(<code class="special">{name}</code> [, <code class="special">{dict}</code>])				<b class="vimtag">*<a name="sign_define()">sign_define()</a>*</b>
+sign_define(<code class="special">{list}</code>)
+		Define a new sign named <code class="special">{name}</code> or modify the attributes of an
+		existing sign.  This is similar to the |<a href="sign.html#:sign-define">:sign-define</a>| command.
+
+		Prefix <code class="special">{name}</code> with a unique text to avoid name collisions.
+		There is no <code class="special">{group}</code> like with placing signs.
+
+		The <code class="special">{name}</code> can be a String or a Number.  The optional <code class="special">{dict}</code>
+		argument specifies the sign attributes.  The following values
+		are supported:
+		   icon		full path to the bitmap file for the sign.
+		   linehl	highlight group used for the whole line the
+				sign is placed in.
+		   text		text that is displayed when there is no icon
+				or the GUI is not being used.
+		   texthl	highlight group used for the text item
+
+		If the sign named <code class="special">{name}</code> already exists, then the attributes
+		of the sign are updated.
+
+		The one argument <code class="special">{list}</code> can be used to define a list of signs.
+		Each list item is a dictionary with the above items in <code class="special">{dict}</code>
+		and a "name" item for the sign name.
+
+		Returns 0 on success and -1 on failure.  When the one argument
+		<code class="special">{list}</code> is used, then returns a List of values one for each
+		defined sign.
+
+		Examples:
+<code class="example">			call sign_define("mySign", {</code>
+<code class="example">				\ "text" : "=&gt;",</code>
+<code class="example">				\ "texthl" : "Error",</code>
+<code class="example">				\ "linehl" : "Search"})</code>
+<code class="example">			call sign_define([</code>
+<code class="example">				\ {'name' : 'sign1',</code>
+<code class="example">				\  'text' : '=&gt;'},</code>
+<code class="example">				\ {'name' : 'sign2',</code>
+<code class="example">				\  'text' : '!!'}</code>
+<code class="example">				\ ])</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignList()-&gt;sign_define()</code>
+<code class="example"></code>
+sign_getdefined([<code class="special">{name}</code>])				<b class="vimtag">*<a name="sign_getdefined()">sign_getdefined()</a>*</b>
+		Get a list of defined signs and their attributes.
+		This is similar to the |<a href="sign.html#:sign-list">:sign-list</a>| command.
+
+		If the <code class="special">{name}</code> is not supplied, then a list of all the defined
+		signs is returned. Otherwise the attribute of the specified
+		sign is returned.
+
+		Each list item in the returned value is a dictionary with the
+		following entries:
+		   icon		full path to the bitmap file of the sign
+		   linehl	highlight group used for the whole line the
+				sign is placed in.
+		   name		name of the sign
+		   text		text that is displayed when there is no icon
+				or the GUI is not being used.
+		   texthl	highlight group used for the text item
+
+		Returns an empty List if there are no signs and when <code class="special">{name}</code> is
+		not found.
+
+		Examples:
+<code class="example">			" Get a list of all the defined signs</code>
+<code class="example">			echo sign_getdefined()</code>
+<code class="example"></code>
+<code class="example">			" Get the attribute of the sign named mySign</code>
+<code class="example">			echo sign_getdefined("mySign")</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignList()-&gt;sign_getdefined()</code>
+<code class="example"></code>
+sign_getplaced([<code class="special">{expr}</code> [, <code class="special">{dict}</code>]])			<b class="vimtag">*<a name="sign_getplaced()">sign_getplaced()</a>*</b>
+		Return a list of signs placed in a buffer or all the buffers.
+		This is similar to the |<a href="sign.html#:sign-place-list">:sign-place-list</a>| command.
+
+		If the optional buffer name <code class="special">{expr}</code> is specified, then only the
+		list of signs placed in that buffer is returned.  For the use
+		of <code class="special">{expr}</code>, see |<a href="eval.html#bufname()">bufname()</a>|. The optional <code class="special">{dict}</code> can contain
+		the following entries:
+		   group	select only signs in this group
+		   id		select sign with this identifier
+		   lnum		select signs placed in this line. For the use
+				of <code class="special">{lnum}</code>, see |<a href="eval.html#line()">line()</a>|.
+		If <code class="special">{group}</code> is '*', then signs in all the groups including the
+		global group are returned. If <code class="special">{group}</code> is not supplied or is an
+		empty string, then only signs in the global group are
+		returned.  If no arguments are supplied, then signs in the
+		global group placed in all the buffers are returned.
+		See |<a href="sign.html#sign-group">sign-group</a>|.
+
+		Each list item in the returned value is a dictionary with the
+		following entries:
+			bufnr	number of the buffer with the sign
+			signs	list of signs placed in <code class="special">{bufnr}</code>. Each list
+				item is a dictionary with the below listed
+				entries
+
+		The dictionary for each sign contains the following entries:
+			group	sign group. Set to '' for the global group.
+			id	identifier of the sign
+			lnum	line number where the sign is placed
+			name	name of the defined sign
+			priority	sign priority
+
+		The returned signs in a buffer are ordered by their line
+		number and priority.
+
+		Returns an empty list on failure or if there are no placed
+		signs.
+
+		Examples:
+<code class="example">			" Get a List of signs placed in eval.c in the</code>
+<code class="example">			" global group</code>
+<code class="example">			echo sign_getplaced("eval.c")</code>
+<code class="example"></code>
+<code class="example">			" Get a List of signs in group 'g1' placed in eval.c</code>
+<code class="example">			echo sign_getplaced("eval.c", <code class="special">{'group' : 'g1'}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Get a List of signs placed at line 10 in eval.c</code>
+<code class="example">			echo sign_getplaced("eval.c", <code class="special">{'lnum' : 10}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Get sign with identifier 10 placed in a.py</code>
+<code class="example">			echo sign_getplaced("a.py", <code class="special">{'id' : 10}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Get sign with id 20 in group 'g1' placed in a.py</code>
+<code class="example">			echo sign_getplaced("a.py", {'group' : 'g1',</code>
+<code class="example">							\  'id' : 20})</code>
+<code class="example"></code>
+<code class="example">			" Get a List of all the placed signs</code>
+<code class="example">			echo sign_getplaced()</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetBufname()-&gt;sign_getplaced()</code>
+
+							<b class="vimtag">*<a name="sign_jump()">sign_jump()</a>*</b>
+sign_jump(<code class="special">{id}</code>, <code class="special">{group}</code>, <code class="special">{expr}</code>)
+		Open the buffer <code class="special">{expr}</code> or jump to the window that contains
+		<code class="special">{expr}</code> and position the cursor at sign <code class="special">{id}</code> in group <code class="special">{group}</code>.
+		This is similar to the |<a href="sign.html#:sign-jump">:sign-jump</a>| command.
+
+		For the use of <code class="special">{expr}</code>, see |<a href="eval.html#bufname()">bufname()</a>|.
+
+		Returns the line number of the sign. Returns -1 if the
+		arguments are invalid.
+
+		Example:
+<code class="example">			" Jump to sign 10 in the current buffer</code>
+<code class="example">			call sign_jump(10, '', '')</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignid()-&gt;sign_jump()</code>
+
+							<b class="vimtag">*<a name="sign_place()">sign_place()</a>*</b>
+sign_place(<code class="special">{id}</code>, <code class="special">{group}</code>, <code class="special">{name}</code>, <code class="special">{expr}</code> [, <code class="special">{dict}</code>])
+		Place the sign defined as <code class="special">{name}</code> at line <code class="special">{lnum}</code> in file or
+		buffer <code class="special">{expr}</code> and assign <code class="special">{id}</code> and <code class="special">{group}</code> to sign.  This is
+		similar to the |<a href="sign.html#:sign-place">:sign-place</a>| command.
+
+		If the sign identifier <code class="special">{id}</code> is zero, then a new identifier is
+		allocated.  Otherwise the specified number is used. <code class="special">{group}</code> is
+		the sign group name. To use the global sign group, use an
+		empty string.  <code class="special">{group}</code> functions as a namespace for <code class="special">{id}</code>, thus
+		two groups can use the same IDs. Refer to |<a href="sign.html#sign-identifier">sign-identifier</a>|
+		and |<a href="sign.html#sign-group">sign-group</a>| for more information.
+
+		<code class="special">{name}</code> refers to a defined sign.
+		<code class="special">{expr}</code> refers to a buffer name or number. For the accepted
+		values, see |<a href="eval.html#bufname()">bufname()</a>|.
+
+		The optional <code class="special">{dict}</code> argument supports the following entries:
+			lnum		line number in the file or buffer
+					<code class="special">{expr}</code> where the sign is to be placed.
+					For the accepted values, see |<a href="eval.html#line()">line()</a>|.
+			priority	priority of the sign. See
+					|<a href="sign.html#sign-priority">sign-priority</a>| for more information.
+
+		If the optional <code class="special">{dict}</code> is not specified, then it modifies the
+		placed sign <code class="special">{id}</code> in group <code class="special">{group}</code> to use the defined sign
+		<code class="special">{name}</code>.
+
+		Returns the sign identifier on success and -1 on failure.
+
+		Examples:
+<code class="example">			" Place a sign named sign1 with id 5 at line 20 in</code>
+<code class="example">			" buffer json.c</code>
+<code class="example">			call sign_place(5, '', 'sign1', 'json.c',</code>
+<code class="example">							\ <code class="special">{'lnum' : 20}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Updates sign 5 in buffer json.c to use sign2</code>
+<code class="example">			call sign_place(5, '', 'sign2', 'json.c')</code>
+<code class="example"></code>
+<code class="example">			" Place a sign named sign3 at line 30 in</code>
+<code class="example">			" buffer json.c with a new identifier</code>
+<code class="example">			let id = sign_place(0, '', 'sign3', 'json.c',</code>
+<code class="example">							\ <code class="special">{'lnum' : 30}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Place a sign named sign4 with id 10 in group 'g3'</code>
+<code class="example">			" at line 40 in buffer json.c with priority 90</code>
+<code class="example">			call sign_place(10, 'g3', 'sign4', 'json.c',</code>
+<code class="example">					\ <code class="special">{'lnum' : 40, 'priority' : 90}</code>)</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignid()-&gt;sign_place(group, name, expr)</code>
+
+							<b class="vimtag">*<a name="sign_placelist()">sign_placelist()</a>*</b>
+sign_placelist(<code class="special">{list}</code>)
+		Place one or more signs.  This is similar to the
+		|<a href="sign.html#sign_place()">sign_place()</a>| function.  The <code class="special">{list}</code> argument specifies the
+		List of signs to place. Each list item is a dict with the
+		following sign attributes:
+		    buffer	buffer name or number. For the accepted
+				values, see |<a href="eval.html#bufname()">bufname()</a>|.
+		    group	sign group. <code class="special">{group}</code> functions as a namespace
+				for <code class="special">{id}</code>, thus two groups can use the same
+				IDs. If not specified or set to an empty
+				string, then the global group is used.   See
+				|<a href="sign.html#sign-group">sign-group</a>| for more information.
+		    id		sign identifier. If not specified or zero,
+				then a new unique identifier is allocated.
+				Otherwise the specified number is used. See
+				|<a href="sign.html#sign-identifier">sign-identifier</a>| for more information.
+		    lnum	line number in the buffer <code class="special">{expr}</code> where the
+				sign is to be placed. For the accepted values,
+				see |<a href="eval.html#line()">line()</a>|.
+		    name	name of the sign to place. See |<a href="sign.html#sign_define()">sign_define()</a>|
+		    		for more information.
+		    priority	priority of the sign. When multiple signs are
+				placed on a line, the sign with the highest
+				priority is used. If not specified, the
+				default value of 10 is used. See
+				|<a href="sign.html#sign-priority">sign-priority</a>| for more information.
+
+		If <code class="special">{id}</code> refers to an existing sign, then the existing sign is
+		modified to use the specified <code class="special">{name}</code> and/or <code class="special">{priority}</code>.
+
+		Returns a List of sign identifiers. If failed to place a
+		sign, the corresponding list item is set to -1.
+
+		Examples:
+<code class="example">			" Place sign s1 with id 5 at line 20 and id 10 at line</code>
+<code class="example">			" 30 in buffer a.c</code>
+<code class="example">			let [n1, n2] = sign_placelist([</code>
+<code class="example">				\ {'id' : 5,</code>
+<code class="example">				\  'name' : 's1',</code>
+<code class="example">				\  'buffer' : 'a.c',</code>
+<code class="example">				\  'lnum' : 20},</code>
+<code class="example">				\ {'id' : 10,</code>
+<code class="example">				\  'name' : 's1',</code>
+<code class="example">				\  'buffer' : 'a.c',</code>
+<code class="example">				\  'lnum' : 30}</code>
+<code class="example">				\ ])</code>
+<code class="example"></code>
+<code class="example">			" Place sign s1 in buffer a.c at line 40 and 50</code>
+<code class="example">			" with auto-generated identifiers</code>
+<code class="example">			let [n1, n2] = sign_placelist([</code>
+<code class="example">				\ {'name' : 's1',</code>
+<code class="example">				\  'buffer' : 'a.c',</code>
+<code class="example">				\  'lnum' : 40},</code>
+<code class="example">				\ {'name' : 's1',</code>
+<code class="example">				\  'buffer' : 'a.c',</code>
+<code class="example">				\  'lnum' : 50}</code>
+<code class="example">				\ ])</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignlist()-&gt;sign_placelist()</code>
+<code class="example"></code>
+sign_undefine([<code class="special">{name}</code>])					<b class="vimtag">*<a name="sign_undefine()">sign_undefine()</a>*</b>
+sign_undefine(<code class="special">{list}</code>)
+		Deletes a previously defined sign <code class="special">{name}</code>. This is similar to
+		the |<a href="sign.html#:sign-undefine">:sign-undefine</a>| command. If <code class="special">{name}</code> is not supplied, then
+		deletes all the defined signs.
+
+		The one argument <code class="special">{list}</code> can be used to undefine a list of
+		signs. Each list item is the name of a sign.
+
+		Returns 0 on success and -1 on failure.  For the one argument
+		<code class="special">{list}</code> call, returns a list of values one for each undefined
+		sign.
+
+		Examples:
+<code class="example">			" Delete a sign named mySign</code>
+<code class="example">			call sign_undefine("mySign")</code>
+<code class="example"></code>
+<code class="example">			" Delete signs 'sign1' and 'sign2'</code>
+<code class="example">			call sign_undefine(["sign1", "sign2"])</code>
+<code class="example"></code>
+<code class="example">			" Delete all the signs</code>
+<code class="example">			call sign_undefine()</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignlist()-&gt;sign_undefine()</code>
+<code class="example"></code>
+sign_unplace(<code class="special">{group}</code> [, <code class="special">{dict}</code>])			<b class="vimtag">*<a name="sign_unplace()">sign_unplace()</a>*</b>
+		Remove a previously placed sign in one or more buffers.  This
+		is similar to the |<a href="sign.html#:sign-unplace">:sign-unplace</a>| command.
+
+		<code class="special">{group}</code> is the sign group name. To use the global sign group,
+		use an empty string.  If <code class="special">{group}</code> is set to '*', then all the
+		groups including the global group are used.
+		The signs in <code class="special">{group}</code> are selected based on the entries in
+		<code class="special">{dict}</code>.  The following optional entries in <code class="special">{dict}</code> are
+		supported:
+			buffer	buffer name or number. See |<a href="eval.html#bufname()">bufname()</a>|.
+			id	sign identifier
+		If <code class="special">{dict}</code> is not supplied, then all the signs in <code class="special">{group}</code> are
+		removed.
+
+		Returns 0 on success and -1 on failure.
+
+		Examples:
+<code class="example">			" Remove sign 10 from buffer a.vim</code>
+<code class="example">			call sign_unplace('', <code class="special">{'buffer' : "a.vim", 'id' : 10}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Remove sign 20 in group 'g1' from buffer 3</code>
+<code class="example">			call sign_unplace('g1', <code class="special">{'buffer' : 3, 'id' : 20}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Remove all the signs in group 'g2' from buffer 10</code>
+<code class="example">			call sign_unplace('g2', <code class="special">{'buffer' : 10}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Remove sign 30 in group 'g3' from all the buffers</code>
+<code class="example">			call sign_unplace('g3', <code class="special">{'id' : 30}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Remove all the signs placed in buffer 5</code>
+<code class="example">			call sign_unplace('*', <code class="special">{'buffer' : 5}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Remove the signs in group 'g4' from all the buffers</code>
+<code class="example">			call sign_unplace('g4')</code>
+<code class="example"></code>
+<code class="example">			" Remove sign 40 from all the buffers</code>
+<code class="example">			call sign_unplace('*', <code class="special">{'id' : 40}</code>)</code>
+<code class="example"></code>
+<code class="example">			" Remove all the placed signs from all the buffers</code>
+<code class="example">			call sign_unplace('*')</code>
+<code class="example"></code>
+&lt;		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSigngroup()-&gt;sign_unplace()</code>
+
+sign_unplacelist(<code class="special">{list}</code>)				<b class="vimtag">*<a name="sign_unplacelist()">sign_unplacelist()</a>*</b>
+		Remove previously placed signs from one or more buffers.  This
+		is similar to the |<a href="sign.html#sign_unplace()">sign_unplace()</a>| function.
+
+		The <code class="special">{list}</code> argument specifies the List of signs to remove.
+		Each list item is a dict with the following sign attributes:
+		    buffer	buffer name or number. For the accepted
+				values, see |<a href="eval.html#bufname()">bufname()</a>|. If not specified,
+				then the specified sign is removed from all
+				the buffers.
+		    group	sign group name. If not specified or set to an
+				empty string, then the global sign group is
+				used. If set to '*', then all the groups
+				including the global group are used.
+		    id		sign identifier. If not specified, then all
+				the signs in the specified group are removed.
+
+		Returns a List where an entry is set to 0 if the corresponding
+		sign was successfully removed or -1 on failure.
+
+		Example:
+<code class="example">			" Remove sign with id 10 from buffer a.vim and sign</code>
+<code class="example">			" with id 20 from buffer b.vim</code>
+<code class="example">			call sign_unplacelist([</code>
+<code class="example">				\ <code class="special">{'id' : 10, 'buffer' : "a.vim"}</code>,</code>
+<code class="example">				\ <code class="special">{'id' : 20, 'buffer' : 'b.vim'}</code>,</code>
+<code class="example">				\ ])</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetSignlist()-&gt;sign_unplacelist()</code>
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

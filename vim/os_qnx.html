@@ -1,0 +1,150 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: os_qnx</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>OS_QNX</h2>
+<pre>
+<b class="vimtag">*<a name="os_qnx.txt">os_qnx.txt</a>*</b>    For Vim version 8.2.  Last change: 2005 Mar 29
+
+
+		  VIM REFERENCE MANUAL    by Julian Kinraid
+
+
+							<b class="vimtag">*<a name="QNX">QNX</a>*</b> <b class="vimtag">*<a name="qnx">qnx</a>*</b>
+
+1. General			|<a href="os_qnx.html#qnx-general">qnx-general</a>|
+2. Compiling Vim		|<a href="os_qnx.html#qnx-compiling">qnx-compiling</a>|
+3. Terminal support		|<a href="os_qnx.html#qnx-terminal">qnx-terminal</a>|
+4. Photon GUI			|<a href="os_qnx.html#photon-gui">photon-gui</a>|
+5. Photon fonts			|<a href="os_qnx.html#photon-fonts">photon-fonts</a>|
+6. Bugs &amp; things To Do
+
+</pre><hr/><pre>
+1. General						<b class="vimtag">*<a name="qnx-general">qnx-general</a>*</b>
+
+Vim on QNX behaves much like other unix versions. |<a href="os_unix.html#os_unix.txt">os_unix</a>|
+
+
+2. Compiling Vim					<b class="vimtag">*<a name="qnx-compiling">qnx-compiling</a>*</b>
+
+Vim can be compiled using the standard configure/make approach.  If you want to
+compile for X11, pass the --with-x option to configure.  Otherwise, running
+./configure without any arguments or passing --enable-gui=photon, will compile
+vim with the Photon gui support.  Run ./configure --help , to find out other
+features you can enable/disable.
+
+
+3. Terminal support					<b class="vimtag">*<a name="qnx-terminal">qnx-terminal</a>*</b>
+
+Vim has support for the mouse and clipboard in a pterm, if those options
+are compiled in, which they are normally.
+
+The options that affect mouse support are |<a href="options.html#'mouse'">'mouse'</a>| and |<a href="options.html#'ttymouse'">'ttymouse'</a>|.  When
+using the mouse, only simple left and right mouse clicking/dragging is
+supported.  If you hold down shift, ctrl, or alt while using the mouse, pterm
+will handle the mouse itself.  It will make a selection, separate from what
+vim's doing.
+
+When the mouse is in use, you can press Alt-RightMouse to open the pterm menu.
+To turn the mouse off in vim, set the mouse option to nothing, set mouse=
+
+
+4. Photon GUI						<b class="vimtag">*<a name="photon-gui">photon-gui</a>*</b>
+
+To start the gui for vim, you need to run either gvim or vim -g, otherwise
+the terminal version will run.  For more info - |<a href="gui_x11.html#gui-x11-start">gui-x11-start</a>|
+
+Supported features:
+	:browse command					|<a href="editing.html#:browse">:browse</a>|
+	:confirm command				|<a href="editing.html#:confirm">:confirm</a>|
+	Cursor blinking					|<a href="options.html#'guicursor'">'guicursor'</a>|
+	Menus, popup menus and menu priorities		|<a href="gui.html#:menu">:menu</a>|
+							|<a href="gui.html#popup-menu">popup-menu</a>|
+							|<a href="gui.html#menu-priority">menu-priority</a>|
+	Toolbar						|<a href="gui.html#gui-toolbar">gui-toolbar</a>|
+							|<a href="options.html#'toolbar'">'toolbar'</a>|
+	Font selector (:set guifont=*)			|<a href="os_qnx.html#photon-fonts">photon-fonts</a>|
+	Mouse focus					|<a href="options.html#'mousefocus'">'mousefocus'</a>|
+	Mouse hide					|<a href="options.html#'mousehide'">'mousehide'</a>|
+	Mouse cursor shapes				|<a href="options.html#'mouseshape'">'mouseshape'</a>|
+	Clipboard					|<a href="gui_w32.html#gui-clipboard">gui-clipboard</a>|
+
+Unfinished features:
+	Various international support, such as Farsi &amp; Hebrew support,
+	different encodings, etc.
+
+	This help file
+
+Unsupported features:
+	Find &amp; Replace window				|<a href="change.html#:promptfind">:promptfind</a>|
+	Tearoff menus
+
+	Other things which I can't think of so I can't list them
+
+
+5. Fonts						<b class="vimtag">*<a name="photon-fonts">photon-fonts</a>*</b>
+
+You set fonts in the gui with the guifont option
+<code class="example">	:set guifont=Lucida\ Terminal</code>
+
+The font must be a monospace font, and any spaces in the font name must be
+escaped with a '\'.  The default font used is PC Terminal, size 8.  Using
+'*' as the font name will open a standard Photon font selector where you can
+select a font.
+
+Following the name, you can include optional settings to control the size and
+style of the font, each setting separated by a ':'.  Not all fonts support the
+various styles.
+
+The options are,
+    s<code class="special">{size}</code>	Set the size of the font to <code class="special">{size}</code>
+    b		Bold style
+    a		Use antialiasing
+    i		Italic style
+
+Examples:
+
+Set the font to monospace size 10 with antialiasing
+<code class="example">	:set guifont=monospace:s10:a</code>
+
+Set the font to Courier size 12, with bold and italics
+<code class="example">	:set guifont=Courier:s12:b:i</code>
+
+Select a font with the requester
+<code class="example">	:set guifont=*</code>
+
+
+
+6. Bugs &amp; things To Do
+
+Known problems:
+	- Vim hangs sometimes when running an external program.  Workaround:
+	  put this line in your |<a href="starting.html#vimrc">vimrc</a>| file:
+<code class="example">		set noguipty</code>
+<code class="example"></code>
+Bugs:
+	- Still a slight problem with menu highlighting.
+	- When using phditto/phinows/etc., if you are using a font that
+	  doesn't support the bold attribute, when vim attempts to draw
+	  bold text it will be all messed up.
+	- The cursor can sometimes be hard to see.
+	- A number of minor problems that can fixed. :)
+
+Todo:
+	- Improve multi-language support.
+	- Options for setting the fonts used in the menu and toolbar.
+	- Find &amp; Replace dialog.
+	- The clientserver features.
+	- Maybe tearoff menus.
+
+	- Replace usage of fork() with spawn() when launching external
+	  programs.
+
+ vim:tw=78:sw=4:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

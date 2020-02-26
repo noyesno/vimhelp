@@ -1,0 +1,903 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: intro</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>INTRO</h2>
+<pre>
+<b class="vimtag">*<a name="intro.txt">intro.txt</a>*</b>     For Vim version 8.2.  Last change: 2019 Nov 11
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Introduction to Vim					<b class="vimtag">*<a name="ref">ref</a>*</b> <b class="vimtag">*<a name="reference">reference</a>*</b>
+
+1. Introduction			|<a href="intro.html#intro">intro</a>|
+2. Vim on the internet		|<a href="intro.html#internet">internet</a>|
+3. Credits			|<a href="intro.html#credits">credits</a>|
+4. Notation			|<a href="intro.html#notation">notation</a>|
+5. Modes, introduction		|<a href="intro.html#vim-modes-intro">vim-modes-intro</a>|
+6. Switching from mode to mode	|<a href="intro.html#mode-switching">mode-switching</a>|
+7. The window contents		|<a href="intro.html#window-contents">window-contents</a>|
+8. Definitions			|<a href="intro.html#definitions">definitions</a>|
+
+</pre><hr/><pre>1. Introduction						<b class="vimtag">*<a name="intro">intro</a>*</b>
+
+Vim stands for Vi IMproved.  It used to be Vi IMitation, but there are so many
+improvements that a name change was appropriate.  Vim is a text editor which
+includes almost all the commands from the Unix program "Vi" and a lot of new
+ones.  It is very useful for editing programs and other plain text.
+   All commands are given with the keyboard.  This has the advantage that you
+can keep your fingers on the keyboard and your eyes on the screen.  For those
+who want it, there is mouse support and a GUI version with scrollbars and
+menus (see |<a href="gui.html#gui.txt">gui</a>|).
+
+An overview of this manual can be found in the file "help.txt", |<a href="help.html#help.txt">help</a>|.
+It can be accessed from within Vim with the <code class="special">&lt;Help&gt;</code> or <code class="special">&lt;F1&gt;</code> key and with the
+|<a href="helphelp.html#:help">:help</a>| command (just type ":help", without the bars or quotes).
+   The 'helpfile' option can be set to the name of the help file, in case it
+is not located in the default place.  You can jump to subjects like with tags:
+Use CTRL-] to jump to a subject under the cursor, use <code class="keystroke">CTRL-T</code> to jump back.
+
+The differences between Vi and Vim are mentioned in |<a href="vi_diff.html#vi_diff.txt">vi_diff</a>|.
+
+This manual refers to Vim on various machines.  There may be small differences
+between different computers and terminals.  Besides the remarks given in this
+document, there is a separate document for each supported system, see
+|<a href="help.html#sys-file-list">sys-file-list</a>|.
+
+							<b class="vimtag">*<a name="pronounce">pronounce</a>*</b>
+Vim is pronounced as one word, like Jim, not vi-ai-em.  It's written with a
+capital, since it's a name, again like Jim.
+
+This manual is a reference for all the Vim commands and options.  This is not
+an introduction to the use of Vi or Vim, it gets a bit complicated here and
+there.  For beginners, there is a hands-on |<a href="usr_01.html#tutor">tutor</a>|.  To learn using Vim, read
+the user manual |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|.
+
+							<b class="vimtag">*<a name="book">book</a>*</b> <b class="vimtag">*<a name="books">books</a>*</b>
+Most books on Vi and Vim contain a section for beginners.  Others are spending
+more words on specific functionality.  You can find an overview of Vim books
+here:
+	http://iccf-holland.org/vim_books.html
+
+</pre><hr/><pre>2. Vim on the internet					<b class="vimtag">*<a name="internet">internet</a>*</b>
+
+			<b class="vimtag">*<a name="www">www</a>*</b> <b class="vimtag">*<a name="WWW">WWW</a>*</b>  <b class="vimtag">*<a name="faq">faq</a>*</b> <b class="vimtag">*<a name="FAQ">FAQ</a>*</b> <b class="vimtag">*<a name="distribution">distribution</a>*</b> <b class="vimtag">*<a name="download">download</a>*</b>
+The Vim pages contain the most recent information about Vim.  They also
+contain links to the most recent version of Vim.  The FAQ is a list of
+Frequently Asked Questions.  Read this if you have problems.
+
+	Vim home page:	  https://www.vim.org/
+	Vim FAQ:	  https://vimhelp.org/vim_faq.txt.html
+	Downloading:	  https://www.vim.org/download.php
+
+
+Asking questions, finding answers: https://vi.stackexchange.com/
+"Vi and Vim Stack Exchange is a question and answer site for people using the
+vi and Vim families of text editors"
+
+
+Usenet News group where Vim is discussed:		<b class="vimtag">*<a name="news">news</a>*</b> <b class="vimtag">*<a name="usenet">usenet</a>*</b>
+	comp.editors
+This group is also for other editors.  If you write about Vim, don't forget to
+mention that.
+You can access it here:
+https://groups.google.com/forum/#!topic/comp.editors
+
+						<b class="vimtag">*<a name="mail-list">mail-list</a>*</b> <b class="vimtag">*<a name="maillist">maillist</a>*</b>
+There are several mailing lists for Vim:
+<code class="special">&lt;vim@vim.org&gt;</code>					<b class="vimtag">*<a name="vim-use">vim-use</a>*</b> <b class="vimtag">*<a name="vim_use">vim_use</a>*</b>
+	For discussions about using existing versions of Vim: Useful mappings,
+	questions, answers, where to get a specific version, etc.  There are
+	quite a few people watching this list and answering questions, also
+	for beginners.  Don't hesitate to ask your question here.
+<code class="special">&lt;vim-dev@vim.org&gt;</code>				<b class="vimtag">*<a name="vim-dev">vim-dev</a>*</b> <b class="vimtag">*<a name="vim_dev">vim_dev</a>*</b> <b class="vimtag">*<a name="vimdev">vimdev</a>*</b>
+	For discussions about changing Vim: New features, porting, patches,
+	beta-test versions, etc.
+<code class="special">&lt;vim-announce@vim.org&gt;</code>				<b class="vimtag">*<a name="vim-announce">vim-announce</a>*</b> <b class="vimtag">*<a name="vim_announce">vim_announce</a>*</b>
+	Announcements about new versions of Vim; also for beta-test versions
+	and ports to different systems.  This is a read-only list.
+<code class="special">&lt;vim-mac@vim.org&gt;</code>				<b class="vimtag">*<a name="vim-mac">vim-mac</a>*</b> <b class="vimtag">*<a name="vim_mac">vim_mac</a>*</b>
+	For discussions about using and improving the Macintosh version of
+	Vim.
+
+See http://www.vim.org/maillist.php for the latest information.
+
+<code class="note">NOTE:</code>
+- Anyone can see the archive, e.g. on Google groups.  Search this if you have
+  questions.
+- You can only send messages to these lists if you have subscribed!
+- The first message is moderated, thus it may take a few hours to show up.
+- You need to send the messages from the same location as where you subscribed
+  from (to avoid spam mail).
+
+						<b class="vimtag">*<a name="subscribe-maillist">subscribe-maillist</a>*</b>
+If you want to join, send a message to
+	<code class="special">&lt;vim-subscribe@vim.org&gt;</code>
+Make sure that your "From:" address is correct.  Then the list server will
+give you help on how to subscribe.
+
+						<b class="vimtag">*<a name="maillist-archive">maillist-archive</a>*</b>
+For more information and archives look on the Vim maillist page:
+http://www.vim.org/maillist.php
+
+
+Bug reports:				<b class="vimtag">*<a name="bugs">bugs</a>*</b> <b class="vimtag">*<a name="bug-reports">bug-reports</a>*</b> <b class="vimtag">*<a name="bugreport.vim">bugreport.vim</a>*</b>
+
+There are two ways to report bugs, both work:
+1. Send bug reports to: Vim Developers <code class="special">&lt;vim-dev@vim.org&gt;</code>
+   This is a maillist, you need to become a member first and many people will
+   see the message.  If you don't want that, e.g. because it is a security
+   issue, send it to <code class="special">&lt;bugs@vim.org&gt;</code>, this only goes to the Vim maintainer
+   (that's Bram).
+2. Open an issue on GitHub: https://github.com/vim/vim/issues
+   The text will be forwarded to the vim-dev maillist.
+
+Please be brief; all the time that is spent on answering mail is subtracted
+from the time that is spent on improving Vim!  Always give a reproducible
+example and try to find out which settings or other things trigger the bug.
+
+Preferably start Vim with:
+<code class="example">	vim --clean -u reproduce.vim</code>
+Where reproduce.vim is a script that reproduces the problem.  Try different
+machines, if relevant (is this an MS-Windows specific bug perhaps?).
+
+Send me patches if you can!  If you create a pull request on
+https://github.com/vim/vim then the automated checks will run and report any
+obvious problems.  But you can also send the patch by email (use an attachment
+to avoid white space changes).
+
+It will help to include information about the version of Vim you are using and
+your setup.  You can get the information with this command:
+<code class="example">   :so $VIMRUNTIME/bugreport.vim</code>
+This will create a file "bugreport.txt" in the current directory, with a lot
+of information of your environment.  Before sending this out, check if it
+doesn't contain any confidential information!
+
+If Vim crashes, please try to find out where.  You can find help on this here:
+|<a href="debug.html#debug.txt">debug</a>|.
+
+In case of doubt or when you wonder if the problem has already been fixed but
+you can't find a fix for it, become a member of the vim-dev maillist and ask
+your question there. |<a href="intro.html#maillist">maillist</a>|
+
+							<b class="vimtag">*<a name="year-2000">year-2000</a>*</b> <b class="vimtag">*<a name="Y2K">Y2K</a>*</b>
+Since Vim internally doesn't use dates for editing, there is no year 2000
+problem to worry about.  Vim does use the time in the form of seconds since
+January 1st 1970.  It is used for a time-stamp check of the edited file and
+the swap file, which is not critical and should only cause warning messages.
+
+There might be a year 2038 problem, when the seconds don't fit in a 32 bit int
+anymore.  This depends on the compiler, libraries and operating system.
+Specifically, time_t and the ctime() function are used.  And the time_t is
+stored in four bytes in the swap file.  But that's only used for printing a
+file date/time for recovery, it will never affect normal editing.
+
+The Vim strftime() function directly uses the strftime() system function.
+localtime() uses the time() system function.  getftime() uses the time
+returned by the stat() system function.  If your system libraries are year
+2000 compliant, Vim is too.
+
+The user may create scripts for Vim that use external commands.  These might
+introduce Y2K problems, but those are not really part of Vim itself.
+
+</pre><hr/><pre>3. Credits				<b class="vimtag">*<a name="credits">credits</a>*</b> <b class="vimtag">*<a name="author">author</a>*</b> <b class="vimtag">*<a name="Bram">Bram</a>*</b> <b class="vimtag">*<a name="Moolenaar">Moolenaar</a>*</b>
+
+Most of Vim was created by Bram Moolenaar <code class="special">&lt;Bram@vim.org&gt;</code>.
+
+Parts of the documentation come from several Vi manuals, written by:
+	W.N. Joy
+	Alan P.W. Hewett
+	Mark Horton
+
+The Vim editor is based on Stevie and includes (ideas from) other software,
+worked on by the people mentioned here.  Other people helped by sending me
+patches, suggestions and giving feedback about what is good and bad in Vim.
+
+Vim would never have become what it is now, without the help of these people!
+
+	Ron Aaron		Win32 GUI changes
+	Mohsin Ahmed		encryption
+	Zoltan Arpadffy		work on VMS port
+	Tony Andrews		Stevie
+	Gert van Antwerpen	changes for DJGPP on MS-DOS
+	Berkeley DB(3)		ideas for swap file implementation
+	Keith Bostic		Nvi
+	Walter Briscoe		Makefile updates, various patches
+	Ralf Brown		SPAWNO library for MS-DOS
+	Robert Colon		many useful remarks
+	Marcin Dalecki		GTK+ GUI port, toolbar icons, gettext()
+	Kayhan Demirel		sent me news in Uganda
+	Chris &amp; John Downey	xvi (ideas for multi-windows version)
+	Henk Elbers		first VMS port
+	Daniel Elstner		GTK+ 2 port
+	Eric Fischer		Mac port, 'cindent', and other improvements
+	Benji Fisher		Answering lots of user questions
+	Bill Foster		Athena GUI port
+	Google			Lets me work on Vim one day a week
+	Loic Grenie		xvim (ideas for multi windows version)
+	Sven Guckes		Vim promoter and previous WWW page maintainer
+	Darren Hiebert		Exuberant ctags
+	Jason Hildebrand	GTK+ 2 port
+	Bruce Hunsaker		improvements for VMS port
+	Andy Kahn		Cscope support, GTK+ GUI port
+	Oezguer Kesim		Maintainer of Vim Mailing Lists
+	Axel Kielhorn		work on the Macintosh port
+	Steve Kirkendall	Elvis
+	Roger Knobbe		original port to Windows NT
+	Sergey Laskavy		Vim's help from Moscow
+	Felix von Leitner	Previous maintainer of Vim Mailing Lists
+	David Leonard		Port of Python extensions to Unix
+	Avner Lottem		Edit in right-to-left windows
+	Flemming Madsen		X11 client-server, various features and patches
+	Tony Mechelynck		answers many user questions
+	Paul Moore		Python interface extensions, many patches
+	Katsuhito Nagano	Work on multi-byte versions
+	Sung-Hyun Nam		Work on multi-byte versions
+	Vince Negri		Win32 GUI and generic console enhancements
+	Steve Oualline		Author of the first Vim book |<a href="usr_01.html#frombook">frombook</a>|
+	Dominique Pelle		Valgrind reports and many fixes
+	A.Politz		Many bug reports and some fixes
+	George V. Reilly	Win32 port, Win32 GUI start-off
+	Stephen Riehm		bug collector
+	Stefan Roemer		various patches and help to users
+	Ralf Schandl		IBM OS/390 port
+	Olaf Seibert		DICE and BeBox version, regexp improvements
+	Mortaza Shiran		Farsi patches
+	Peter da Silva		termlib
+	Paul Slootman		OS/2 port
+	Henry Spencer		regular expressions
+	Dany St-Amant		Macintosh port
+	Tim Thompson		Stevie
+	G. R. (Fred) Walter	Stevie
+	Sven Verdoolaege	Perl interface
+	Robert Webb		Command-line completion, GUI versions, and
+				lots of patches
+	Ingo Wilken		Tcl interface
+	Mike Williams		PostScript printing
+	Juergen Weigert		Lattice version, AUX improvements, UNIX and
+				MS-DOS ports, autoconf
+	Stefan 'Sec' Zehl	Maintainer of vim.org
+	Yasuhiro Matsumoto	many MS-Windows improvements
+	Ken Takata		fixes and features
+	Kazunobu Kuriyama	GTK 3
+	Christian Brabandt	many fixes, features, user support, etc.
+	Yegappan Lakshmanan	many quickfix features
+
+I wish to thank all the people that sent me bug reports and suggestions.  The
+list is too long to mention them all here.  Vim would not be the same without
+the ideas from all these people: They keep Vim alive!
+<b class="vimtag">*<a name="love">love</a>*</b> <b class="vimtag">*<a name="peace">peace</a>*</b> <b class="vimtag">*<a name="friendship">friendship</a>*</b> <b class="vimtag">*<a name="gross-national-happiness">gross-national-happiness</a>*</b>
+
+
+In this documentation there are several references to other versions of Vi:
+							<b class="vimtag">*<a name="Vi">Vi</a>*</b> <b class="vimtag">*<a name="vi">vi</a>*</b>
+Vi	"the original".  Without further remarks this is the version
+	of Vi that appeared in Sun OS 4.x.  ":version" returns
+	"Version 3.7, 6/7/85".  Sometimes other versions are referred
+	to.  Only runs under Unix.  Source code is now available under a
+	BSD-style license.  More information on Vi can be found through:
+		http://ex-vi.sourceforge.net/
+							<b class="vimtag">*<a name="Posix">Posix</a>*</b>
+Posix	From the IEEE standard 1003.2, Part 2: Shell and utilities.
+	Generally known as "Posix".  This is a textual description of
+	how Vi is supposed to work.
+	See |<a href="vi_diff.html#posix-compliance">posix-compliance</a>|.
+							<b class="vimtag">*<a name="Nvi">Nvi</a>*</b>
+Nvi	The "New" Vi.  The version of Vi that comes with BSD 4.4 and FreeBSD.
+	Very good compatibility with the original Vi, with a few extensions.
+	The version used is 1.79.  ":version" returns "Version 1.79
+	(10/23/96)".  There has been no release the last few years, although
+	there is a development version 1.81.
+	Source code is freely available.
+							<b class="vimtag">*<a name="Elvis">Elvis</a>*</b>
+Elvis	Another Vi clone, made by Steve Kirkendall.  Very compact but isn't
+	as flexible as Vim.  Development has stalled, Elvis has left the
+	building!  Source code is freely available.
+							<b class="vimtag">*<a name="Neovim">Neovim</a>*</b>
+Neovim	A Vim clone.  Forked the Vim source in 2014 and went a different way.
+	Very much bound to github and has many more dependencies, making
+	development more complex and limiting portability.  Code has been
+	refactored, resulting in patches not being exchangeable with Vim.
+	Supports a remote GUI and integration with scripting languages.
+
+</pre><hr/><pre>4. Notation						<b class="vimtag">*<a name="notation">notation</a>*</b>
+
+When syntax highlighting is used to read this, text that is not typed
+literally is often highlighted with the Special group.  These are items in [],
+<code class="special">{}</code> and <code class="special">&lt;&gt;</code>, and <code class="keystroke">CTRL-X</code>.
+
+<code class="note">Note</code> that Vim uses all possible characters in commands.  Sometimes the [], <code class="special">{}</code>
+and <code class="special">&lt;&gt;</code> are part of what you type, the context should make this clear.
+
+
+[]		Characters in square brackets are optional.
+
+						    <b class="vimtag">*<a name="count">count</a>*</b> <b class="vimtag">*<a name="[count]">[count]</a>*</b>
+<code class="special">[count]</code>		An optional number that may precede the command to multiply
+		or iterate the command.  If no number is given, a count of one
+		is used, unless otherwise <code class="note">note</code>d.  <code class="note">Note</code> that in this manual the
+		<code class="special">[count]</code> is not mentioned in the description of the command,
+		but only in the explanation.  This was done to make the
+		commands easier to look up.  If the 'showcmd' option is on,
+		the (partially) entered count is shown at the bottom of the
+		window.  You can use <code class="special">&lt;Del&gt;</code> to erase the last digit (|<a href="various.html#N%3CDel%3E">N&lt;Del&gt;</a>|).
+
+							<b class="vimtag">*<a name="[quotex]">[quotex]</a>*</b>
+["x]		An optional register designation where text can be stored.
+		See |<a href="change.html#registers">registers</a>|.  The x is a single character between 'a' and
+		'z' or 'A' and 'Z' or '"', and in some cases (with the put
+		command) between '0' and '9', '%', '#', or others.  The
+		uppercase and lowercase letter designate the same register,
+		but the lowercase letter is used to overwrite the previous
+		register contents, while the uppercase letter is used to
+		append to the previous register contents.  Without the ""x" or
+		with """" the stored text is put into the unnamed register.
+
+							<b class="vimtag">*<a name="{}">{}</a>*</b>
+<code class="special">{}</code>		Curly braces de<code class="note">note</code> parts of the command which must appear,
+		but which can take a number of different values.  The
+		differences between Vim and Vi are also given in curly braces
+		(this will be clear from the context).
+
+							<b class="vimtag">*<a name="{char1-char2}">{char1-char2}</a>*</b>
+<code class="special">{char1-char2}</code>	A single character from the range char1 to char2.  For
+		example: <code class="special">{a-z}</code> is a lowercase letter.  Multiple ranges may be
+		concatenated.  For example, <code class="special">{a-zA-Z0-9}</code> is any alphanumeric
+		character.
+
+						<b class="vimtag">*<a name="{motion}">{motion}</a>*</b> <b class="vimtag">*<a name="movement">movement</a>*</b>
+<code class="special">{motion}</code>	A command that moves the cursor.  These are explained in
+		|<a href="motion.html#motion.txt">motion</a>|.  Examples:
+			w		to start of next word
+			b		to begin of current word
+			4j		four lines down
+			/The<code class="special">&lt;CR&gt;</code>	to next occurrence of "The"
+		This is used after an |<a href="motion.html#operator">operator</a>| command to move over the text
+		that is to be operated upon.
+		- If the motion includes a count and the operator also has a
+		  count, the two counts are multiplied.  For example: "2d3w"
+		  deletes six words.
+		- The motion can be backwards, e.g. "db" to delete to the
+		  start of the word.
+		- The motion can also be a mouse click.  The mouse is not
+		  supported in every terminal though.
+		- The ":omap" command can be used to map characters while an
+		  operator is pending.
+		- Ex commands can be used to move the cursor.  This can be
+		  used to call a function that does some complicated motion.
+		  The motion is always characterwise exclusive, no matter
+		  what ":" command is used.  This means it's impossible to
+		  include the last character of a line without the line break
+		  (unless 'virtualedit' is set).
+		  If the Ex command changes the text before where the operator
+		  starts or jumps to another buffer the result is
+		  unpredictable.  It is possible to change the text further
+		  down.  Jumping to another buffer is possible if the current
+		  buffer is not unloaded.
+
+							<b class="vimtag">*<a name="{Visual}">{Visual}</a>*</b>
+<code class="special">{Visual}</code>	A selected text area.  It is started with the "v", "V", or
+		<code class="keystroke">CTRL-V</code> command, then any cursor movement command can be used
+		to change the end of the selected text.
+		This is used before an |<a href="motion.html#operator">operator</a>| command to highlight the
+		text that is to be operated upon.
+		See |<a href="visual.html#Visual-mode">Visual-mode</a>|.
+
+							<b class="vimtag">*<a name="%3Ccharacter%3E">&lt;character&gt;</a>*</b>
+<code class="special">&lt;character&gt;</code>	A special character from the table below, optionally with
+		modifiers, or a single ASCII character with modifiers.
+
+							<b class="vimtag">*<a name="'character'">'character'</a>*</b>
+'c'		A single ASCII character.
+
+							<b class="vimtag">*<a name="CTRL-{char}">CTRL-{char}</a>*</b>
+CTRL-<code class="special">{char}</code>	<code class="special">{char}</code> typed as a control character; that is, typing <code class="special">{char}</code>
+		while holding the CTRL key down.  The case of <code class="special">{char}</code> does not
+		matter; thus <code class="keystroke">CTRL-A</code> and <code class="keystroke">CTRL-a</code> are equivalent.  But on some
+		terminals, using the SHIFT key will produce another code,
+		don't use it then.
+
+							<b class="vimtag">*<a name="'option'">'option'</a>*</b>
+'option'	An option, or parameter, that can be set to a value, is
+		enclosed in single quotes.  See |<a href="options.html#options">options</a>|.
+
+							<b class="vimtag">*<a name="quotecommandquote">quotecommandquote</a>*</b>
+"command"	A reference to a command that you can type is enclosed in
+		double quotes.
+`command`	New style command, this distinguishes it from other quoted
+		text and strings.
+
+					<b class="vimtag">*<a name="key-notation">key-notation</a>*</b> <b class="vimtag">*<a name="key-codes">key-codes</a>*</b> <b class="vimtag">*<a name="keycodes">keycodes</a>*</b>
+These names for keys are used in the documentation.  They can also be used
+with the ":map" command (insert the key name by pressing <code class="keystroke">CTRL-K</code> and then the
+key you want the name for).
+
+<code class="section">notation	meaning		    equivalent	decimal value(s)	</code>
+</pre><hr/><pre><code class="special">&lt;Nul&gt;</code>		zero			CTRL-@	  0 (stored as 10) <b class="vimtag">*<a name="%3CNul%3E">&lt;Nul&gt;</a>*</b>
+<code class="special">&lt;BS&gt;</code>		backspace		<code class="keystroke">CTRL-H</code>	  8	<b class="vimtag">*<a name="backspace">backspace</a>*</b>
+<code class="special">&lt;Tab&gt;</code>		tab			<code class="keystroke">CTRL-I</code>	  9	<b class="vimtag">*<a name="tab">tab</a>*</b> <b class="vimtag">*<a name="Tab">Tab</a>*</b>
+							<b class="vimtag">*<a name="linefeed">linefeed</a>*</b>
+<code class="special">&lt;NL&gt;</code>		linefeed		<code class="keystroke">CTRL-J</code>	 10 (used for <code class="special">&lt;Nul&gt;</code>)
+<code class="special">&lt;FF&gt;</code>		formfeed		<code class="keystroke">CTRL-L</code>	 12	<b class="vimtag">*<a name="formfeed">formfeed</a>*</b>
+<code class="special">&lt;CR&gt;</code>		carriage return		<code class="keystroke">CTRL-M</code>	 13	<b class="vimtag">*<a name="carriage-return">carriage-return</a>*</b>
+<code class="special">&lt;Return&gt;</code>	same as <code class="special">&lt;CR&gt;</code>				<b class="vimtag">*<a name="%3CReturn%3E">&lt;Return&gt;</a>*</b>
+<code class="special">&lt;Enter&gt;</code>		same as <code class="special">&lt;CR&gt;</code>				<b class="vimtag">*<a name="%3CEnter%3E">&lt;Enter&gt;</a>*</b>
+<code class="special">&lt;Esc&gt;</code>		escape			CTRL-[	 27	<b class="vimtag">*<a name="escape">escape</a>*</b> <b class="vimtag">*<a name="%3CEsc%3E">&lt;Esc&gt;</a>*</b>
+<code class="special">&lt;Space&gt;</code>		space				 32	<b class="vimtag">*<a name="space">space</a>*</b>
+<code class="special">&lt;lt&gt;</code>		less-than		&lt;	 60	<b class="vimtag">*<a name="%3Clt%3E">&lt;lt&gt;</a>*</b>
+<code class="special">&lt;Bslash&gt;</code>	backslash		\	 92	<b class="vimtag">*<a name="backslash">backslash</a>*</b> <b class="vimtag">*<a name="%3CBslash%3E">&lt;Bslash&gt;</a>*</b>
+<code class="special">&lt;Bar&gt;</code>		vertical bar		|	124	<b class="vimtag">*<a name="%3CBar%3E">&lt;Bar&gt;</a>*</b>
+<code class="special">&lt;Del&gt;</code>		delete				127
+<code class="special">&lt;CSI&gt;</code>		command sequence intro  ALT-Esc 155	<b class="vimtag">*<a name="%3CCSI%3E">&lt;CSI&gt;</a>*</b>
+<code class="special">&lt;xCSI&gt;</code>		CSI when typed in the GUI		<b class="vimtag">*<a name="%3CxCSI%3E">&lt;xCSI&gt;</a>*</b>
+
+<code class="special">&lt;EOL&gt;</code>		end-of-line (can be <code class="special">&lt;CR&gt;</code>, <code class="special">&lt;LF&gt;</code> or <code class="special">&lt;CR&gt;</code><code class="special">&lt;LF&gt;</code>,
+		depends on system and 'fileformat')	<b class="vimtag">*<a name="%3CEOL%3E">&lt;EOL&gt;</a>*</b>
+
+<code class="special">&lt;Up&gt;</code>		cursor-up			<b class="vimtag">*<a name="cursor-up">cursor-up</a>*</b> <b class="vimtag">*<a name="cursor_up">cursor_up</a>*</b>
+<code class="special">&lt;Down&gt;</code>		cursor-down			<b class="vimtag">*<a name="cursor-down">cursor-down</a>*</b> <b class="vimtag">*<a name="cursor_down">cursor_down</a>*</b>
+<code class="special">&lt;Left&gt;</code>		cursor-left			<b class="vimtag">*<a name="cursor-left">cursor-left</a>*</b> <b class="vimtag">*<a name="cursor_left">cursor_left</a>*</b>
+<code class="special">&lt;Right&gt;</code>		cursor-right			<b class="vimtag">*<a name="cursor-right">cursor-right</a>*</b> <b class="vimtag">*<a name="cursor_right">cursor_right</a>*</b>
+<code class="special">&lt;S-Up&gt;</code>		shift-cursor-up
+<code class="special">&lt;S-Down&gt;</code>	shift-cursor-down
+<code class="special">&lt;S-Left&gt;</code>	shift-cursor-left
+<code class="special">&lt;S-Right&gt;</code>	shift-cursor-right
+<code class="special">&lt;C-Left&gt;</code>	control-cursor-left
+<code class="special">&lt;C-Right&gt;</code>	control-cursor-right
+<code class="special">&lt;F1&gt;</code> - <code class="special">&lt;F12&gt;</code>	function keys 1 to 12		<b class="vimtag">*<a name="function_key">function_key</a>*</b> <b class="vimtag">*<a name="function-key">function-key</a>*</b>
+<code class="special">&lt;S-F1&gt;</code> - <code class="special">&lt;S-F12&gt;</code> shift-function keys 1 to 12	<b class="vimtag">*<a name="%3CS-F1%3E">&lt;S-F1&gt;</a>*</b>
+<code class="special">&lt;Help&gt;</code>		help key
+<code class="special">&lt;Undo&gt;</code>		undo key
+<code class="special">&lt;Insert&gt;</code>	insert key
+<code class="special">&lt;Home&gt;</code>		home				<b class="vimtag">*<a name="home">home</a>*</b>
+<code class="special">&lt;End&gt;</code>		end				<b class="vimtag">*<a name="end">end</a>*</b>
+<code class="special">&lt;PageUp&gt;</code>	page-up				<b class="vimtag">*<a name="page_up">page_up</a>*</b> <b class="vimtag">*<a name="page-up">page-up</a>*</b>
+<code class="special">&lt;PageDown&gt;</code>	page-down			<b class="vimtag">*<a name="page_down">page_down</a>*</b> <b class="vimtag">*<a name="page-down">page-down</a>*</b>
+<code class="special">&lt;kHome&gt;</code>		keypad home (upper left)	<b class="vimtag">*<a name="keypad-home">keypad-home</a>*</b>
+<code class="special">&lt;kEnd&gt;</code>		keypad end (lower left)		<b class="vimtag">*<a name="keypad-end">keypad-end</a>*</b>
+<code class="special">&lt;kPageUp&gt;</code>	keypad page-up (upper right)	<b class="vimtag">*<a name="keypad-page-up">keypad-page-up</a>*</b>
+<code class="special">&lt;kPageDown&gt;</code>	keypad page-down (lower right)	<b class="vimtag">*<a name="keypad-page-down">keypad-page-down</a>*</b>
+<code class="special">&lt;kPlus&gt;</code>		keypad +			<b class="vimtag">*<a name="keypad-plus">keypad-plus</a>*</b>
+<code class="special">&lt;kMinus&gt;</code>	keypad -			<b class="vimtag">*<a name="keypad-minus">keypad-minus</a>*</b>
+<code class="special">&lt;kMultiply&gt;</code>	keypad <b class="vimtag">*<a name="			">			</a>*</b>keypad-multiply*
+<code class="special">&lt;kDivide&gt;</code>	keypad /			<b class="vimtag">*<a name="keypad-divide">keypad-divide</a>*</b>
+<code class="special">&lt;kEnter&gt;</code>	keypad Enter			<b class="vimtag">*<a name="keypad-enter">keypad-enter</a>*</b>
+<code class="special">&lt;kPoint&gt;</code>	keypad Decimal point		<b class="vimtag">*<a name="keypad-point">keypad-point</a>*</b>
+<code class="special">&lt;k0&gt;</code> - <code class="special">&lt;k9&gt;</code>	keypad 0 to 9			<b class="vimtag">*<a name="keypad-0">keypad-0</a>*</b> <b class="vimtag">*<a name="keypad-9">keypad-9</a>*</b>
+<code class="special">&lt;S-...&gt;</code>		shift-key			<b class="vimtag">*<a name="shift">shift</a>*</b> <b class="vimtag">*<a name="%3CS-">&lt;S-</a>*</b>
+<code class="special">&lt;C-...&gt;</code>		control-key			<b class="vimtag">*<a name="control">control</a>*</b> <b class="vimtag">*<a name="ctrl">ctrl</a>*</b> <b class="vimtag">*<a name="%3CC-">&lt;C-</a>*</b>
+<code class="special">&lt;M-...&gt;</code>		alt-key or meta-key		<b class="vimtag">*<a name="meta">meta</a>*</b> <b class="vimtag">*<a name="alt">alt</a>*</b> <b class="vimtag">*<a name="%3CM-">&lt;M-</a>*</b>
+<code class="special">&lt;A-...&gt;</code>		same as <code class="special">&lt;M-...&gt;</code>			<b class="vimtag">*<a name="%3CA-">&lt;A-</a>*</b>
+<code class="special">&lt;D-...&gt;</code>		command-key (Macintosh only)	<b class="vimtag">*<a name="%3CD-">&lt;D-</a>*</b>
+<code class="special">&lt;t_xx&gt;</code>		key with "xx" entry in termcap
+</pre><hr/><pre>
+<code class="note">Note:</code> The shifted cursor keys, the help key, and the undo key are only
+available on a few terminals.  On the Amiga, shifted function key 10 produces
+a code (CSI) that is also used by key sequences.  It will be recognized only
+after typing another key.
+
+<code class="note">Note:</code> There are two codes for the delete key.  127 is the decimal ASCII value
+for the delete key, which is always recognized.  Some delete keys send another
+value, in which case this value is obtained from the termcap entry "kD".  Both
+values have the same effect.  Also see |<a href="options.html#:fixdel">:fixdel</a>|.
+
+<code class="note">Note:</code> The keypad keys are used in the same way as the corresponding "normal"
+keys.  For example, <code class="special">&lt;kHome&gt;</code> has the same effect as <code class="special">&lt;Home&gt;</code>.  If a keypad key
+sends the same raw key code as its non-keypad equivalent, it will be
+recognized as the non-keypad code.  For example, when <code class="special">&lt;kHome&gt;</code> sends the same
+code as <code class="special">&lt;Home&gt;</code>, when pressing <code class="special">&lt;kHome&gt;</code> Vim will think <code class="special">&lt;Home&gt;</code> was pressed.
+Mapping <code class="special">&lt;kHome&gt;</code> will not work then.
+
+								<b class="vimtag">*<a name="%3C%3E">&lt;&gt;</a>*</b>
+Examples are often given in the <code class="special">&lt;&gt;</code> notation.  Sometimes this is just to make
+clear what you need to type, but often it can be typed literally, e.g., with
+the ":map" command.  The rules are:
+ 1.  Any printable characters are typed directly, except backslash and '&lt;'
+ 2.  A backslash is represented with "\\", double backslash, or "<code class="special">&lt;Bslash&gt;</code>".
+ 3.  A real '<code class="special">&lt;' is represented with "\&lt;" or "&lt;lt&gt;</code>".  When there is no
+     confusion possible, a '&lt;' can be used directly.
+ 4.  "<code class="special">&lt;key&gt;</code>" means the special key typed.  This is the notation explained in
+     the table above.  A few examples:
+	   <code class="special">&lt;Esc&gt;</code>		Escape key
+	   <code class="special">&lt;C-G&gt;</code>		<code class="keystroke">CTRL-G</code>
+	   <code class="special">&lt;Up&gt;</code>			cursor up key
+	   <code class="special">&lt;C-LeftMouse&gt;</code>	Control- left mouse click
+	   <code class="special">&lt;S-F11&gt;</code>		Shifted function key 11
+	   <code class="special">&lt;M-a&gt;</code>		Meta- a  ('a' with bit 8 set)
+	   <code class="special">&lt;M-A&gt;</code>		Meta- A  ('A' with bit 8 set)
+	   <code class="special">&lt;t_kd&gt;</code>		"kd" termcap entry (cursor down key)
+    Although you can specify <code class="special">&lt;M-<code class="special">{char}</code>&gt;</code> with <code class="special">{char}</code> being a multi-byte
+    character, Vim may not be able to know what byte sequence that is and then
+    it won't work.
+
+If you want to use the full <code class="special">&lt;&gt;</code> notation in Vim, you have to make sure the '&lt;'
+flag is excluded from 'cpoptions' (when 'compatible' is not set, it already is
+by default).
+<code class="example">	:set cpo-=&lt;</code>
+The <code class="special">&lt;&gt;</code> notation uses <code class="special">&lt;lt&gt;</code> to escape the special meaning of key names.  Using a
+backslash also works, but only when 'cpoptions' does not include the 'B' flag.
+
+Examples for mapping <code class="keystroke">CTRL-H</code> to the six characters "<code class="special">&lt;Home&gt;</code>":
+<code class="example">	:imap <code class="special">&lt;C-H&gt;</code> \<code class="special">&lt;Home&gt;</code></code>
+<code class="example">	:imap <code class="special">&lt;C-H&gt;</code> <code class="special">&lt;lt&gt;</code>Home&gt;</code>
+The first one only works when the 'B' flag is not in 'cpoptions'.  The second
+one always works.
+To get a literal "<code class="special">&lt;lt&gt;</code>" in a mapping:
+<code class="example">	:map <code class="special">&lt;C-L&gt;</code> <code class="special">&lt;lt&gt;</code>lt&gt;</code>
+<code class="example"></code>
+For mapping, abbreviation and menu commands you can then copy-paste the
+examples and use them directly.  Or type them literally, including the '&lt;' and
+'&gt;' characters.  This does NOT work for other commands, like ":set" and
+":autocmd"!
+
+</pre><hr/><pre>5. Modes, introduction				<b class="vimtag">*<a name="vim-modes-intro">vim-modes-intro</a>*</b> <b class="vimtag">*<a name="vim-modes">vim-modes</a>*</b>
+
+Vim has seven BASIC modes:
+
+					<b class="vimtag">*<a name="Normal">Normal</a>*</b> <b class="vimtag">*<a name="Normal-mode">Normal-mode</a>*</b> <b class="vimtag">*<a name="command-mode">command-mode</a>*</b>
+Normal mode		In Normal mode you can enter all the normal editor
+			commands.  If you start the editor you are in this
+			mode (unless you have set the 'insertmode' option,
+			see below).  This is also known as command mode.
+
+Visual mode		This is like Normal mode, but the movement commands
+			extend a highlighted area.  When a non-movement
+			command is used, it is executed for the highlighted
+			area.  See |<a href="visual.html#Visual-mode">Visual-mode</a>|.
+			If the 'showmode' option is on "-- VISUAL --" is shown
+			at the bottom of the window.
+
+Select mode		This looks most like the MS-Windows selection mode.
+			Typing a printable character deletes the selection
+			and starts Insert mode.  See |<a href="visual.html#Select-mode">Select-mode</a>|.
+			If the 'showmode' option is on "-- SELECT --" is shown
+			at the bottom of the window.
+
+Insert mode		In Insert mode the text you type is inserted into the
+			buffer.  See |<a href="insert.html#Insert-mode">Insert-mode</a>|.
+			If the 'showmode' option is on "-- INSERT --" is shown
+			at the bottom of the window.
+
+Command-line mode	In Command-line mode (also called Cmdline mode) you
+Cmdline mode		can enter one line of text at the bottom of the
+			window.  This is for the Ex commands, ":", the pattern
+			search commands, "?" and "/", and the filter command,
+			"!".  |<a href="cmdline.html#Cmdline-mode">Cmdline-mode</a>|
+
+Ex mode			Like Command-line mode, but after entering a command
+			you remain in Ex mode.  Very limited editing of the
+			command line.  |<a href="intro.html#Ex-mode">Ex-mode</a>|
+
+Terminal-Job mode	Interacting with a job in a terminal window.  Typed
+			keys go to the job and the job output is displayed in
+			the terminal window.  See |<a href="terminal.html#terminal">terminal</a>| about how to
+			switch to other modes.
+
+There are seven ADDITIONAL modes.  These are variants of the BASIC modes:
+
+				<b class="vimtag">*<a name="Operator-pending">Operator-pending</a>*</b> <b class="vimtag">*<a name="Operator-pending-mode">Operator-pending-mode</a>*</b>
+Operator-pending mode	This is like Normal mode, but after an operator
+			command has started, and Vim is waiting for a <code class="special">{motion}</code>
+			to specify the text that the operator will work on.
+
+Replace mode		Replace mode is a special case of Insert mode.  You
+			can do the same things as in Insert mode, but for
+			each character you enter, one character of the existing
+			text is deleted.  See |<a href="insert.html#Replace-mode">Replace-mode</a>|.
+			If the 'showmode' option is on "-- REPLACE --" is
+			shown at the bottom of the window.
+
+Virtual Replace mode	Virtual Replace mode is similar to Replace mode, but
+			instead of file characters you are replacing screen
+			real estate.  See |<a href="insert.html#Virtual-Replace-mode">Virtual-Replace-mode</a>|.
+			If the 'showmode' option is on "-- VREPLACE --" is
+			shown at the bottom of the window.
+
+Insert Normal mode	Entered when <code class="keystroke">CTRL-O</code> is typed in Insert mode (see
+			|<a href="insert.html#i_CTRL-O">i_CTRL-O</a>|).  This is like Normal mode, but after
+			executing one command Vim returns to Insert mode.
+			If the 'showmode' option is on "-- (insert) --" is
+			shown at the bottom of the window.
+
+Terminal-Normal mode	Using Normal mode in a terminal window.  Making
+			changes is impossible.  Use an insert command, such as
+			"a" or "i", to return to Terminal-Job mode.
+
+Insert Visual mode	Entered when starting a Visual selection from Insert
+			mode, e.g., by using <code class="keystroke">CTRL-O</code> and then "v", "V" or
+			<code class="keystroke">CTRL-V</code>.  When the Visual selection ends, Vim returns
+			to Insert mode.
+			If the 'showmode' option is on "-- (insert) VISUAL --"
+			is shown at the bottom of the window.
+
+Insert Select mode	Entered when starting Select mode from Insert mode.
+			E.g., by dragging the mouse or <code class="special">&lt;S-Right&gt;</code>.
+			When the Select mode ends, Vim returns to Insert mode.
+			If the 'showmode' option is on "-- (insert) SELECT --"
+			is shown at the bottom of the window.
+
+</pre><hr/><pre>6. Switching from mode to mode				<b class="vimtag">*<a name="mode-switching">mode-switching</a>*</b>
+
+If for any reason you do not know which mode you are in, you can always get
+back to Normal mode by typing <code class="special">&lt;Esc&gt;</code> twice.  This doesn't work for Ex mode
+though, use ":visual".
+You will know you are back in Normal mode when you see the screen flash or
+hear the bell after you type <code class="special">&lt;Esc&gt;</code>.  However, when pressing <code class="special">&lt;Esc&gt;</code> after using
+<code class="keystroke">CTRL-O</code> in Insert mode you get a beep but you are still in Insert mode, type
+<code class="special">&lt;Esc&gt;</code> again.
+
+							<b class="vimtag">*<a name="i_esc">i_esc</a>*</b>
+<code class="section">		TO mode						    </code>
+<code class="section">		Normal	Visual	Select	Insert	  Replace   Cmd-line  Ex </code>
+<code class="section">FROM mode								 </code>
+Normal			v V ^V	  <b class="vimtag">*<a name="4	 ">4	 </a>*</b>1	   R gR     : / ? !   Q
+Visual		 *2		  ^G	 c C	    --	      :       --
+Select		 <b class="vimtag">*<a name="5	^O ^G		 ">5	^O ^G		 </a>*</b>6	    --	      --      --
+Insert		 <code class="special">&lt;Esc&gt;</code>	  --	  --		  <code class="special">&lt;Insert&gt;</code>    --      --
+Replace		 <code class="special">&lt;Esc&gt;</code>	  --	  --	<code class="special">&lt;Insert&gt;</code>	      --      --
+Command-line	 *3	  --	  --	 :start	    --		      --
+Ex		 :vi	  --	  --	 --	    --	      --
+
+-- not possible
+
+*1 Go from Normal mode to Insert mode by giving the command "i", "I", "a",
+   "A", "o", "O", "c", "C", "s" or S".
+*2 Go from Visual mode to Normal mode by giving a non-movement command, which
+   causes the command to be executed, or by hitting <code class="special">&lt;Esc&gt;</code> "v", "V" or "<code class="keystroke">CTRL-V</code>"
+   (see |<a href="visual.html#v_v">v_v</a>|), which just stops Visual mode without side effects.
+*3 Go from Command-line mode to Normal mode by:
+   - Hitting <code class="special">&lt;CR&gt;</code> or <code class="special">&lt;NL&gt;</code>, which causes the entered command to be executed.
+   - Deleting the complete line (e.g., with <code class="keystroke">CTRL-U</code>) and giving a final <code class="special">&lt;BS&gt;</code>.
+   - Hitting <code class="keystroke">CTRL-C</code> or <code class="special">&lt;Esc&gt;</code>, which quits the command-line without executing
+     the command.
+   In the last case <code class="special">&lt;Esc&gt;</code> may be the character defined with the 'wildchar'
+   option, in which case it will start command-line completion.  You can
+   ignore that and type <code class="special">&lt;Esc&gt;</code> again.
+*4 Go from Normal to Select mode by:
+   - use the mouse to select text while 'selectmode' contains "mouse"
+   - use a non-printable command to move the cursor while keeping the Shift
+     key pressed, and the 'selectmode' option contains "key"
+   - use "v", "V" or "<code class="keystroke">CTRL-V</code>" while 'selectmode' contains "cmd"
+   - use "gh", "gH" or "g <code class="keystroke">CTRL-H</code>"  |<a href="visual.html#g_CTRL-H">g_CTRL-H</a>|
+*5 Go from Select mode to Normal mode by using a non-printable command to move
+   the cursor, without keeping the Shift key pressed.
+*6 Go from Select mode to Insert mode by typing a printable character.  The
+   selection is deleted and the character is inserted.
+
+If the 'insertmode' option is on, editing a file will start in Insert mode.
+
+	<b class="vimtag">*<a name="CTRL-\_CTRL-N">CTRL-\_CTRL-N</a>*</b> <b class="vimtag">*<a name="i_CTRL-\_CTRL-N">i_CTRL-\_CTRL-N</a>*</b> <b class="vimtag">*<a name="c_CTRL-\_CTRL-N">c_CTRL-\_CTRL-N</a>*</b> <b class="vimtag">*<a name="v_CTRL-\_CTRL-N">v_CTRL-\_CTRL-N</a>*</b>
+Additionally the command CTRL-\ <code class="keystroke">CTRL-N</code> or <code class="special">&lt;C-\&gt;</code><code class="special">&lt;C-N&gt;</code> can be used to go to
+Normal mode from any other mode.  This can be used to make sure Vim is in
+Normal mode, without causing a beep like <code class="special">&lt;Esc&gt;</code> would.  However, this does not
+work in Ex mode.  When used after a command that takes an argument, such as
+|<a href="motion.html#f">f</a>| or |<a href="motion.html#m">m</a>|, the timeout set with 'ttimeoutlen' applies.
+When focus is in a terminal window, CTRL-\ <code class="keystroke">CTRL-N</code> goes to Normal mode for only
+one command, see |<a href="terminal.html#t_CTRL-\_CTRL-N">t_CTRL-\_CTRL-N</a>|.
+
+	<b class="vimtag">*<a name="CTRL-\_CTRL-G">CTRL-\_CTRL-G</a>*</b> <b class="vimtag">*<a name="i_CTRL-\_CTRL-G">i_CTRL-\_CTRL-G</a>*</b> <b class="vimtag">*<a name="c_CTRL-\_CTRL-G">c_CTRL-\_CTRL-G</a>*</b> <b class="vimtag">*<a name="v_CTRL-\_CTRL-G">v_CTRL-\_CTRL-G</a>*</b>
+The command CTRL-\ <code class="keystroke">CTRL-G</code> or <code class="special">&lt;C-\&gt;</code><code class="special">&lt;C-G&gt;</code> can be used to go to Insert mode when
+'insertmode' is set.  Otherwise it goes to Normal mode.  This can be used to
+make sure Vim is in the mode indicated by 'insertmode', without knowing in
+what mode Vim currently is.
+
+				    <b class="vimtag">*<a name="Q">Q</a>*</b> <b class="vimtag">*<a name="mode-Ex">mode-Ex</a>*</b> <b class="vimtag">*<a name="Ex-mode">Ex-mode</a>*</b> <b class="vimtag">*<a name="Ex">Ex</a>*</b> <b class="vimtag">*<a name="EX">EX</a>*</b> <b class="vimtag">*<a name="E501">E501</a>*</b>
+Q			Switch to "Ex" mode.  This is a bit like typing ":"
+			commands one after another, except:
+			- You don't have to keep pressing ":".
+			- The screen doesn't get updated after each command.
+			- There is no normal command-line editing.
+			- Mappings and abbreviations are not used.
+			In fact, you are editing the lines with the "standard"
+			line-input editing commands (<code class="special">&lt;Del&gt;</code> or <code class="special">&lt;BS&gt;</code> to erase,
+			<code class="keystroke">CTRL-U</code> to kill the whole line).
+			Vim will enter this mode by default if it's invoked as
+			"ex" on the command-line.
+			Use the ":vi" command |<a href="editing.html#:visual">:visual</a>| to exit "Ex" mode.
+			<code class="note">Note:</code> In older versions of Vim "Q" formatted text,
+			that is now done with |<a href="change.html#gq">gq</a>|.  But if you use the
+			|<a href="usr_05.html#vimrc_example.vim">vimrc_example.vim</a>| script "Q" works like "gq".
+
+					<b class="vimtag">*<a name="gQ">gQ</a>*</b>
+gQ			Switch to "Ex" mode like with "Q", but really behave
+			like typing ":" commands after another.  All command
+			line editing, completion etc. is available.
+			Use the ":vi" command |<a href="editing.html#:visual">:visual</a>| to exit "Ex" mode.
+
+</pre><hr/><pre>7. The window contents					<b class="vimtag">*<a name="window-contents">window-contents</a>*</b>
+
+In Normal mode and Insert/Replace mode the screen window will show the current
+contents of the buffer: What You See Is What You Get.  There are two
+exceptions:
+- When the 'cpoptions' option contains '$', and the change is within one line,
+  the text is not directly deleted, but a '$' is put at the last deleted
+  character.
+- When inserting text in one window, other windows on the same text are not
+  updated until the insert is finished.
+
+Lines longer than the window width will wrap, unless the 'wrap' option is off
+(see below).  The 'linebreak' option can be set to wrap at a blank character.
+
+If the window has room after the last line of the buffer, Vim will show '~' in
+the first column of the last lines in the window, like this:
+
+	+-----------------------+
+	|<code class="badlink">some line		</code>|
+	|<code class="badlink">last line		</code>|
+	|<code class="badlink">~			</code>|
+	|<code class="badlink">~			</code>|
+	+-----------------------+
+
+Thus the '~' lines indicate that the end of the buffer was reached.
+
+If the last line in a window doesn't fit, Vim will indicate this with a '@' in
+the first column of the last lines in the window, like this:
+
+	+-----------------------+
+	|<code class="badlink">first line		</code>|
+	|<code class="badlink">second line		</code>|
+	|<code class="badlink">@			</code>|
+	|<code class="badlink">@			</code>|
+	+-----------------------+
+
+Thus the '@' lines indicate that there is a line that doesn't fit in the
+window.
+
+When the "lastline" flag is present in the 'display' option, you will not see
+'@' characters at the left side of window.  If the last line doesn't fit
+completely, only the part that fits is shown, and the last three characters of
+the last line are replaced with "@@@", like this:
+
+	+-----------------------+
+	|<code class="badlink">first line		</code>|
+	|<code class="badlink">second line		</code>|
+	|<code class="badlink">a very long line that d</code>|
+	|<code class="badlink">oesn't fit in the wi@@@</code>|
+	+-----------------------+
+
+If there is a single line that is too long to fit in the window, this is a
+special situation.  Vim will show only part of the line, around where the
+cursor is.  There are no special characters shown, so that you can edit all
+parts of this line.
+
+The '@' occasion in the 'highlight' option can be used to set special
+highlighting for the '@' and '~' characters.  This makes it possible to
+distinguish them from real characters in the buffer.
+
+The 'showbreak' option contains the string to put in front of wrapped lines.
+
+							<b class="vimtag">*<a name="wrap-off">wrap-off</a>*</b>
+If the 'wrap' option is off, long lines will not wrap.  Only the part that
+fits on the screen is shown.  If the cursor is moved to a part of the line
+that is not shown, the screen is scrolled horizontally.  The advantage of
+this method is that columns are shown as they are and lines that cannot fit
+on the screen can be edited.  The disadvantage is that you cannot see all the
+characters of a line at once.  The 'sidescroll' option can be set to the
+minimal number of columns to scroll.
+
+All normal ASCII characters are displayed directly on the screen.  The <code class="special">&lt;Tab&gt;</code>
+is replaced with the number of spaces that it represents.  Other non-printing
+characters are replaced with "^<code class="special">{char}</code>", where <code class="special">{char}</code> is the non-printing
+character with 64 added.  Thus character 7 (bell) will be shown as "^G".
+Characters between 127 and 160 are replaced with "~<code class="special">{char}</code>", where <code class="special">{char}</code> is
+the character with 64 subtracted.  These characters occupy more than one
+position on the screen.  The cursor can only be positioned on the first one.
+
+If you set the 'number' option, all lines will be preceded with their
+number.  Tip: If you don't like wrapping lines to mix with the line numbers,
+set the 'showbreak' option to eight spaces:
+	":set showbreak=\ \ \ \ \ \ \ \ "
+
+If you set the 'list' option, <code class="special">&lt;Tab&gt;</code> characters will not be shown as several
+spaces, but as "^I".  A '$' will be placed at the end of the line, so you can
+find trailing blanks.
+
+In Command-line mode only the command-line itself is shown correctly.  The
+display of the buffer contents is updated as soon as you go back to Command
+mode.
+
+The last line of the window is used for status and other messages.  The
+status messages will only be used if an option is on:
+
+<code class="section">status message			option	     default	Unix default	</code>
+current mode			'showmode'	on	    on
+command characters		'showcmd'	on	    off
+cursor position			'ruler'		off	    off
+
+The current mode is "-- INSERT --" or "-- REPLACE --", see |<a href="options.html#'showmode'">'showmode'</a>|.  The
+command characters are those that you typed but were not used yet.
+
+If you have a slow terminal you can switch off the status messages to speed
+up editing:
+	:set nosc noru nosm
+
+If there is an error, an error message will be shown for at least one second
+(in reverse video).
+
+Some commands show how many lines were affected.  Above which threshold this
+happens can be controlled with the 'report' option (default 2).
+
+On the Amiga Vim will run in a CLI window.  The name Vim and the full name of
+the current file name will be shown in the title bar.  When the window is
+resized, Vim will automatically redraw the window.  You may make the window as
+small as you like, but if it gets too small not a single line will fit in it.
+Make it at least 40 characters wide to be able to read most messages on the
+last line.
+
+On most Unix systems, resizing the window is recognized and handled correctly
+by Vim.
+
+</pre><hr/><pre>8. Definitions						<b class="vimtag">*<a name="definitions">definitions</a>*</b>
+
+  buffer		Contains lines of text, usually read from a file.
+  screen		The whole area that Vim uses to work in.  This can be
+			a terminal emulator window.  Also called "the Vim
+			window".
+  window		A view on a buffer.  There can be multiple windows for
+			one buffer.
+
+A screen contains one or more windows, separated by status lines and with the
+command line at the bottom.
+
+	+-------------------------------+
+screen	|<code class="badlink"> window 1	</code>| window 2	|
+	|<code class="badlink">		</code>|		|
+	|<code class="badlink">		</code>|		|
+	|<code class="badlink">= status line =</code>|= status line =|
+	|<code class="badlink"> window 3			</code>|
+	|<code class="badlink">				</code>|
+	|<code class="badlink">				</code>|
+	|<code class="badlink">==== status line ==============</code>|
+	|<code class="badlink">command line			</code>|
+	+-------------------------------+
+
+The command line is also used for messages.  It scrolls up the screen when
+there is not enough room in the command line.
+
+A difference is made between four types of lines:
+
+  buffer lines		The lines in the buffer.  This is the same as the
+			lines as they are read from/written to a file.  They
+			can be thousands of characters long.
+  logical lines		The buffer lines with folding applied.  Buffer lines
+			in a closed fold are changed to a single logical line:
+			"+-- 99 lines folded".  They can be thousands of
+			characters long.
+  window lines		The lines displayed in a window: A range of logical
+			lines with wrapping, line breaks, etc.  applied.  They
+			can only be as long as the width of the window allows,
+			longer lines are wrapped or truncated.
+  screen lines		The lines of the screen that Vim uses.  Consists of
+			the window lines of all windows, with status lines
+			and the command line added.  They can only be as long
+			as the width of the screen allows.  When the command
+			line gets longer it wraps and lines are scrolled to
+			make room.
+
+<code class="section">buffer lines	logical lines	window lines	screen lines </code>
+
+1. one		1. one		1. +-- folded   1.  +-- folded
+2. two		2. +-- folded	2. five		2.  five
+3. three	3. five		3. six		3.  six
+4. four		4. six		4. seven	4.  seven
+5. five		5. seven			5.  === status line ===
+6. six						6.  aaa
+7. seven					7.  bbb
+						8.  ccc ccc c
+1. aaa		1. aaa		1. aaa		9.  cc
+2. bbb		2. bbb		2. bbb		10. ddd
+<code class="section">3. ccc ccc ccc	3. ccc ccc ccc	3. ccc ccc c	11. </code>
+4. ddd		4. ddd		4. cc		12. === status line ===
+				5. ddd		13. (command line)
+<code class="section">				6. </code>
+
+</pre><hr/><pre> vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

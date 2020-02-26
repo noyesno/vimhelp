@@ -1,0 +1,550 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: if_tcl</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>IF_TCL</h2>
+<pre>
+<b class="vimtag">*<a name="if_tcl.txt">if_tcl.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 Jul 21
+
+
+		  VIM REFERENCE MANUAL    by Ingo Wilken
+
+
+The Tcl Interface to Vim				<b class="vimtag">*<a name="tcl">tcl</a>*</b> <b class="vimtag">*<a name="Tcl">Tcl</a>*</b> <b class="vimtag">*<a name="TCL">TCL</a>*</b>
+
+1. Commands				|<a href="if_tcl.html#tcl-ex-commands">tcl-ex-commands</a>|
+2. Tcl commands				|<a href="if_tcl.html#tcl-commands">tcl-commands</a>|
+3. Tcl variables			|<a href="if_tcl.html#tcl-variables">tcl-variables</a>|
+4. Tcl window commands			|<a href="if_tcl.html#tcl-window-cmds">tcl-window-cmds</a>|
+5. Tcl buffer commands			|<a href="if_tcl.html#tcl-buffer-cmds">tcl-buffer-cmds</a>|
+6. Miscellaneous; Output from Tcl	|<a href="if_tcl.html#tcl-misc">tcl-misc</a>| |<a href="if_tcl.html#tcl-output">tcl-output</a>|
+7. Known bugs &amp; problems		|<a href="if_tcl.html#tcl-bugs">tcl-bugs</a>|
+8. Examples				|<a href="if_tcl.html#tcl-examples">tcl-examples</a>|
+9. Dynamic loading			|<a href="if_tcl.html#tcl-dynamic">tcl-dynamic</a>|
+
+<b class="vimtag">*<a name="E280">E280</a>*</b>
+{only available when Vim was compiled with the |<a href="various.html#+tcl">+tcl</a>| feature}
+
+WARNING: There are probably still some bugs.  Please send bug reports,
+comments, ideas etc to <code class="special">&lt;Ingo.Wilken@informatik.uni-oldenburg.de&gt;</code>
+
+</pre><hr/><pre>1. Commands				<b class="vimtag">*<a name="tcl-ex-commands">tcl-ex-commands</a>*</b> <b class="vimtag">*<a name="E571">E571</a>*</b> <b class="vimtag">*<a name="E572">E572</a>*</b>
+
+							<b class="vimtag">*<a name=":tcl">:tcl</a>*</b> <b class="vimtag">*<a name=":tc">:tc</a>*</b>
+:tc[l] <code class="special">{cmd}</code>		Execute Tcl command <code class="special">{cmd}</code>.  A simple check if `:tcl`
+			is working:
+<code class="example">				:tcl puts "Hello"</code>
+<code class="example"></code>
+:<code class="special">[range]</code>tc[l] &lt;&lt; [endmarker]
+<code class="special">{script}</code>
+<code class="special">{endmarker}</code>
+			Execute Tcl script <code class="special">{script}</code>.
+			<code class="note">Note:</code> This command doesn't work when the Tcl feature
+			wasn't compiled in.  To avoid errors, see
+			|<a href="if_perl.html#script-here">script-here</a>|.
+
+The <code class="special">{endmarker}</code> after <code class="special">{script}</code> must NOT be preceded by any white space.
+
+If [endmarker] is omitted from after the "&lt;&lt;", a dot '.' must be used after
+<code class="special">{script}</code>, like for the |<a href="insert.html#:append">:append</a>| and |<a href="insert.html#:insert">:insert</a>| commands.
+
+This form of the |<a href="if_tcl.html#:tcl">:tcl</a>| command is mainly useful for including tcl code in Vim
+scripts.
+
+Example:
+<code class="example">	function! DefineDate()</code>
+<code class="example">	    tcl &lt;&lt; EOF</code>
+<code class="example">	    proc date <code class="special">{}</code> {</code>
+<code class="example">		return [clock format [clock seconds]]</code>
+<code class="example">	    }</code>
+<code class="example">	EOF</code>
+<code class="example">	endfunction</code>
+
+To see what version of Tcl you have:
+<code class="example">	:tcl puts [info patchlevel]</code>
+
+
+							<b class="vimtag">*<a name=":tcldo">:tcldo</a>*</b> <b class="vimtag">*<a name=":tcld">:tcld</a>*</b>
+:<code class="special">[range]</code>tcld[o] <code class="special">{cmd}</code>	Execute Tcl command <code class="special">{cmd}</code> for each line in <code class="special">[range]</code>
+			with the variable "line" being set to the text of each
+			line in turn, and "lnum" to the line number.  Setting
+			"line" will change the text, but <code class="note">note</code> that it is not
+			possible to add or delete lines using this command.
+			If <code class="special">{cmd}</code> returns an error, the command is interrupted.
+			The default for <code class="special">[range]</code> is the whole file: "1,$".
+			See |<a href="if_tcl.html#tcl-var-line">tcl-var-line</a>| and |<a href="if_tcl.html#tcl-var-lnum">tcl-var-lnum</a>|.
+
+							<b class="vimtag">*<a name=":tclfile">:tclfile</a>*</b> <b class="vimtag">*<a name=":tclf">:tclf</a>*</b>
+:tclf[ile] <code class="special">{file}</code>	Execute the Tcl script in <code class="special">{file}</code>.  This is the same as
+			":tcl source <code class="special">{file}</code>", but allows file name completion.
+
+
+<code class="note">Note</code> that Tcl objects (like variables) persist from one command to the next,
+just as in the Tcl shell.
+
+Executing Tcl commands is not possible in the |<a href="eval.html#sandbox">sandbox</a>|.
+
+</pre><hr/><pre>2. Tcl commands						<b class="vimtag">*<a name="tcl-commands">tcl-commands</a>*</b>
+
+Tcl code gets all of its access to vim via commands in the "::vim" namespace.
+The following commands are implemented:
+<code class="example"></code>
+<code class="example">	::vim::beep			# Guess.</code>
+<code class="example">	::vim::buffer <code class="special">{n}</code>		# Create Tcl command for one buffer.</code>
+<code class="example">	::vim::buffer list		# Create Tcl commands for all buffers.</code>
+<code class="example">	::vim::command [-quiet] <code class="special">{cmd}</code>	# Execute an Ex command.</code>
+<code class="example">	::vim::expr <code class="special">{expr}</code>		# Use Vim's expression evaluator.</code>
+<code class="example">	::vim::option <code class="special">{opt}</code>		# Get vim option.</code>
+<code class="example">	::vim::option <code class="special">{opt}</code> <code class="special">{val}</code>	# Set vim option.</code>
+<code class="example">	::vim::window list		# Create Tcl commands for all windows.</code>
+<code class="example"></code>
+Commands:
+	::vim::beep					<b class="vimtag">*<a name="tcl-beep">tcl-beep</a>*</b>
+	Honk.  Does not return a result.
+
+	::vim::buffer <code class="special">{n}</code>				<b class="vimtag">*<a name="tcl-buffer">tcl-buffer</a>*</b>
+	::vim::buffer exists <code class="special">{n}</code>
+	::vim::buffer list
+	Provides access to vim buffers.  With an integer argument, creates a
+	buffer command (see |<a href="if_tcl.html#tcl-buffer-cmds">tcl-buffer-cmds</a>|) for the buffer with that
+	number, and returns its name as the result.  Invalid buffer numbers
+	result in a standard Tcl error.  To test for valid buffer numbers,
+	vim's internal functions can be used:
+<code class="example">		set nbufs [::vim::expr bufnr("$")]</code>
+<code class="example">		set isvalid [::vim::expr "bufexists($n)"]</code>
+	The "list" option creates a buffer command for each valid buffer, and
+	returns a list of the command names as the result.
+	Example:
+<code class="example">		set bufs [::vim::buffer list]</code>
+<code class="example">		foreach b $bufs <code class="special">{ $b append end "The End!" }</code></code>
+	The "exists" option checks if a buffer with the given number exists.
+	Example:
+<code class="example">		if <code class="special">{ [::vim::buffer exists $n] }</code> <code class="special">{ ::vim::command ":e #$n" }</code></code>
+	This command might be replaced by a variable in future versions.
+	See also |<a href="if_tcl.html#tcl-var-current">tcl-var-current</a>| for the current buffer.
+
+	::vim::command <code class="special">{cmd}</code>				<b class="vimtag">*<a name="tcl-command">tcl-command</a>*</b>
+	::vim::command -quiet <code class="special">{cmd}</code>
+	Execute the vim (ex-mode) command <code class="special">{cmd}</code>.  Any Ex command that affects
+	a buffer or window uses the current buffer/current window.  Does not
+	return a result other than a standard Tcl error code.  After this
+	command is completed, the "::vim::current" variable is updated.
+	The "-quiet" flag suppresses any error messages from vim.
+	Examples:
+<code class="example">		::vim::command "set ts=8"</code>
+<code class="example">		::vim::command "%s/foo/bar/g"</code>
+&lt;	To execute normal-mode commands, use "normal" (see |<a href="various.html#:normal">:normal</a>|):
+<code class="example">		set cmd "jj"</code>
+<code class="example">		::vim::command "normal $cmd"</code>
+	See also |<a href="if_tcl.html#tcl-window-command">tcl-window-command</a>| and |<a href="if_tcl.html#tcl-buffer-command">tcl-buffer-command</a>|.
+
+	::vim::expr <code class="special">{expr}</code>				<b class="vimtag">*<a name="tcl-expr">tcl-expr</a>*</b>
+	Evaluates the expression <code class="special">{expr}</code> using vim's internal expression
+	evaluator (see |<a href="eval.html#expression">expression</a>|).   Any expression that queries a buffer
+	or window property uses the current buffer/current window.  Returns
+	the result as a string.  A |<a href="eval.html#List">List</a>| is turned into a string by joining
+	the items and inserting line breaks.
+	Examples:
+<code class="example">		set perl_available [::vim::expr has("perl")]</code>
+	See also |<a href="if_tcl.html#tcl-window-expr">tcl-window-expr</a>| and |<a href="if_tcl.html#tcl-buffer-expr">tcl-buffer-expr</a>|.
+
+	::vim::option <code class="special">{opt}</code>				<b class="vimtag">*<a name="tcl-option">tcl-option</a>*</b>
+	::vim::option <code class="special">{opt}</code> <code class="special">{value}</code>
+	Without second argument, queries the value of a vim option.  With this
+	argument, sets the vim option to <code class="special">{value}</code>, and returns the previous
+	value as the result.  Any options that are marked as 'local to buffer'
+	or 'local to window' affect the current buffer/current window.  The
+	global value is not changed, use the ":set" command for that.  For
+	boolean options, <code class="special">{value}</code> should be "0" or "1", or any of the keywords
+	"on", "off" or "toggle".  See |<a href="options.html#option-summary">option-summary</a>| for a list of options.
+	Example:
+<code class="example">		::vim::option ts 8</code>
+	See also |<a href="if_tcl.html#tcl-window-option">tcl-window-option</a>| and |<a href="if_tcl.html#tcl-buffer-option">tcl-buffer-option</a>|.
+
+	::vim::window <code class="special">{option}</code>				<b class="vimtag">*<a name="tcl-window">tcl-window</a>*</b>
+	Provides access to vim windows.  Currently only the "list" option is
+	implemented.  This creates a window command (see |<a href="if_tcl.html#tcl-window-cmds">tcl-window-cmds</a>|) for
+	each window, and returns a list of the command names as the result.
+	Example:
+<code class="example">		set wins [::vim::window list]</code>
+<code class="example">		foreach w $wins <code class="special">{ $w height 4 }</code></code>
+	This command might be replaced by a variable in future versions.
+	See also |<a href="if_tcl.html#tcl-var-current">tcl-var-current</a>| for the current window.
+
+</pre><hr/><pre>3. Tcl variables					<b class="vimtag">*<a name="tcl-variables">tcl-variables</a>*</b>
+
+The ::vim namespace contains a few variables.  These are created when the Tcl
+interpreter is called from vim and set to current values.
+<code class="example"></code>
+<code class="example">	::vim::current		# array containing "current" objects</code>
+<code class="example">	::vim::lbase		# number of first line</code>
+<code class="example">	::vim::range		# array containing current range numbers</code>
+<code class="example">	line			# current line as a string (:tcldo only)</code>
+<code class="example">	lnum			# current line number (:tcldo only)</code>
+<code class="example"></code>
+Variables:
+	::vim::current					<b class="vimtag">*<a name="tcl-var-current">tcl-var-current</a>*</b>
+	This is an array providing access to various "current" objects
+	available in vim.  The contents of this array are updated after
+	"::vim::command" is called, as this might change vim's current
+	settings (e.g., by deleting the current buffer).
+	The "buffer" element contains the name of the buffer command for the
+	current buffer.  This can be used directly to invoke buffer commands
+	(see |<a href="if_tcl.html#tcl-buffer-cmds">tcl-buffer-cmds</a>|).  This element is read-only.
+	Example:
+<code class="example">		$::vim::current(buffer) insert begin "Hello world"</code>
+	The "window" element contains the name of the window command for the
+	current window.  This can be used directly to invoke window commands
+	(see |<a href="if_tcl.html#tcl-window-cmds">tcl-window-cmds</a>|).  This element is read-only.
+	Example:
+<code class="example">		$::vim::current(window) height 10</code>
+
+	::vim::lbase					<b class="vimtag">*<a name="tcl-var-lbase">tcl-var-lbase</a>*</b>
+	This variable controls how Tcl treats line numbers.  If it is set to
+	'1', then lines and columns start at 1.  This way, line numbers from
+	Tcl commands and vim expressions are compatible.  If this variable is
+	set to '0', then line numbers and columns start at 0 in Tcl.  This is
+	useful if you want to treat a buffer as a Tcl list or a line as a Tcl
+	string and use standard Tcl commands that return an index ("lsort" or
+	"string first", for example).  The default value is '1'.  Currently,
+	any non-zero values is treated as '1', but your scripts should not
+	rely on this.  See also |<a href="if_tcl.html#tcl-linenumbers">tcl-linenumbers</a>|.
+
+	::vim::range					<b class="vimtag">*<a name="tcl-var-range">tcl-var-range</a>*</b>
+	This is an array with three elements, "start", "begin" and "end".  It
+	contains the line numbers of the start and end row of the current
+	range.  "begin" is the same as "start".  This variable is read-only.
+	See |<a href="if_tcl.html#tcl-examples">tcl-examples</a>|.
+
+	line						<b class="vimtag">*<a name="tcl-var-line">tcl-var-line</a>*</b>
+	lnum						<b class="vimtag">*<a name="tcl-var-lnum">tcl-var-lnum</a>*</b>
+	These global variables are only available if the ":tcldo" Ex command
+	is being executed.  They contain the text and line number of the
+	current line.  When the Tcl command invoked by ":tcldo" is completed,
+	the current line is set to the contents of the "line" variable, unless
+	the variable was unset by the Tcl command.  The "lnum" variable is
+	read-only.  These variables are not in the "::vim" namespace so they
+	can be used in ":tcldo" without much typing (this might be changed in
+	future versions).  See also |<a href="if_tcl.html#tcl-linenumbers">tcl-linenumbers</a>|.
+
+</pre><hr/><pre>4. Tcl window commands					<b class="vimtag">*<a name="tcl-window-cmds">tcl-window-cmds</a>*</b>
+
+Window commands represent vim windows.  They are created by several commands:
+	::vim::window list			|<a href="if_tcl.html#tcl-window">tcl-window</a>|
+	"windows" option of a buffer command	|<a href="if_tcl.html#tcl-buffer-windows">tcl-buffer-windows</a>|
+The ::vim::current(window) variable contains the name of the window command
+for the current window.  A window command is automatically deleted when the
+corresponding vim window is closed.
+
+Let's assume the name of the window command is stored in the Tcl variable "win",
+i.e. "$win" calls the command.  The following options are available:
+<code class="example"></code>
+<code class="example">	$win buffer		# Create Tcl command for window's buffer.</code>
+<code class="example">	$win command <code class="special">{cmd}</code>	# Execute Ex command in windows context.</code>
+<code class="example">	$win cursor		# Get current cursor position.</code>
+<code class="example">	$win cursor <code class="special">{var}</code>	# Set cursor position from array variable.</code>
+<code class="example">	$win cursor <code class="special">{row}</code> <code class="special">{col}</code>	# Set cursor position.</code>
+<code class="example">	$win delcmd <code class="special">{cmd}</code>	# Call Tcl command when window is closed.</code>
+<code class="example">	$win expr <code class="special">{expr}</code>	# Evaluate vim expression in windows context.</code>
+<code class="example">	$win height		# Report the window's height.</code>
+<code class="example">	$win height <code class="special">{n}</code>		# Set the window's height.</code>
+<code class="example">	$win option <code class="special">{opt}</code> [val]	# Get/Set vim option in windows context.</code>
+<code class="example"></code>
+Options:
+	$win buffer					<b class="vimtag">*<a name="tcl-window-buffer">tcl-window-buffer</a>*</b>
+	Creates a Tcl command for the window's buffer, and returns its name as
+	the result.  The name should be stored in a variable:
+<code class="example">		set buf [$win buffer]</code>
+	$buf is now a valid Tcl command.  See |<a href="if_tcl.html#tcl-buffer-cmds">tcl-buffer-cmds</a>| for the
+	available options.
+
+	$win cursor					<b class="vimtag">*<a name="tcl-window-cursor">tcl-window-cursor</a>*</b>
+	$win cursor <code class="special">{var}</code>
+	$win cursor <code class="special">{row}</code> <code class="special">{col}</code>
+	Without argument, reports the current cursor position as a string.
+	This can be converted to a Tcl array variable:
+<code class="example">		array set here [$win cursor]</code>
+	"here(row)" and "here(column)" now contain the cursor position.
+	With a single argument, the argument is interpreted as the name of a
+	Tcl array variable, which must contain two elements "row" and "column".
+	These are used to set the cursor to the new position:
+<code class="example">		$win cursor here	;# not $here !</code>
+&lt;	With two arguments, sets the cursor to the specified row and column:
+<code class="example">		$win cursor $here(row) $here(column)</code>
+	Invalid positions result in a standard Tcl error, which can be caught
+	with "catch".  The row and column values depend on the "::vim::lbase"
+	variable.  See |<a href="if_tcl.html#tcl-var-lbase">tcl-var-lbase</a>|.
+
+	$win delcmd <code class="special">{cmd}</code>				<b class="vimtag">*<a name="tcl-window-delcmd">tcl-window-delcmd</a>*</b>
+	Registers the Tcl command <code class="special">{cmd}</code> as a deletion callback for the window.
+	This command is executed (in the global scope) just before the window
+	is closed.  Complex commands should be build with "list":
+<code class="example">		$win delcmd [list puts vimerr "window deleted"]</code>
+	See also |<a href="if_tcl.html#tcl-buffer-delcmd">tcl-buffer-delcmd</a>|.
+
+	$win height					<b class="vimtag">*<a name="tcl-window-height">tcl-window-height</a>*</b>
+	$win height <code class="special">{n}</code>
+	Without argument, reports the window's current height.  With an
+	argument, tries to set the window's height to <code class="special">{n}</code>, then reports the
+	new height (which might be different from <code class="special">{n}</code>).
+
+	$win command [-quiet] <code class="special">{cmd}</code>			<b class="vimtag">*<a name="tcl-window-command">tcl-window-command</a>*</b>
+	$win expr <code class="special">{expr}</code>				<b class="vimtag">*<a name="tcl-window-expr">tcl-window-expr</a>*</b>
+	$win option <code class="special">{opt}</code> [val]				<b class="vimtag">*<a name="tcl-window-option">tcl-window-option</a>*</b>
+	These are similar to "::vim::command" etc., except that everything is
+	done in the context of the window represented by $win, instead of the
+	current window.  For example, setting an option that is marked 'local
+	to window' affects the window $win.  Anything that affects or queries
+	a buffer uses the buffer displayed in this window (i.e. the buffer
+	that is represented by "$win buffer").  See |<a href="if_tcl.html#tcl-command">tcl-command</a>|, |<a href="if_tcl.html#tcl-expr">tcl-expr</a>|
+	and |<a href="if_tcl.html#tcl-option">tcl-option</a>| for more information.
+	Example:
+<code class="example">		$win option number on</code>
+<code class="example"></code>
+</pre><hr/><pre>5. Tcl buffer commands					<b class="vimtag">*<a name="tcl-buffer-cmds">tcl-buffer-cmds</a>*</b>
+
+Buffer commands represent vim buffers.  They are created by several commands:
+	::vim::buffer <code class="special">{N}</code>			|<a href="if_tcl.html#tcl-buffer">tcl-buffer</a>|
+	::vim::buffer list			|<a href="if_tcl.html#tcl-buffer">tcl-buffer</a>|
+	"buffer" option of a window command	|<a href="if_tcl.html#tcl-window-buffer">tcl-window-buffer</a>|
+The ::vim::current(buffer) variable contains the name of the buffer command
+for the current buffer.  A buffer command is automatically deleted when the
+corresponding vim buffer is destroyed.  Whenever the buffer's contents are
+changed, all marks in the buffer are automatically adjusted.  Any changes to
+the buffer's contents made by Tcl commands can be undone with the "undo" vim
+command (see |<a href="undo.html#undo">undo</a>|).
+
+Let's assume the name of the buffer command is stored in the Tcl variable "buf",
+i.e. "$buf" calls the command.  The following options are available:
+<code class="example"></code>
+<code class="example">	$buf append <code class="special">{n}</code> <code class="special">{str}</code>	# Append a line to buffer, after line <code class="special">{n}</code>.</code>
+<code class="example">	$buf command <code class="special">{cmd}</code>	# Execute Ex command in buffers context.</code>
+<code class="example">	$buf count		# Report number of lines in buffer.</code>
+<code class="example">	$buf delcmd <code class="special">{cmd}</code>	# Call Tcl command when buffer is deleted.</code>
+<code class="example">	$buf delete <code class="special">{n}</code>		# Delete a single line.</code>
+<code class="example">	$buf delete <code class="special">{n}</code> <code class="special">{m}</code>	# Delete several lines.</code>
+<code class="example">	$buf expr <code class="special">{expr}</code>	# Evaluate vim expression in buffers context.</code>
+<code class="example">	$buf get <code class="special">{n}</code>		# Get a single line as a string.</code>
+<code class="example">	$buf get <code class="special">{n}</code> <code class="special">{m}</code>	# Get several lines as a list.</code>
+<code class="example">	$buf insert <code class="special">{n}</code> <code class="special">{str}</code>	# Insert a line in buffer, as line <code class="special">{n}</code>.</code>
+<code class="example">	$buf last		# Report line number of last line in buffer.</code>
+<code class="example">	$buf mark <code class="special">{mark}</code>	# Report position of buffer mark.</code>
+<code class="example">	$buf name		# Report name of file in buffer.</code>
+<code class="example">	$buf number		# Report number of this buffer.</code>
+<code class="example">	$buf option <code class="special">{opt}</code> [val]	# Get/Set vim option in buffers context.</code>
+<code class="example">	$buf set <code class="special">{n}</code> <code class="special">{text}</code>	# Replace a single line.</code>
+<code class="example">	$buf set <code class="special">{n}</code> <code class="special">{m}</code> <code class="special">{list}</code>	# Replace several lines.</code>
+<code class="example">	$buf windows		# Create Tcl commands for buffer's windows.</code>
+
+							<b class="vimtag">*<a name="tcl-linenumbers">tcl-linenumbers</a>*</b>
+Most buffer commands take line numbers as arguments.  How Tcl treats these
+numbers depends on the "::vim::lbase" variable (see |<a href="if_tcl.html#tcl-var-lbase">tcl-var-lbase</a>|).  Instead
+of line numbers, several keywords can be also used: "top", "start", "begin",
+"first", "bottom", "end" and "last".
+
+Options:
+	$buf append <code class="special">{n}</code> <code class="special">{str}</code>				<b class="vimtag">*<a name="tcl-buffer-append">tcl-buffer-append</a>*</b>
+	$buf insert <code class="special">{n}</code> <code class="special">{str}</code>				<b class="vimtag">*<a name="tcl-buffer-insert">tcl-buffer-insert</a>*</b>
+	Add a line to the buffer.  With the "insert" option, the string
+	becomes the new line <code class="special">{n}</code>, with "append" it is inserted after line <code class="special">{n}</code>.
+	Example:
+<code class="example">		$buf insert top "This is the beginning."</code>
+<code class="example">		$buf append end "This is the end."</code>
+&lt;	To add a list of lines to the buffer, use a loop:
+<code class="example">		foreach line $list <code class="special">{ $buf append $num $line ; incr num }</code></code>
+
+	$buf count					<b class="vimtag">*<a name="tcl-buffer-count">tcl-buffer-count</a>*</b>
+	Reports the total number of lines in the buffer.
+
+	$buf delcmd <code class="special">{cmd}</code>				<b class="vimtag">*<a name="tcl-buffer-delcmd">tcl-buffer-delcmd</a>*</b>
+	Registers the Tcl command <code class="special">{cmd}</code> as a deletion callback for the buffer.
+	This command is executed (in the global scope) just before the buffer
+	is deleted.  Complex commands should be build with "list":
+<code class="example">		$buf delcmd [list puts vimerr "buffer [$buf number] gone"]</code>
+	See also |<a href="if_tcl.html#tcl-window-delcmd">tcl-window-delcmd</a>|.
+
+	$buf delete <code class="special">{n}</code>					<b class="vimtag">*<a name="tcl-buffer-delete">tcl-buffer-delete</a>*</b>
+	$buf delete <code class="special">{n}</code> <code class="special">{m}</code>
+	Deletes line <code class="special">{n}</code> or lines <code class="special">{n}</code> through <code class="special">{m}</code> from the buffer.
+	This example deletes everything except the last line:
+<code class="example">		$buf delete first [expr [$buf last] - 1]</code>
+
+	$buf get <code class="special">{n}</code>					<b class="vimtag">*<a name="tcl-buffer-get">tcl-buffer-get</a>*</b>
+	$buf get <code class="special">{n}</code> <code class="special">{m}</code>
+	Gets one or more lines from the buffer.  For a single line, the result
+	is a string; for several lines, a list of strings.
+	Example:
+<code class="example">		set topline [$buf get top]</code>
+
+	$buf last					<b class="vimtag">*<a name="tcl-buffer-last">tcl-buffer-last</a>*</b>
+	Reports the line number of the last line.  This value depends on the
+	"::vim::lbase" variable.  See |<a href="if_tcl.html#tcl-var-lbase">tcl-var-lbase</a>|.
+
+	$buf mark <code class="special">{mark}</code>				<b class="vimtag">*<a name="tcl-buffer-mark">tcl-buffer-mark</a>*</b>
+	Reports the position of the named mark as a string, similar to the
+	cursor position of the "cursor" option of a window command (see
+	|<a href="if_tcl.html#tcl-window-cursor">tcl-window-cursor</a>|).  This can be converted to a Tcl array variable:
+<code class="example">		array set mpos [$buf mark "a"]</code>
+	"mpos(column)" and "mpos(row)" now contain the position of the mark.
+	If the mark is not set, a standard Tcl error results.
+
+	$buf name
+	Reports the name of the file in the buffer.  For a buffer without a
+	file, this is an empty string.
+
+	$buf number
+	Reports the number of this buffer.  See |<a href="windows.html#:buffers">:buffers</a>|.
+	This example deletes a buffer from vim:
+<code class="example">		::vim::command "bdelete [$buf number]"</code>
+
+	$buf set <code class="special">{n}</code> <code class="special">{string}</code>				<b class="vimtag">*<a name="tcl-buffer-set">tcl-buffer-set</a>*</b>
+	$buf set <code class="special">{n}</code> <code class="special">{m}</code> <code class="special">{list}</code>
+	Replace one or several lines in the buffer.  If the list contains more
+	elements than there are lines to replace, they are inserted into the
+	buffer.  If the list contains fewer elements, any unreplaced line is
+	deleted from the buffer.
+
+	$buf windows					<b class="vimtag">*<a name="tcl-buffer-windows">tcl-buffer-windows</a>*</b>
+	Creates a window command for each window that displays this buffer, and
+	returns a list of the command names as the result.
+	Example:
+<code class="example">		set winlist [$buf windows]</code>
+<code class="example">		foreach win $winlist <code class="special">{ $win height 4 }</code></code>
+	See |<a href="if_tcl.html#tcl-window-cmds">tcl-window-cmds</a>| for the available options.
+
+	$buf command [-quiet] <code class="special">{cmd}</code>			<b class="vimtag">*<a name="tcl-buffer-command">tcl-buffer-command</a>*</b>
+	$buf expr <code class="special">{expr}</code>				<b class="vimtag">*<a name="tcl-buffer-expr">tcl-buffer-expr</a>*</b>
+	$buf option <code class="special">{opt}</code> [val]				<b class="vimtag">*<a name="tcl-buffer-option">tcl-buffer-option</a>*</b>
+	These are similar to "::vim::command" etc., except that everything is
+	done in the context of the buffer represented by $buf, instead of the
+	current buffer.  For example, setting an option that is marked 'local
+	to buffer' affects the buffer $buf.  Anything that affects or queries
+	a window uses the first window in vim's window list that displays this
+	buffer (i.e. the first entry in the list returned by "$buf windows").
+	See |<a href="if_tcl.html#tcl-command">tcl-command</a>|, |<a href="if_tcl.html#tcl-expr">tcl-expr</a>| and |<a href="if_tcl.html#tcl-option">tcl-option</a>| for more information.
+	Example:
+<code class="example">		if <code class="special">{ [$buf option modified] }</code> <code class="special">{ $buf command "w" }</code></code>
+<code class="example"></code>
+</pre><hr/><pre>6. Miscellaneous; Output from Tcl		<b class="vimtag">*<a name="tcl-misc">tcl-misc</a>*</b> <b class="vimtag">*<a name="tcl-output">tcl-output</a>*</b>
+
+The standard Tcl commands "exit" and "catch" are replaced by custom versions.
+"exit" terminates the current Tcl script and returns to vim, which deletes the
+Tcl interpreter.  Another call to ":tcl" then creates a new Tcl interpreter.
+"exit" does NOT terminate vim!  "catch" works as before, except that it does
+not prevent script termination from "exit".  An exit code != 0 causes the ex
+command that invoked the Tcl script to return an error.
+
+Two new I/O streams are available in Tcl, "vimout" and "vimerr".  All output
+directed to them is displayed in the vim message area, as information messages
+and error messages, respectively.  The standard Tcl output streams stdout and
+stderr are mapped to vimout and vimerr, so that a normal "puts" command can be
+used to display messages in vim.
+
+</pre><hr/><pre>7. Known bugs &amp; problems				<b class="vimtag">*<a name="tcl-bugs">tcl-bugs</a>*</b>
+
+Calling one of the Tcl Ex commands from inside Tcl (via "::vim::command") may
+have unexpected side effects.  The command creates a new interpreter, which
+has the same abilities as the standard interpreter - making "::vim::command"
+available in a safe child interpreter therefore makes the child unsafe.  (It
+would be trivial to block nested :tcl* calls or ensure that such calls from a
+safe interpreter create only new safe interpreters, but quite pointless -
+depending on vim's configuration, "::vim::command" may execute arbitrary code
+in any number of other scripting languages.)  A call to "exit" within this new
+interpreter does not affect the old interpreter; it only terminates the new
+interpreter, then script processing continues normally in the old interpreter.
+
+Input from stdin is currently not supported.
+
+</pre><hr/><pre>8. Examples:						<b class="vimtag">*<a name="tcl-examples">tcl-examples</a>*</b>
+
+Here are a few small (and maybe useful) Tcl scripts.
+
+This script sorts the lines of the entire buffer (assume it contains a list
+of names or something similar):
+	set buf $::vim::current(buffer)
+	set lines [$buf get top bottom]
+	set lines [lsort -dictionary $lines]
+	$buf set top bottom $lines
+
+This script reverses the lines in the buffer.  <code class="note">Note</code> the use of "::vim::lbase"
+and "$buf last" to work with any line number setting.
+	set buf $::vim::current(buffer)
+	set t $::vim::lbase
+	set b [$buf last]
+	while <code class="special">{ $t &lt; $b }</code> {
+		set tl [$buf get $t]
+		set bl [$buf get $b]
+		$buf set $t $bl
+		$buf set $b $tl
+		incr t
+		incr b -1
+	}
+
+This script adds a consecutive number to each line in the current range:
+	set buf $::vim::current(buffer)
+	set i $::vim::range(start)
+	set n 1
+	while <code class="special">{ $i &lt;= $::vim::range(end) }</code> {
+		set line [$buf get $i]
+		$buf set $i "$n\t$line"
+		incr i ; incr n
+	}
+
+The same can also be done quickly with two Ex commands, using ":tcldo":
+	:tcl set n 1
+	:<code class="special">[range]</code>tcldo set line "$n\t$line" ; incr n
+
+This procedure runs an Ex command on each buffer (idea stolen from Ron Aaron):
+	proc eachbuf <code class="special">{ cmd }</code> {
+		foreach b [::vim::buffer list] {
+			$b command $cmd
+		}
+	}
+Use it like this:
+	:tcl eachbuf %s/foo/bar/g
+Be careful with Tcl's string and backslash substitution, tough.  If in doubt,
+surround the Ex command with curly braces.
+
+
+If you want to add some Tcl procedures permanently to vim, just place them in
+a file (e.g. "~/.vimrc.tcl" on Unix machines), and add these lines to your
+startup file (usually "~/.vimrc" on Unix):
+	if has("tcl")
+		tclfile ~/.vimrc.tcl
+	endif
+
+</pre><hr/><pre>9. Dynamic loading					<b class="vimtag">*<a name="tcl-dynamic">tcl-dynamic</a>*</b>
+
+On MS-Windows and Unix the Tcl library can be loaded dynamically.  The
+|<a href="various.html#:version">:version</a>| output then includes |<a href="various.html#+tcl%2Fdyn">+tcl/dyn</a>|.
+
+This means that Vim will search for the Tcl DLL or shared library file only
+when needed.  When you don't use the Tcl interface you don't need it, thus you
+can use Vim without this file.
+
+
+<code class="section">MS-Windows </code>
+
+To use the Tcl interface the Tcl DLL must be in your search path.  In a
+console window type "path" to see what directories are used.  The 'tcldll'
+option can be also used to specify the Tcl DLL.
+
+The name of the DLL must match the Tcl version Vim was compiled with.
+Currently the name is "tcl86.dll".  That is for Tcl 8.6.  To know for sure
+edit "gvim.exe" and search for "tcl\d*.dll\c".
+
+
+<code class="section">Unix </code>
+
+The 'tcldll' option can be used to specify the Tcl shared library file instead
+of DYNAMIC_TCL_DLL file what was specified at compile time.  The version of
+the shared library must match the Tcl version Vim was compiled with.
+
+</pre><hr/><pre> vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

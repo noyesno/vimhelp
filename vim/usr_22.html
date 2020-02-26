@@ -1,0 +1,422 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_22</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_22</h2>
+<pre>
+<b class="vimtag">*<a name="usr_22.txt">usr_22.txt</a>*</b>	For Vim version 8.2.  Last change: 2019 Dec 07
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			   Finding the file to edit
+
+
+Files can be found everywhere.  So how do you find them?  Vim offers various
+ways to browse the directory tree.  There are commands to jump to a file that
+is mentioned in another.  And Vim remembers which files have been edited
+before.
+
+|<a href="usr_22.html#22.1">22.1</a>|	The file browser
+|<a href="usr_22.html#22.2">22.2</a>|	The current directory
+|<a href="usr_22.html#22.3">22.3</a>|	Finding a file
+|<a href="usr_22.html#22.4">22.4</a>|	The buffer list
+
+     Next chapter: |<a href="usr_23.html#usr_23.txt">usr_23</a>|  Editing other files
+ Previous chapter: |<a href="usr_21.html#usr_21.txt">usr_21</a>|  Go away and come back
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="22.1">22.1</a>*</b>	The file browser
+
+Vim has a plugin that makes it possible to edit a directory.  Try this:
+<code class="example"></code>
+<code class="example">	:edit .</code>
+<code class="example"></code>
+Through the magic of autocommands and Vim scripts, the window will be filled
+with the contents of the directory.  It looks like this:
+
+<code class="section">" ============================================================================ </code>
+<code class="section">" Netrw Directory Listing                                        (netrw v109) </code>
+<code class="section">"   Sorted by      name </code>
+<code class="section">"   Sort sequence: [\/]$,\.h$,\.c$,\.cpp$,*,\.info$,\.swp$,\.o$\.obj$,\.bak$ </code>
+<code class="section">"   Quick Help: <code class="special">&lt;F1&gt;</code>:help  -:go up dir  D:delete  R:rename  s:sort-by  x:exec </code>
+<code class="section">" ============================================================================ </code>
+<code class="section">../ </code>
+<code class="section">./ </code>
+<code class="section">check/ </code>
+<code class="section">Makefile </code>
+<code class="section">autocmd.txt </code>
+<code class="section">change.txt </code>
+<code class="section">eval.txt~ </code>
+<code class="section">filetype.txt~ </code>
+<code class="section">help.txt.info </code>
+
+You can see these items:
+
+1.  The name of the browsing tool and its version number
+2.  The name of the browsing directory
+3.  The method of sorting (may be by name, time, or size)
+4.  How names are to be sorted (directories first, then *.h files,
+    *.c files, etc)
+5.  How to get help (use the <code class="special">&lt;F1&gt;</code> key), and an abbreviated listing
+    of available commands
+6.  A listing of files, including "../", which allows one to list
+    the parent directory.
+
+If you have syntax highlighting enabled, the different parts are highlighted
+so as to make it easier to spot them.
+
+You can use Normal mode Vim commands to move around in the text.  For example,
+move the cursor atop a file and press <code class="special">&lt;Enter&gt;</code>; you will then be editing that
+file.  To go back to the browser use ":edit ." again, or use ":Explore".
+<code class="keystroke">CTRL-O</code> also works.
+
+Try using <code class="special">&lt;Enter&gt;</code> while the cursor is atop a directory name.  The result is
+that the file browser moves into that directory and displays the items found
+there.  Pressing <code class="special">&lt;Enter&gt;</code> on the first directory "../" moves you one level
+higher.  Pressing "-" does the same thing, without the need to move to the
+"../" item first.
+
+You can press <code class="special">&lt;F1&gt;</code> to get help on the things you can do in the netrw file
+browser.  This is what you get:
+<code class="example"></code>
+<code class="example">    9. Directory Browsing	 netrw-browse   netrw-dir   netrw-list   netrw-help</code>
+<code class="example"></code>
+<code class="example">    MAPS								 netrw-maps</code>
+<code class="example">     	 <code class="special">&lt;F1&gt;</code>.............Help.......................................|<a href="pi_netrw.html#netrw-help">netrw-help</a>|</code>
+<code class="example">     	 <code class="special">&lt;cr&gt;</code>.............Browsing...................................|<a href="pi_netrw.html#netrw-cr">netrw-cr</a>|</code>
+<code class="example">     	 <code class="special">&lt;del&gt;</code>............Deleting Files or Directories..............|<a href="pi_netrw.html#netrw-delete">netrw-delete</a>|</code>
+<code class="example">     	 -................Going Up...................................|<a href="pi_netrw.html#netrw--">netrw--</a>|</code>
+<code class="example">     	 a................Hiding Files or Directories................|<a href="pi_netrw.html#netrw-a">netrw-a</a>|</code>
+<code class="example">     	 mb...............Bookmarking a Directory....................|<a href="pi_netrw.html#netrw-mb">netrw-mb</a>|</code>
+<code class="example">     	 gb...............Changing to a Bookmarked Directory.........|<a href="pi_netrw.html#netrw-gb">netrw-gb</a>|</code>
+<code class="example">     	 c................Make Browsing Directory The Current Dir....|<a href="pi_netrw.html#netrw-c">netrw-c</a>|</code>
+<code class="example">     	 d................Make A New Directory.......................|<a href="pi_netrw.html#netrw-d">netrw-d</a>|</code>
+<code class="example">     	 D................Deleting Files or Directories..............|<a href="pi_netrw.html#netrw-D">netrw-D</a>|</code>
+<code class="example">     	 <code class="special">&lt;c-h&gt;</code>............Edit File/Directory Hiding List............|<a href="pi_netrw.html#netrw-ctrl-h">netrw-ctrl-h</a>|</code>
+<code class="example">     	 i................Change Listing Style.......................|<a href="pi_netrw.html#netrw-i">netrw-i</a>|</code>
+<code class="example">     	 <code class="special">&lt;c-l&gt;</code>............Refreshing the Listing.....................|<a href="pi_netrw.html#netrw-ctrl-l">netrw-ctrl-l</a>|</code>
+<code class="example">     	 o................Browsing with a Horizontal Split...........|<a href="pi_netrw.html#netrw-o">netrw-o</a>|</code>
+<code class="example">     	 p................Use Preview Window.........................|<a href="pi_netrw.html#netrw-p">netrw-p</a>|</code>
+<code class="example">     	 P................Edit in Previous Window....................|<a href="pi_netrw.html#netrw-p">netrw-p</a>|</code>
+<code class="example">     	 q................Listing Bookmarks and History..............|<a href="pi_netrw.html#netrw-qb">netrw-qb</a>|</code>
+<code class="example">     	 r................Reversing Sorting Order....................|<a href="pi_netrw.html#netrw-r">netrw-r</a>|</code>
+    	(etc)
+
+The <code class="special">&lt;F1&gt;</code> key thus brings you to a netrw directory browsing contents help page.
+It's a regular help page; use the usual |<a href="tagsrch.html#CTRL-]">CTRL-]</a>| to jump to tagged help items
+and |<a href="motion.html#CTRL-O">CTRL-O</a>| to jump back.
+
+To select files for display and editing: (with the cursor is atop a filename)
+
+	<code class="special">&lt;enter&gt;</code>		Open the file in the current window.	   |<a href="pi_netrw.html#netrw-cr">netrw-cr</a>|
+	o		Horizontally split window and display file |<a href="pi_netrw.html#netrw-o">netrw-o</a>|
+	v		Vertically split window and display file   |<a href="pi_netrw.html#netrw-v">netrw-v</a>|
+	p		Use the |<a href="windows.html#preview-window">preview-window</a>| 		   |<a href="pi_netrw.html#netrw-p">netrw-p</a>|
+	P		Edit in the previous window		   |<a href="pi_netrw.html#netrw-P">netrw-P</a>|
+	t		Open file in a new tab			   |<a href="pi_netrw.html#netrw-t">netrw-t</a>|
+
+The following normal-mode commands may be used to control the browser display:
+
+	i		Controls listing style (thin, long, wide, and tree).
+			The long listing includes size and date information.
+	s		Repeatedly pressing s will change the way the files
+			are sorted; one may sort on name, modification time,
+			or size.
+	r		Reverse the sorting order.
+
+As a sampling of extra normal-mode commands:
+
+	c		Change Vim's notion of the current directory to be
+			the same as the browser directory.  (see
+			|<a href="pi_netrw.html#g:netrw_keepdir">g:netrw_keepdir</a>| to control this, too)
+	R		Rename the file or directory under the cursor; a
+			prompt will be issued for the new name.
+	D		Delete the file or directory under the cursor; a
+			confirmation request will be issued.
+	mb gb		Make bookmark/goto bookmark
+
+
+One may also use command mode; again, just a sampling:
+
+	:Explore [directory]	Browse specified/current directory
+	:NetrwSettings		A comprehensive list of your current netrw
+				settings with help linkage.
+
+The netrw browser is not limited to just your local machine; one may use
+urls such as:    (that trailing / is important)
+
+	:Explore ftp://somehost/path/to/dir/
+	:e scp://somehost/path/to/dir/
+
+See |<a href="pi_netrw.html#netrw-browse">netrw-browse</a>| for more.
+
+</pre><hr/><pre><b class="vimtag">*<a name="22.2">22.2</a>*</b>	The current directory
+
+Just like the shell, Vim has the concept of a current directory.  Suppose you
+are in your home directory and want to edit several files in a directory
+"VeryLongFileName".  You could do:
+<code class="example"></code>
+<code class="example">	:edit VeryLongFileName/file1.txt</code>
+<code class="example">	:edit VeryLongFileName/file2.txt</code>
+<code class="example">	:edit VeryLongFileName/file3.txt</code>
+<code class="example"></code>
+To avoid much of the typing, do this:
+<code class="example"></code>
+<code class="example">	:cd VeryLongFileName</code>
+<code class="example">	:edit file1.txt</code>
+<code class="example">	:edit file2.txt</code>
+<code class="example">	:edit file3.txt</code>
+<code class="example"></code>
+The ":cd" command changes the current directory.  You can see what the current
+directory is with the ":pwd" command:
+<code class="example"></code>
+<code class="example">	:pwd</code>
+<code class="example">	/home/Bram/VeryLongFileName</code>
+<code class="example"></code>
+Vim remembers the last directory that you used.  Use "cd -" to go back to it.
+Example:
+<code class="example"></code>
+<code class="example">	:pwd</code>
+<code class="example">	/home/Bram/VeryLongFileName</code>
+<code class="example">	:cd /etc</code>
+<code class="example">	:pwd</code>
+<code class="example">	/etc</code>
+<code class="example">	:cd -</code>
+<code class="example">	:pwd</code>
+<code class="example">	/home/Bram/VeryLongFileName</code>
+<code class="example">	:cd -</code>
+<code class="example">	:pwd</code>
+<code class="example">	/etc</code>
+<code class="example"></code>
+<code class="example"></code>
+WINDOW LOCAL DIRECTORY
+
+When you split a window, both windows use the same current directory.  When
+you want to edit a number of files somewhere else in the new window, you can
+make it use a different directory, without changing the current directory in
+the other window.  This is called a local directory.
+<code class="example"></code>
+<code class="example">	:pwd</code>
+<code class="example">	/home/Bram/VeryLongFileName</code>
+<code class="example">	:split</code>
+<code class="example">	:lcd /etc</code>
+<code class="example">	:pwd</code>
+<code class="example">	/etc</code>
+<code class="example">	<code class="keystroke">CTRL-W</code> w</code>
+<code class="example">	:pwd</code>
+<code class="example">	/home/Bram/VeryLongFileName</code>
+<code class="example"></code>
+So long as no `:lcd` command has been used, all windows share the same current
+directory.  Doing a `:cd` command in one window will also change the current
+directory of the other window.
+   For a window where `:lcd` has been used a different current directory is
+remembered.  Using `:cd` or `:lcd` in other windows will not change it.
+   When using a `:cd` command in a window that uses a different current
+directory, it will go back to using the shared directory.
+
+
+TAB LOCAL DIRECTORY
+
+When you open a new tab page, it uses the directory of the window in the
+previous tab page from which the new tab page was opened. You can change the
+directory of the current tab page using the `:tcd` command. All the windows in
+a tab page share this directory except for windows with a window-local
+directory. Any new windows opened in this tab page will use this directory as
+the current working directory. Using a `:cd` command in a tab page will not
+change the working directory of tab pages which have a tab local directory.
+When the global working directory is changed using the `:cd` command in a tab
+page, it will also change the current tab page working directory.
+
+
+</pre><hr/><pre><b class="vimtag">*<a name="22.3">22.3</a>*</b>	Finding a file
+
+You are editing a C program that contains this line:
+
+<code class="section">	#include "inits.h" </code>
+
+You want to see what is in that "inits.h" file.  Move the cursor on the name
+of the file and type:
+<code class="example"></code>
+<code class="example">	gf</code>
+<code class="example"></code>
+Vim will find the file and edit it.
+   What if the file is not in the current directory?  Vim will use the 'path'
+option to find the file.  This option is a list of directory names where to
+look for your file.
+   Suppose you have your include files located in "c:/prog/include".  This
+command will add it to the 'path' option:
+<code class="example"></code>
+<code class="example">	:set path+=c:/prog/include</code>
+<code class="example"></code>
+This directory is an absolute path.  No matter where you are, it will be the
+same place.  What if you have located files in a subdirectory, below where the
+file is?  Then you can specify a relative path name.  This starts with a dot:
+
+<code class="example">	:set path+=./proto</code>
+<code class="example"></code>
+This tells Vim to look in the directory "proto", below the directory where the
+file in which you use "gf" is.  Thus using "gf" on "inits.h" will make Vim
+look for "proto/inits.h", starting in the directory of the file.
+   Without the "./", thus "proto", Vim would look in the "proto" directory
+below the current directory.  And the current directory might not be where the
+file that you are editing is located.
+
+The 'path' option allows specifying the directories where to search for files
+in many more ways.  See the help on the 'path' option.
+   The 'isfname' option is used to decide which characters are included in the
+file name, and which ones are not (e.g., the " character in the example
+above).
+
+When you know the file name, but it's not to be found in the file, you can
+type it:
+<code class="example"></code>
+<code class="example">	:find inits.h</code>
+<code class="example"></code>
+Vim will then use the 'path' option to try and locate the file.  This is the
+same as the ":edit" command, except for the use of 'path'.
+
+To open the found file in a new window use <code class="keystroke">CTRL-W</code> f instead of "gf", or use
+":sfind" instead of ":find".
+
+
+A nice way to directly start Vim to edit a file somewhere in the 'path':
+<code class="example"></code>
+<code class="example">	vim "+find stdio.h"</code>
+<code class="example"></code>
+This finds the file "stdio.h" in your value of 'path'.  The quotes are
+necessary to have one argument |<a href="starting.html#-+c">-+c</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="22.4">22.4</a>*</b>	The buffer list
+
+The Vim editor uses the term buffer to describe a file being edited.
+Actually, a buffer is a copy of the file that you edit.  When you finish
+changing the buffer, you write the contents of the buffer to the file.
+Buffers not only contain file contents, but also all the marks, settings, and
+other stuff that goes with it.
+
+
+HIDDEN BUFFERS
+
+Suppose you are editing the file one.txt and need to edit the file two.txt.
+You could simply use ":edit two.txt", but since you made changes to one.txt
+that won't work.  You also don't want to write one.txt yet.  Vim has a
+solution for you:
+<code class="example"></code>
+<code class="example">	:hide edit two.txt</code>
+<code class="example"></code>
+The buffer "one.txt" disappears from the screen, but Vim still knows that you
+are editing this buffer, so it keeps the modified text.  This is called a
+hidden buffer: The buffer contains text, but you can't see it.
+   The argument of ":hide" is another command.  ":hide" makes that command
+behave as if the 'hidden' option was set.  You could also set this option
+yourself.  The effect is that when any buffer is abandoned, it becomes hidden.
+   Be careful!  When you have hidden buffers with changes, don't exit Vim
+without making sure you have saved all the buffers.
+
+
+INACTIVE BUFFERS
+
+   When a buffer has been used once, Vim remembers some information about it.
+When it is not displayed in a window and it is not hidden, it is still in the
+buffer list.  This is called an inactive buffer.  Overview:
+
+   Active		Appears in a window, text loaded.
+   Hidden		Not in a window, text loaded.
+   Inactive		Not in a window, no text loaded.
+
+The inactive buffers are remembered, because Vim keeps information about them,
+like marks.  And remembering the file name is useful too, so that you can see
+which files you have edited.  And edit them again.
+
+
+LISTING BUFFERS
+
+View the buffer list with this command:
+<code class="example"></code>
+<code class="example">	:buffers</code>
+<code class="example"></code>
+A command which does the same, is not so obvious to list buffers, but is much
+shorter to type:
+<code class="example"></code>
+<code class="example">	:ls</code>
+<code class="example"></code>
+The output could look like this:
+
+<code class="section">  1 #h   "help.txt"			line 62 </code>
+<code class="section">  2 %a + "usr_21.txt"			line 1 </code>
+<code class="section">  3      "usr_toc.txt"			line 1 </code>
+
+The first column contains the buffer number.  You can use this to edit the
+buffer without having to type the name, see below.
+   After the buffer number come the flags.  Then the name of the file
+and the line number where the cursor was the last time.
+   The flags that can appear are these (from left to right):
+
+	u	Buffer is unlisted |<a href="windows.html#unlisted-buffer">unlisted-buffer</a>|.
+	 %	Current buffer.
+	 #	Alternate buffer.
+	  a	Buffer is loaded and displayed.
+	  h	Buffer is loaded but hidden.
+	   =	Buffer is read-only.
+	   -	Buffer is not modifiable, the 'modifiable' option is off.
+	    +	Buffer has been modified.
+
+
+EDITING A BUFFER
+
+You can edit a buffer by its number.  That avoids having to type the file
+name:
+<code class="example"></code>
+<code class="example">	:buffer 2</code>
+<code class="example"></code>
+But the only way to know the number is by looking in the buffer list.  You can
+use the name, or part of it, instead:
+<code class="example"></code>
+<code class="example">	:buffer help</code>
+<code class="example"></code>
+Vim will find the best match for the name you type.  If there is only one
+buffer that matches the name, it will be used.  In this case "help.txt".
+   To open a buffer in a new window:
+<code class="example"></code>
+<code class="example">	:sbuffer 3</code>
+<code class="example"></code>
+This works with a name as well.
+
+
+USING THE BUFFER LIST
+
+You can move around in the buffer list with these commands:
+
+	:bnext		go to next buffer
+	:bprevious	go to previous buffer
+	:bfirst		go to the first buffer
+	:blast		go to the last buffer
+
+To remove a buffer from the list, use this command:
+<code class="example"></code>
+<code class="example">	:bdelete 3</code>
+<code class="example"></code>
+Again, this also works with a name.
+   If you delete a buffer that was active (visible in a window), that window
+will be closed.  If you delete the current buffer, the current window will be
+closed.  If it was the last window, Vim will find another buffer to edit.  You
+can't be editing nothing!
+
+	<code class="note">Note:</code>
+	Even after removing the buffer with ":bdelete" Vim still remembers it.
+	It's actually made "unlisted", it no longer appears in the list from
+	":buffers".  The ":buffers!" command will list unlisted buffers (yes,
+	Vim can do the impossible).  To really make Vim forget about a buffer,
+	use ":bwipe".  Also see the 'buflisted' option.
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_23.html#usr_23.txt">usr_23</a>|  Editing other files
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

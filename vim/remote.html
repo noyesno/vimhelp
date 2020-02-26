@@ -1,0 +1,215 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: remote</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>REMOTE</h2>
+<pre>
+<b class="vimtag">*<a name="remote.txt">remote.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 May 05
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Vim client-server communication				<b class="vimtag">*<a name="client-server">client-server</a>*</b>
+
+1. Common functionality		|<a href="remote.html#clientserver">clientserver</a>|
+2. X11 specific items		|<a href="remote.html#x11-clientserver">x11-clientserver</a>|
+3. MS-Windows specific items	|<a href="remote.html#w32-clientserver">w32-clientserver</a>|
+
+</pre><hr/><pre>1. Common functionality					<b class="vimtag">*<a name="clientserver">clientserver</a>*</b>
+
+When compiled with the |<a href="various.html#+clientserver">+clientserver</a>| option, Vim can act as a command
+server.  It accepts messages from a client and executes them.  At the same
+time, Vim can function as a client and send commands to a Vim server.
+
+The following command line arguments are available:
+
+<code class="section">    argument			meaning	</code>
+
+   --remote [+<code class="special">{cmd}</code>] <code class="special">{file}</code> ...					<b class="vimtag">*<a name="--remote">--remote</a>*</b>
+				Open the file list in a remote Vim.  When
+				there is no Vim server, execute locally.
+				There is one optional init command: +<code class="special">{cmd}</code>.
+				This must be an Ex command that can be
+				followed by "|".
+				The rest of the command line is taken as the
+				file list.  Thus any non-file arguments must
+				come before this.
+				You cannot edit stdin this way |<a href="starting.html#--">--</a>|.
+				The remote Vim is raised.  If you don't want
+				this use
+<code class="example">				 vim --remote-send "<code class="special">&lt;C-\&gt;</code><code class="special">&lt;C-N&gt;</code>:n filename<code class="special">&lt;CR&gt;</code>"</code>
+
+   --remote-silent [+<code class="special">{cmd}</code>] <code class="special">{file}</code> ...			<b class="vimtag">*<a name="--remote-silent">--remote-silent</a>*</b>
+				As above, but don't complain if there is no
+				server and the file is edited locally.
+   --remote-wait [+<code class="special">{cmd}</code>] <code class="special">{file}</code> ...				<b class="vimtag">*<a name="--remote-wait">--remote-wait</a>*</b>
+				As --remote, but wait for files to complete
+				(unload) in remote Vim.
+   --remote-wait-silent [+<code class="special">{cmd}</code>] <code class="special">{file}</code> ...		<b class="vimtag">*<a name="--remote-wait-silent">--remote-wait-silent</a>*</b>
+				As --remote-wait, but don't complain if there
+				is no server.
+							<b class="vimtag">*<a name="--remote-tab">--remote-tab</a>*</b>
+   --remote-tab			Like --remote but open each file in a new
+				tabpage.
+							<b class="vimtag">*<a name="--remote-tab-silent">--remote-tab-silent</a>*</b>
+   --remote-tab-silent		Like --remote-silent but open each file in a
+				new tabpage.
+							<b class="vimtag">*<a name="--remote-tab-wait">--remote-tab-wait</a>*</b>
+   --remote-tab-wait		Like --remote-wait but open each file in a new
+				tabpage.
+
+						<b class="vimtag">*<a name="--remote-tab-wait-silent">--remote-tab-wait-silent</a>*</b>
+   --remote-tab-wait-silent	Like --remote-wait-silent but open each file
+				in a new tabpage.
+								<b class="vimtag">*<a name="--servername">--servername</a>*</b>
+   --servername <code class="special">{name}</code>		Become the server <code class="special">{name}</code>.  When used together
+				with one of the --remote commands: connect to
+				server <code class="special">{name}</code> instead of the default (see
+				below).  The name used will be uppercase.
+								<b class="vimtag">*<a name="--remote-send">--remote-send</a>*</b>
+   --remote-send <code class="special">{keys}</code>		Send <code class="special">{keys}</code> to server and exit.  The <code class="special">{keys}</code>
+   				are not mapped.  Special key names are
+				recognized, e.g., "<code class="special">&lt;CR&gt;</code>" results in a CR
+				character.
+								<b class="vimtag">*<a name="--remote-expr">--remote-expr</a>*</b>
+   --remote-expr <code class="special">{expr}</code>		Evaluate <code class="special">{expr}</code> in server and print the result
+				on stdout.
+								<b class="vimtag">*<a name="--serverlist">--serverlist</a>*</b>
+   --serverlist			Output a list of server names.
+
+
+<code class="section">Examples </code>
+
+Edit "file.txt" in an already running GVIM server:
+<code class="example">    gvim --remote file.txt</code>
+<code class="example"></code>
+Edit "file.txt" in an already running server called FOOBAR:
+<code class="example">    gvim --servername FOOBAR --remote file.txt</code>
+<code class="example"></code>
+Edit "file.txt" in server "FILES" if it exists, become server "FILES"
+otherwise:
+<code class="example">    gvim --servername FILES --remote-silent file.txt</code>
+<code class="example"></code>
+This doesn't work, all arguments after --remote will be used as file names:
+<code class="example">    gvim --remote --servername FOOBAR file.txt</code>
+<code class="example"></code>
+Edit file "+foo" in a remote server (<code class="note">note</code> the use of "./" to avoid the special
+meaning of the leading plus):
+<code class="example">    vim --remote ./+foo</code>
+<code class="example"></code>
+Tell the remote server "BLA" to write all files and exit:
+<code class="example">    vim --servername BLA --remote-send '<code class="special">&lt;C-\&gt;</code><code class="special">&lt;C-N&gt;</code>:wqa<code class="special">&lt;CR&gt;</code>'</code>
+<code class="example"></code>
+<code class="example"></code>
+SERVER NAME						<b class="vimtag">*<a name="client-server-name">client-server-name</a>*</b>
+
+By default Vim will try to register the name under which it was invoked (gvim,
+egvim ...).  This can be overridden with the --servername argument.  If the
+specified name is not available, a postfix is applied until a free name is
+encountered, i.e. "gvim1" for the second invocation of gvim on a particular
+X-server.  The resulting name is available in the servername builtin variable
+|<a href="eval.html#v:servername">v:servername</a>|.  The case of the server name is ignored, thus "gvim" and
+"GVIM" are considered equal.
+
+When Vim is invoked with --remote, --remote-wait or --remote-send it will try
+to locate the server name determined by the invocation name and --servername
+argument as described above.  If an exact match is not available, the first
+server with the number postfix will be used.  If a name with the number
+postfix is specified with the --servername argument, it must match exactly.
+
+If no server can be located and --remote or --remote-wait was used, Vim will
+start up according to the rest of the command line and do the editing by
+itself.  This way it is not necessary to know whether gvim is already started
+when sending command to it.
+
+The --serverlist argument will cause Vim to print a list of registered command
+servers on the standard output (stdout) and exit.
+
+Win32 <code class="note">Note:</code> Making the Vim server go to the foreground doesn't always work,
+because MS-Windows doesn't allow it.  The client will move the server to the
+foreground when using the --remote or --remote-wait argument and the server
+name starts with "g".
+
+
+REMOTE EDITING
+
+The --remote argument will cause a |<a href="windows.html#:drop">:drop</a>| command to be constructed from the
+rest of the command line and sent as described above.
+The --remote-wait argument does the same thing and additionally sets up to
+wait for each of the files to have been edited.  This uses the BufUnload
+event, thus as soon as a file has been unloaded, Vim assumes you are done
+editing it.
+<code class="note">Note</code> that the --remote and --remote-wait arguments will consume the rest of
+the command line.  I.e. all remaining arguments will be regarded as filenames.
+You can not put options there!
+
+
+FUNCTIONS
+								<b class="vimtag">*<a name="E240">E240</a>*</b> <b class="vimtag">*<a name="E573">E573</a>*</b>
+There are a number of Vim functions for scripting the command server.  See
+the description in |<a href="eval.html#eval.txt">eval</a>| or use CTRL-] on the function name to jump to
+the full explanation.
+
+<code class="section">    synopsis				     explanation </code>
+    remote_startserver( name)		     run a server
+    remote_expr( server, string, idvar)      send expression
+    remote_send( server, string, idvar)      send key sequence
+    serverlist()			     get a list of available servers
+    remote_peek( serverid, retvar)	     check for reply string
+    remote_read( serverid)		     read reply string
+    server2client( serverid, string)	     send reply string
+    remote_foreground( server)		     bring server to the front
+
+See also the explanation of |<a href="intro.html#CTRL-\_CTRL-N">CTRL-\_CTRL-N</a>|.  Very useful as a leading key
+sequence.
+The <code class="special">{serverid}</code> for server2client() can be obtained with expand("<code class="special">&lt;client&gt;</code>")
+
+</pre><hr/><pre>2. X11 specific items					<b class="vimtag">*<a name="x11-clientserver">x11-clientserver</a>*</b>
+				    <b class="vimtag">*<a name="E247">E247</a>*</b> <b class="vimtag">*<a name="E248">E248</a>*</b> <b class="vimtag">*<a name="E251">E251</a>*</b> <b class="vimtag">*<a name="E258">E258</a>*</b> <b class="vimtag">*<a name="E277">E277</a>*</b>
+
+The communication between client and server goes through the X server.  The
+display of the Vim server must be specified.  The usual protection of the X
+server is used, you must be able to open a window on the X server for the
+communication to work.  It is possible to communicate between different
+systems.
+
+By default, a GUI Vim will register a name on the X-server by which it can be
+addressed for subsequent execution of injected strings.  Vim can also act as
+a client and send strings to other instances of Vim on the same X11 display.
+
+When an X11 GUI Vim (gvim) is started, it will try to register a send-server
+name on the 'VimRegistry' property on the root window.
+
+A non GUI Vim with access to the X11 display (|<a href="term.html#xterm-clipboard">xterm-clipboard</a>| enabled), can
+also act as a command server if a server name is explicitly given with the
+--servername argument, or when Vim was build with the |<a href="various.html#+autoservername">+autoservername</a>|
+feature.
+
+An empty --servername argument will cause the command server to be disabled.
+
+To send commands to a Vim server from another application, read the source
+file src/if_xcmdsrv.c, it contains some hints about the protocol used.
+
+</pre><hr/><pre>3. Win32 specific items					<b class="vimtag">*<a name="w32-clientserver">w32-clientserver</a>*</b>
+
+Every Win32 Vim can work as a server, also in the console.  You do not need a
+version compiled with OLE.  Windows messages are used, this works on any
+version of MS-Windows.  But only communication within one system is possible.
+
+Since MS-Windows messages are used, any other application should be able to
+communicate with a Vim server.  An alternative is using the OLE functionality
+|<a href="if_ole.html#ole-interface">ole-interface</a>|.
+
+When using gvim, the --remote-wait only works properly this way:
+<code class="example"></code>
+<code class="example">	start /w gvim --remote-wait file.txt</code>
+
+ vim:tw=78:sw=4:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

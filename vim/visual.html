@@ -1,0 +1,545 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: visual</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>VISUAL</h2>
+<pre>
+<b class="vimtag">*<a name="visual.txt">visual.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 Nov 02
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Visual mode				<b class="vimtag">*<a name="Visual">Visual</a>*</b> <b class="vimtag">*<a name="Visual-mode">Visual-mode</a>*</b> <b class="vimtag">*<a name="visual-mode">visual-mode</a>*</b>
+
+Visual mode is a flexible and easy way to select a piece of text for an
+operator.  It is the only way to select a block of text.
+
+This is introduced in section |<a href="usr_04.html#04.4">04.4</a>| of the user manual.
+
+1. Using Visual mode			|<a href="visual.html#visual-use">visual-use</a>|
+2. Starting and stopping Visual mode	|<a href="visual.html#visual-start">visual-start</a>|
+3. Changing the Visual area		|<a href="visual.html#visual-change">visual-change</a>|
+4. Operating on the Visual area		|<a href="visual.html#visual-operators">visual-operators</a>|
+5. Blockwise operators			|<a href="visual.html#blockwise-operators">blockwise-operators</a>|
+6. Repeating				|<a href="visual.html#visual-repeat">visual-repeat</a>|
+7. Examples				|<a href="visual.html#visual-examples">visual-examples</a>|
+8. Select mode				|<a href="visual.html#Select-mode">Select-mode</a>|
+
+{Since Vim 7.4.200 the |<a href="various.html#+visual">+visual</a>| feature is always included}
+
+</pre><hr/><pre>1. Using Visual mode					<b class="vimtag">*<a name="visual-use">visual-use</a>*</b>
+
+Using Visual mode consists of three parts:
+1. Mark the start of the text with "v", "V" or <code class="keystroke">CTRL-V</code>.
+   The character under the cursor will be used as the start.
+2. Move to the end of the text.
+   The text from the start of the Visual mode up to and including the
+   character under the cursor is highlighted.
+3. Type an operator command.
+   The highlighted characters will be operated upon.
+
+The 'highlight' option can be used to set the display mode to use for
+highlighting in Visual mode.
+The 'virtualedit' option can be used to allow positioning the cursor to
+positions where there is no actual character.
+
+The highlighted text normally includes the character under the cursor.
+However, when the 'selection' option is set to "exclusive" and the cursor is
+after the Visual area, the character under the cursor is not included.
+
+With "v" the text before the start position and after the end position will
+not be highlighted.  However, all uppercase and non-alpha operators, except
+"~" and "U", will work on whole lines anyway.  See the list of operators
+below.
+
+							<b class="vimtag">*<a name="visual-block">visual-block</a>*</b>
+With <code class="keystroke">CTRL-V</code> (blockwise Visual mode) the highlighted text will be a rectangle
+between start position and the cursor.  However, some operators work on whole
+lines anyway (see the list below).  The change and substitute operators will
+delete the highlighted text and then start insertion at the top left
+position.
+
+</pre><hr/><pre>2. Starting and stopping Visual mode			<b class="vimtag">*<a name="visual-start">visual-start</a>*</b>
+
+						<b class="vimtag">*<a name="v">v</a>*</b> <b class="vimtag">*<a name="characterwise-visual">characterwise-visual</a>*</b>
+<code class="special">[count]</code>v		Start Visual mode per character.
+			With <code class="special">[count]</code> select the same number of characters or
+			lines as used for the last Visual operation, but at
+			the current cursor position, multiplied by <code class="special">[count]</code>.
+			When the previous Visual operation was on a block both
+			the width and height of the block are multiplied by
+			<code class="special">[count]</code>.
+			When there was no previous Visual operation <code class="special">[count]</code>
+			characters are selected.  This is like moving the
+			cursor right N * <code class="special">[count]</code> characters.  One less when
+			'selection' is not "exclusive".
+
+						<b class="vimtag">*<a name="V">V</a>*</b> <b class="vimtag">*<a name="linewise-visual">linewise-visual</a>*</b>
+<code class="special">[count]</code>V		Start Visual mode linewise.
+			With <code class="special">[count]</code> select the same number of lines as used
+			for the last Visual operation, but at the current
+			cursor position, multiplied by <code class="special">[count]</code>.  When there
+			was no previous Visual operation <code class="special">[count]</code> lines are
+			selected.
+
+						<b class="vimtag">*<a name="CTRL-V">CTRL-V</a>*</b> <b class="vimtag">*<a name="blockwise-visual">blockwise-visual</a>*</b>
+<code class="special">[count]</code><code class="keystroke">CTRL-V</code>		Start Visual mode blockwise.  <code class="note">Note:</code> Under Windows
+			<code class="keystroke">CTRL-V</code> could be mapped to paste text, it doesn't work
+			to start Visual mode then, see |<a href="gui_w32.html#CTRL-V-alternative">CTRL-V-alternative</a>|.
+			<code class="special">[count]</code> is used as with `v` above.
+
+If you use <code class="special">&lt;Esc&gt;</code>, click the left mouse button or use any command that
+does a jump to another buffer while in Visual mode, the highlighting stops
+and no text is affected.  Also when you hit "v" in characterwise Visual mode,
+"<code class="keystroke">CTRL-V</code>" in blockwise Visual mode or "V" in linewise Visual mode.  If you hit
+<code class="keystroke">CTRL-Z</code> the highlighting stops and the editor is suspended or a new shell is
+started |<a href="starting.html#CTRL-Z">CTRL-Z</a>|.
+
+	      new mode after typing:		<b class="vimtag">*<a name="v_v">v_v</a>*</b> <b class="vimtag">*<a name="v_CTRL-V">v_CTRL-V</a>*</b> <b class="vimtag">*<a name="v_V">v_V</a>*</b>
+<code class="section">old mode	     "v"	      "<code class="keystroke">CTRL-V</code>"		     "V"	</code>
+
+Normal		    Visual	   blockwise Visual	  linewise Visual
+Visual		    Normal	   blockwise Visual	  linewise Visual
+blockwise Visual    Visual	   Normal		  linewise Visual
+linewise Visual     Visual	   blockwise Visual	  Normal
+
+						<b class="vimtag">*<a name="gv">gv</a>*</b> <b class="vimtag">*<a name="v_gv">v_gv</a>*</b> <b class="vimtag">*<a name="reselect-Visual">reselect-Visual</a>*</b>
+gv			Start Visual mode with the same area as the previous
+			area and the same mode.
+			In Visual mode the current and the previous Visual
+			area are exchanged.
+			After using "p" or "P" in Visual mode the text that
+			was put will be selected.
+
+								<b class="vimtag">*<a name="gn">gn</a>*</b> <b class="vimtag">*<a name="v_gn">v_gn</a>*</b>
+gn			Search forward for the last used search pattern, like
+			with `n`, and start Visual mode to select the match.
+			If the cursor is on the match, visually selects it.
+			If an operator is pending, operates on the match.
+			E.g., "dgn" deletes the text of the next match.
+			If Visual mode is active, extends the selection
+			until the end of the next match.
+			'wrapscan' applies
+			<code class="note">Note:</code> Unlike `n` the search direction does not depend
+			on the previous search command.
+
+								<b class="vimtag">*<a name="gN">gN</a>*</b> <b class="vimtag">*<a name="v_gN">v_gN</a>*</b>
+gN			Like |<a href="visual.html#gn">gn</a>| but searches backward, like with `N`.
+
+							<b class="vimtag">*<a name="%3CLeftMouse%3E">&lt;LeftMouse&gt;</a>*</b>
+<code class="special">&lt;LeftMouse&gt;</code>		Set the current cursor position.  If Visual mode is
+			active it is stopped.  Only when 'mouse' option is
+			contains 'n' or 'a'.  If the position is within 'so'
+			lines from the last line on the screen the text is
+			scrolled up.  If the position is within 'so' lines from
+			the first line on the screen the text is scrolled
+			down.
+
+							<b class="vimtag">*<a name="%3CRightMouse%3E">&lt;RightMouse&gt;</a>*</b>
+<code class="special">&lt;RightMouse&gt;</code>		Start Visual mode if it is not active.  The text from
+			the cursor position to the position of the click is
+			highlighted.  If Visual mode was already active move
+			the start or end of the highlighted text, which ever
+			is closest, to the position of the click.  Only when
+			'mouse' option contains 'n' or 'a'.
+
+			<code class="note">Note:</code> when 'mousemodel' is set to "popup",
+			<code class="special">&lt;S-LeftMouse&gt;</code> has to be used instead of <code class="special">&lt;RightMouse&gt;</code>.
+
+							<b class="vimtag">*<a name="%3CLeftRelease%3E">&lt;LeftRelease&gt;</a>*</b>
+<code class="special">&lt;LeftRelease&gt;</code>		This works like a <code class="special">&lt;LeftMouse&gt;</code>, if it is not at
+			the same position as <code class="special">&lt;LeftMouse&gt;</code>.  In an older version
+			of xterm you won't see the selected area until the
+			button is released, unless there is access to the
+			display where the xterm is running (via the DISPLAY
+			environment variable or the -display argument).  Only
+			when 'mouse' option contains 'n' or 'a'.
+
+If Visual mode is not active and the "v", "V" or <code class="keystroke">CTRL-V</code> is preceded with a
+count, the size of the previously highlighted area is used for a start.  You
+can then move the end of the highlighted area and give an operator.  The type
+of the old area is used (character, line or blockwise).
+- Linewise Visual mode: The number of lines is multiplied with the count.
+- Blockwise Visual mode: The number of lines and columns is multiplied with
+  the count.
+- Normal Visual mode within one line: The number of characters is multiplied
+  with the count.
+- Normal Visual mode with several lines: The number of lines is multiplied
+  with the count, in the last line the same number of characters is used as
+  in the last line in the previously highlighted area.
+The start of the text is the Cursor position.  If the "$" command was used as
+one of the last commands to extend the highlighted text, the area will be
+extended to the rightmost column of the longest line.
+
+If you want to highlight exactly the same area as the last time, you can use
+"gv" |<a href="visual.html#gv">gv</a>| |<a href="visual.html#v_gv">v_gv</a>|.
+
+							<b class="vimtag">*<a name="v_%3CEsc%3E">v_&lt;Esc&gt;</a>*</b>
+<code class="special">&lt;Esc&gt;</code>			In Visual mode: Stop Visual mode.
+
+							<b class="vimtag">*<a name="v_CTRL-C">v_CTRL-C</a>*</b>
+<code class="keystroke">CTRL-C</code>			In Visual mode: Stop Visual mode.  When insert mode is
+			pending (the mode message shows
+			"-- (insert) VISUAL --"), it is also stopped.
+
+</pre><hr/><pre>3. Changing the Visual area				<b class="vimtag">*<a name="visual-change">visual-change</a>*</b>
+
+							<b class="vimtag">*<a name="v_o">v_o</a>*</b>
+o			Go to Other end of highlighted text: The current
+			cursor position becomes the start of the highlighted
+			text and the cursor is moved to the other end of the
+			highlighted text.  The highlighted area remains the
+			same.
+
+							<b class="vimtag">*<a name="v_O">v_O</a>*</b>
+O			Go to Other end of highlighted text.  This is like
+			"o", but in Visual block mode the cursor moves to the
+			other corner in the same line.  When the corner is at
+			a character that occupies more than one position on
+			the screen (e.g., a <code class="special">&lt;Tab&gt;</code>), the highlighted text may
+			change.
+
+							<b class="vimtag">*<a name="v_$">v_$</a>*</b>
+When the "$" command is used with blockwise Visual mode, the right end of the
+highlighted text will be determined by the longest highlighted line.  This
+stops when a motion command is used that does not move straight up or down.
+
+For moving the end of the block many commands can be used, but you cannot
+use Ex commands, commands that make changes or abandon the file.  Commands
+(starting with) ".", "&amp;", CTRL-^, "Z", CTRL-], <code class="keystroke">CTRL-T</code>, <code class="keystroke">CTRL-R</code>, <code class="keystroke">CTRL-I</code>
+and <code class="keystroke">CTRL-O</code> cause a beep and Visual mode continues.
+
+When switching to another window on the same buffer, the cursor position in
+that window is adjusted, so that the same Visual area is still selected.  This
+is especially useful to view the start of the Visual area in one window, and
+the end in another.  You can then use <code class="special">&lt;RightMouse&gt;</code> (or <code class="special">&lt;S-LeftMouse&gt;</code> when
+'mousemodel' is "popup") to drag either end of the Visual area.
+
+</pre><hr/><pre>4. Operating on the Visual area				<b class="vimtag">*<a name="visual-operators">visual-operators</a>*</b>
+
+The operators that can be used are:
+	~	switch case					|<a href="change.html#v_%7E">v_~</a>|
+	d	delete						|<a href="change.html#v_d">v_d</a>|
+	c	change (4)					|<a href="change.html#v_c">v_c</a>|
+	y	yank						|<a href="change.html#v_y">v_y</a>|
+	&gt;	shift right (4)					|<a href="change.html#v_%3E">v_&gt;</a>|
+	&lt;	shift left (4)					|<a href="change.html#v_%3C">v_&lt;</a>|
+	!	filter through external command (1)		|<a href="change.html#v_!">v_!</a>|
+	=	filter through 'equalprg' option command (1)	|<a href="change.html#v_%20">v_=</a>|
+	gq	format lines to 'textwidth' length (1)		|<a href="change.html#v_gq">v_gq</a>|
+
+The objects that can be used are:
+	aw	a word (with white space)			|<a href="motion.html#v_aw">v_aw</a>|
+	iw	inner word					|<a href="motion.html#v_iw">v_iw</a>|
+	aW	a WORD (with white space)			|<a href="motion.html#v_aW">v_aW</a>|
+	iW	inner WORD					|<a href="motion.html#v_iW">v_iW</a>|
+	as	a sentence (with white space)			|<a href="motion.html#v_as">v_as</a>|
+	is	inner sentence					|<a href="motion.html#v_is">v_is</a>|
+	ap	a paragraph (with white space)			|<a href="motion.html#v_ap">v_ap</a>|
+	ip	inner paragraph					|<a href="motion.html#v_ip">v_ip</a>|
+	ab	a () block (with parenthesis)			|<a href="motion.html#v_ab">v_ab</a>|
+	ib	inner () block					|<a href="motion.html#v_ib">v_ib</a>|
+	aB	a <code class="special">{}</code> block (with braces)			|<a href="motion.html#v_aB">v_aB</a>|
+	iB	inner <code class="special">{}</code> block					|<a href="motion.html#v_iB">v_iB</a>|
+	at	a <code class="special">&lt;tag&gt;</code> <code class="special">&lt;/tag&gt;</code> block (with tags)		|<a href="motion.html#v_at">v_at</a>|
+	it	inner <code class="special">&lt;tag&gt;</code> <code class="special">&lt;/tag&gt;</code> block			|<a href="motion.html#v_it">v_it</a>|
+	a<code class="special">&lt;	a &lt;&gt;</code> block (with <code class="special">&lt;&gt;</code>)				|<a href="motion.html#v_a%3C">v_a&lt;</a>|
+	i<code class="special">&lt;	inner &lt;&gt;</code> block					|<a href="motion.html#v_i%3C">v_i&lt;</a>|
+	a[	a [] block (with [])				|<a href="motion.html#v_a[">v_a[</a>|
+	i[	inner [] block					|<a href="motion.html#v_i[">v_i[</a>|
+	a"	a double quoted string (with quotes)		|<a href="motion.html#v_aquote">v_aquote</a>|
+	i"	inner double quoted string			|<a href="motion.html#v_iquote">v_iquote</a>|
+	a'	a single quoted string (with quotes)		|<a href="motion.html#v_a'">v_a'</a>|
+	i'	inner simple quoted string			|<a href="motion.html#v_i'">v_i'</a>|
+	a`	a string in backticks (with backticks)		|<a href="motion.html#v_a`">v_a`</a>|
+	i`	inner string in backticks			|<a href="motion.html#v_i`">v_i`</a>|
+
+Additionally the following commands can be used:
+	:	start Ex command for highlighted lines (1)	|<a href="cmdline.html#v_:">v_:</a>|
+	r	change (4)					|<a href="change.html#v_r">v_r</a>|
+	s	change						|<a href="change.html#v_s">v_s</a>|
+	C	change (2)(4)					|<a href="change.html#v_C">v_C</a>|
+	S	change (2)					|<a href="change.html#v_S">v_S</a>|
+	R	change (2)					|<a href="change.html#v_R">v_R</a>|
+	x	delete						|<a href="change.html#v_x">v_x</a>|
+	D	delete (3)					|<a href="change.html#v_D">v_D</a>|
+	X	delete (2)					|<a href="change.html#v_X">v_X</a>|
+	Y	yank (2)					|<a href="change.html#v_Y">v_Y</a>|
+	p	put						|<a href="change.html#v_p">v_p</a>|
+	J	join (1)					|<a href="change.html#v_J">v_J</a>|
+	U	make uppercase					|<a href="change.html#v_U">v_U</a>|
+	u	make lowercase					|<a href="change.html#v_u">v_u</a>|
+	^]	find tag					|<a href="tagsrch.html#v_CTRL-]">v_CTRL-]</a>|
+	I	block insert					|<a href="visual.html#v_b_I">v_b_I</a>|
+	A	block append					|<a href="visual.html#v_b_A">v_b_A</a>|
+
+(1): Always whole lines, see |<a href="visual.html#:visual_example">:visual_example</a>|.
+(2): Whole lines when not using <code class="keystroke">CTRL-V</code>.
+(3): Whole lines when not using <code class="keystroke">CTRL-V</code>, delete until the end of the line when
+     using <code class="keystroke">CTRL-V</code>.
+(4): When using <code class="keystroke">CTRL-V</code> operates on the block only.
+
+<code class="note">Note</code> that the ":vmap" command can be used to specifically map keys in Visual
+mode.  For example, if you would like the "/" command not to extend the Visual
+area, but instead take the highlighted text and search for that:
+<code class="example">	:vmap / y/<code class="special">&lt;C-R&gt;</code>"<code class="special">&lt;CR&gt;</code></code>
+(In the <code class="special">&lt;&gt;</code> notation |<a href="intro.html#%3C%3E">&lt;&gt;</a>|, when typing it you should type it literally; you
+need to remove the 'B' and '&lt;' flags from 'cpoptions'.)
+
+If you want to give a register name using the """ command, do this just before
+typing the operator character: "v<code class="special">{move-around}</code>"xd".
+
+If you want to give a count to the command, do this just before typing the
+operator character: "v<code class="special">{move-around}</code>3&gt;" (move lines 3 indents to the right).
+
+							<b class="vimtag">*<a name="{move-around}">{move-around}</a>*</b>
+The <code class="special">{move-around}</code> is any sequence of movement commands.  <code class="note">Note</code> the difference
+with <code class="special">{motion}</code>, which is only ONE movement command.
+
+Another way to operate on the Visual area is using the |<a href="pattern.html#%2F\%V">/\%V</a>| item in a
+pattern.  For example, to replace all '(' in the Visual area with '#':
+<code class="example"></code>
+<code class="example">	:'<code class="special">&lt;,'&gt;</code>s/\%V(/#/g</code>
+<code class="example"></code>
+<code class="note">Note</code> that the "'<code class="special">&lt;,'&gt;</code>" will appear automatically when you press ":" in Visual
+mode.
+
+</pre><hr/><pre>5. Blockwise operators					<b class="vimtag">*<a name="blockwise-operators">blockwise-operators</a>*</b>
+
+Reminder: Use 'virtualedit' to be able to select blocks that start or end
+after the end of a line or halfway a tab.
+
+Visual-block Insert						<b class="vimtag">*<a name="v_b_I">v_b_I</a>*</b>
+With a blockwise selection, I<code class="special">{string}</code><code class="special">&lt;ESC&gt;</code> will insert <code class="special">{string}</code> at the start
+of block on every line of the block, provided that the line extends into the
+block.  Thus lines that are short will remain unmodified.  TABs are split to
+retain visual columns.  Works only for adding text to a line, not for
+deletions.  See |<a href="visual.html#v_b_I_example">v_b_I_example</a>|.
+
+Visual-block Append						<b class="vimtag">*<a name="v_b_A">v_b_A</a>*</b>
+With a blockwise selection, A<code class="special">{string}</code><code class="special">&lt;ESC&gt;</code> will append <code class="special">{string}</code> to the end of
+block on every line of the block.  There is some differing behavior where the
+block RHS is not straight, due to different line lengths:
+
+1. Block was created with <code class="special">&lt;C-v&gt;</code>$
+    In this case the string is appended to the end of each line.
+2. Block was created with <code class="special">&lt;C-v&gt;</code><code class="special">{move-around}</code>
+    In this case the string is appended to the end of the block on each line,
+    and whitespace is inserted to pad to the end-of-block column.
+See |<a href="visual.html#v_b_A_example">v_b_A_example</a>|.
+<code class="note">Note:</code> "I" and "A" behave differently for lines that don't extend into the
+selected block.  This was done intentionally, so that you can do it the way
+you want.
+Works only for adding text to a line, not for deletions.
+
+Visual-block change						<b class="vimtag">*<a name="v_b_c">v_b_c</a>*</b>
+All selected text in the block will be replaced by the same text string.  When
+using "c" the selected text is deleted and Insert mode started.  You can then
+enter text (without a line break).  When you hit <code class="special">&lt;Esc&gt;</code>, the same string is
+inserted in all previously selected lines.
+
+Visual-block Change						<b class="vimtag">*<a name="v_b_C">v_b_C</a>*</b>
+Like using "c", but the selection is extended until the end of the line for
+all lines.
+
+								<b class="vimtag">*<a name="v_b_%3C">v_b_&lt;</a>*</b>
+Visual-block Shift						<b class="vimtag">*<a name="v_b_%3E">v_b_&gt;</a>*</b>
+The block is shifted by 'shiftwidth'.  The RHS of the block is irrelevant.  The
+LHS of the block determines the point from which to apply a right shift, and
+padding includes TABs optimally according to 'ts' and 'et'.  The LHS of the
+block determines the point upto which to shift left.
+See |<a href="visual.html#v_b_%3E_example">v_b_&gt;_example</a>|.
+See |<a href="visual.html#v_b_%3C_example">v_b_&lt;_example</a>|.
+
+Visual-block Replace						<b class="vimtag">*<a name="v_b_r">v_b_r</a>*</b>
+Every screen char in the highlighted region is replaced with the same char, ie
+TABs are split and the virtual whitespace is replaced, maintaining screen
+layout.
+See |<a href="visual.html#v_b_r_example">v_b_r_example</a>|.
+
+
+</pre><hr/><pre>6. Repeating						<b class="vimtag">*<a name="visual-repeat">visual-repeat</a>*</b>
+
+When repeating a Visual mode operator, the operator will be applied to the
+same amount of text as the last time:
+- Linewise Visual mode: The same number of lines.
+- Blockwise Visual mode: The same number of lines and columns.
+- Normal Visual mode within one line: The same number of characters.
+- Normal Visual mode with several lines: The same number of lines, in the
+  last line the same number of characters as in the last line the last time.
+The start of the text is the Cursor position.  If the "$" command was used as
+one of the last commands to extend the highlighted text, the repeating will
+be applied up to the rightmost column of the longest line.
+
+
+</pre><hr/><pre>7. Examples						<b class="vimtag">*<a name="visual-examples">visual-examples</a>*</b>
+
+							<b class="vimtag">*<a name=":visual_example">:visual_example</a>*</b>
+Currently the ":" command works on whole lines only.  When you select part of
+a line, doing something like ":!date" will replace the whole line.  If you
+want only part of the line to be replaced you will have to make a mapping for
+it.  In a future release ":" may work on partial lines.
+
+Here is an example, to replace the selected text with the output of "date":
+<code class="example">	:vmap _a <code class="special">&lt;Esc&gt;</code>`&gt;a<code class="special">&lt;CR&gt;</code><code class="special">&lt;Esc&gt;</code>`<code class="special">&lt;i&lt;CR&gt;</code><code class="special">&lt;Esc&gt;</code>!!date<code class="special">&lt;CR&gt;</code>kJJ</code>
+<code class="example"></code>
+(In the <code class="special">&lt;&gt;</code> notation |<a href="intro.html#%3C%3E">&lt;&gt;</a>|, when typing it you should type it literally; you
+need to remove the 'B' and '&lt;' flags from 'cpoptions')
+
+What this does is:
+<code class="special">&lt;Esc&gt;</code>		stop Visual mode
+`&gt;		go to the end of the Visual area
+a<code class="special">&lt;CR&gt;</code><code class="special">&lt;Esc&gt;</code>	break the line after the Visual area
+`&lt;		jump to the start of the Visual area
+i<code class="special">&lt;CR&gt;</code><code class="special">&lt;Esc&gt;</code>	break the line before the Visual area
+!!date<code class="special">&lt;CR&gt;</code>	filter the Visual text through date
+kJJ		Join the lines back together
+
+							<b class="vimtag">*<a name="visual-search">visual-search</a>*</b>
+Here is an idea for a mapping that makes it possible to do a search for the
+selected text:
+<code class="example">	:vmap X y/<code class="special">&lt;C-R&gt;</code>"<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+(In the <code class="special">&lt;&gt;</code> notation |<a href="intro.html#%3C%3E">&lt;&gt;</a>|, when typing it you should type it literally; you
+need to remove the 'B' and '&lt;' flags from 'cpoptions')
+
+<code class="note">Note</code> that special characters (like '.' and '*') will cause problems.
+
+Visual-block Examples					<b class="vimtag">*<a name="blockwise-examples">blockwise-examples</a>*</b>
+With the following text, I will indicate the commands to produce the block and
+the results below.  In all cases, the cursor begins on the 'a' in the first
+line of the test text.
+The following modeline settings are assumed ":ts=8:sw=4:".
+
+It will be helpful to
+:set hls
+/<code class="special">&lt;TAB&gt;</code>
+where <code class="special">&lt;TAB&gt;</code> is a real TAB.  This helps visualise the operations.
+
+The test text is:
+
+abcdefghijklmnopqrstuvwxyz
+abc		defghijklmnopqrstuvwxyz
+abcdef  ghi		jklmnopqrstuvwxyz
+abcdefghijklmnopqrstuvwxyz
+
+1. fo<code class="special">&lt;C-v&gt;</code>3jISTRING<code class="special">&lt;ESC&gt;</code>					<b class="vimtag">*<a name="v_b_I_example">v_b_I_example</a>*</b>
+
+abcdefghijklmnSTRINGopqrstuvwxyz
+abc	      STRING  defghijklmnopqrstuvwxyz
+abcdef  ghi   STRING	jklmnopqrstuvwxyz
+abcdefghijklmnSTRINGopqrstuvwxyz
+
+2. fo<code class="special">&lt;C-v&gt;</code>3j$ASTRING<code class="special">&lt;ESC&gt;</code>					<b class="vimtag">*<a name="v_b_A_example">v_b_A_example</a>*</b>
+
+abcdefghijklmnopqrstuvwxyzSTRING
+abc		defghijklmnopqrstuvwxyzSTRING
+abcdef  ghi		jklmnopqrstuvwxyzSTRING
+abcdefghijklmnopqrstuvwxyzSTRING
+
+3. fo<code class="special">&lt;C-v&gt;</code>3j3l&lt;..						<b class="vimtag">*<a name="v_b_%3C_example">v_b_&lt;_example</a>*</b>
+
+abcdefghijklmnopqrstuvwxyz
+abc	      defghijklmnopqrstuvwxyz
+abcdef  ghi   jklmnopqrstuvwxyz
+abcdefghijklmnopqrstuvwxyz
+
+4. fo<code class="special">&lt;C-v&gt;</code>3j&gt;..							<b class="vimtag">*<a name="v_b_%3E_example">v_b_&gt;_example</a>*</b>
+
+abcdefghijklmn		  opqrstuvwxyz
+abc			    defghijklmnopqrstuvwxyz
+abcdef  ghi			    jklmnopqrstuvwxyz
+abcdefghijklmn		  opqrstuvwxyz
+
+5. fo<code class="special">&lt;C-v&gt;</code>5l3jrX						<b class="vimtag">*<a name="v_b_r_example">v_b_r_example</a>*</b>
+
+abcdefghijklmnXXXXXXuvwxyz
+abc	      XXXXXXhijklmnopqrstuvwxyz
+abcdef  ghi   XXXXXX    jklmnopqrstuvwxyz
+abcdefghijklmnXXXXXXuvwxyz
+
+</pre><hr/><pre>8. Select mode						<b class="vimtag">*<a name="Select">Select</a>*</b> <b class="vimtag">*<a name="Select-mode">Select-mode</a>*</b>
+
+Select mode looks like Visual mode, but the commands accepted are quite
+different.  This resembles the selection mode in Microsoft Windows.
+When the 'showmode' option is set, "-- SELECT --" is shown in the last line.
+
+Entering Select mode:
+- Using the mouse to select an area, and 'selectmode' contains "mouse".
+  'mouse' must also contain a flag for the current mode.
+- Using a non-printable movement command, with the Shift key pressed, and
+  'selectmode' contains "key".  For example: <code class="special">&lt;S-Left&gt;</code> and <code class="special">&lt;S-End&gt;</code>.  'keymodel'
+  must also contain "startsel".
+- Using "v", "V" or <code class="keystroke">CTRL-V</code> command, and 'selectmode' contains "cmd".
+- Using "gh", "gH" or "g_<code class="keystroke">CTRL-H</code>" command in Normal mode.
+- From Visual mode, press <code class="keystroke">CTRL-G</code>.			<b class="vimtag">*<a name="v_CTRL-G">v_CTRL-G</a>*</b>
+
+Commands in Select mode:
+- Printable characters, <code class="special">&lt;NL&gt;</code> and <code class="special">&lt;CR&gt;</code> cause the selection to be deleted, and
+  Vim enters Insert mode.  The typed character is inserted.
+- Non-printable movement commands, with the Shift key pressed, extend the
+  selection.  'keymodel' must include "startsel".
+- Non-printable movement commands, with the Shift key NOT pressed, stop Select
+  mode.  'keymodel' must include "stopsel".
+- ESC stops Select mode.
+- <code class="keystroke">CTRL-O</code> switches to Visual mode for the duration of one command. <b class="vimtag">*<a name="v_CTRL-O">v_CTRL-O</a>*</b>
+- <code class="keystroke">CTRL-G</code> switches to Visual mode.
+
+Otherwise, typed characters are handled as in Visual mode.
+
+When using an operator in Select mode, and the selection is linewise, the
+selected lines are operated upon, but like in characterwise selection.  For
+example, when a whole line is deleted, it can later be pasted halfway a line.
+
+
+Mappings and menus in Select mode.			<b class="vimtag">*<a name="Select-mode-mapping">Select-mode-mapping</a>*</b>
+
+When mappings and menus are defined with the |<a href="map.html#:vmap">:vmap</a>| or |<a href="gui.html#:vmenu">:vmenu</a>| command they
+work both in Visual mode and in Select mode.  When these are used in Select
+mode Vim automatically switches to Visual mode, so that the same behavior as
+in Visual mode is effective.  If you don't want this use |<a href="map.html#:xmap">:xmap</a>| or |<a href="map.html#:smap">:smap</a>|.
+
+Users will expect printable characters to replace the selected area.
+Therefore avoid mapping printable characters in Select mode.  Or use
+|<a href="map.html#:sunmap">:sunmap</a>|  after |<a href="map.html#:map">:map</a>| and |<a href="map.html#:vmap">:vmap</a>| to remove it for Select mode.
+
+After the mapping or menu finishes, the selection is enabled again and Select
+mode entered, unless the selected area was deleted, another buffer became
+the current one or the window layout was changed.
+
+When a character was typed that causes the selection to be deleted and Insert
+mode started, Insert mode mappings are applied to this character.  This may
+cause some confusion, because it means Insert mode mappings apply to a
+character typed in Select mode.  Language mappings apply as well.
+
+							<b class="vimtag">*<a name="gV">gV</a>*</b> <b class="vimtag">*<a name="v_gV">v_gV</a>*</b>
+gV			Avoid the automatic reselection of the Visual area
+			after a Select mode mapping or menu has finished.
+			Put this just before the end of the mapping or menu.
+			At least it should be after any operations on the
+			selection.
+
+							<b class="vimtag">*<a name="gh">gh</a>*</b>
+gh			Start Select mode, characterwise.  This is like "v",
+			but starts Select mode instead of Visual mode.
+			Mnemonic: "get highlighted".
+
+							<b class="vimtag">*<a name="gH">gH</a>*</b>
+gH			Start Select mode, linewise.  This is like "V",
+			but starts Select mode instead of Visual mode.
+			Mnemonic: "get Highlighted".
+
+							<b class="vimtag">*<a name="g_CTRL-H">g_CTRL-H</a>*</b>
+g <code class="keystroke">CTRL-H</code>		Start Select mode, blockwise.  This is like <code class="keystroke">CTRL-V</code>,
+			but starts Select mode instead of Visual mode.
+			Mnemonic: "get Highlighted".
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

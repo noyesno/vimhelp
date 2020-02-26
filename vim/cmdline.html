@@ -1,0 +1,1207 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: cmdline</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>CMDLINE</h2>
+<pre>
+<b class="vimtag">*<a name="cmdline.txt">cmdline.txt</a>*</b>   For Vim version 8.2.  Last change: 2019 Dec 17
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+				<b class="vimtag">*<a name="Cmdline-mode">Cmdline-mode</a>*</b> <b class="vimtag">*<a name="Command-line-mode">Command-line-mode</a>*</b>
+Command-line mode		<b class="vimtag">*<a name="Cmdline">Cmdline</a>*</b> <b class="vimtag">*<a name="Command-line">Command-line</a>*</b> <b class="vimtag">*<a name="mode-cmdline">mode-cmdline</a>*</b> <b class="vimtag">*<a name=":">:</a>*</b>
+
+Command-line mode is used to enter Ex commands (":"), search patterns
+("/" and "?"), and filter commands ("!").
+
+Basic command line editing is explained in chapter 20 of the user manual
+|<a href="usr_20.html#usr_20.txt">usr_20</a>|.
+
+1. Command-line editing		|<a href="cmdline.html#cmdline-editing">cmdline-editing</a>|
+2. Command-line completion	|<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|
+3. Ex command-lines		|<a href="cmdline.html#cmdline-lines">cmdline-lines</a>|
+4. Ex command-line ranges	|<a href="cmdline.html#cmdline-ranges">cmdline-ranges</a>|
+5. Ex command-line flags	|<a href="cmdline.html#ex-flags">ex-flags</a>|
+6. Ex special characters	|<a href="cmdline.html#cmdline-special">cmdline-special</a>|
+7. Command-line window		|<a href="cmdline.html#cmdline-window">cmdline-window</a>|
+
+</pre><hr/><pre>1. Command-line editing					<b class="vimtag">*<a name="cmdline-editing">cmdline-editing</a>*</b>
+
+Normally characters are inserted in front of the cursor position.  You can
+move around in the command-line with the left and right cursor keys.  With the
+<code class="special">&lt;Insert&gt;</code> key, you can toggle between inserting and overstriking characters.
+
+<code class="note">Note</code> that if your keyboard does not have working cursor keys or any of the
+other special keys, you can use ":cnoremap" to define another key for them.
+For example, to define tcsh style editing keys:		<b class="vimtag">*<a name="tcsh-style">tcsh-style</a>*</b>
+<code class="example">	:cnoremap <code class="special">&lt;C-A&gt;</code> <code class="special">&lt;Home&gt;</code></code>
+<code class="example">	:cnoremap <code class="special">&lt;C-F&gt;</code> <code class="special">&lt;Right&gt;</code></code>
+<code class="example">	:cnoremap <code class="special">&lt;C-B&gt;</code> <code class="special">&lt;Left&gt;</code></code>
+<code class="example">	:cnoremap <code class="special">&lt;Esc&gt;</code>b <code class="special">&lt;S-Left&gt;</code></code>
+<code class="example">	:cnoremap <code class="special">&lt;Esc&gt;</code>f <code class="special">&lt;S-Right&gt;</code></code>
+(<code class="special">&lt;&gt;</code> notation |<a href="intro.html#%3C%3E">&lt;&gt;</a>|; type all this literally)
+
+							<b class="vimtag">*<a name="cmdline-too-long">cmdline-too-long</a>*</b>
+When the command line is getting longer than what fits on the screen, only the
+part that fits will be shown.  The cursor can only move in this visible part,
+thus you cannot edit beyond that.
+
+						<b class="vimtag">*<a name="cmdline-history">cmdline-history</a>*</b> <b class="vimtag">*<a name="history">history</a>*</b>
+The command-lines that you enter are remembered in a history table.  You can
+recall them with the up and down cursor keys.  There are actually five
+history tables:
+- one for ':' commands
+- one for search strings
+- one for expressions
+- one for input lines, typed for the |<a href="eval.html#input()">input()</a>| function.
+- one for debug mode commands
+These are completely separate.  Each history can only be accessed when
+entering the same type of line.
+Use the 'history' option to set the number of lines that are remembered
+(default: 50).
+<code class="note">Note</code>s:
+- When you enter a command-line that is exactly the same as an older one, the
+  old one is removed (to avoid repeated commands moving older commands out of
+  the history).
+- Only commands that are typed are remembered.  Ones that completely come from
+  mappings are not put in the history.
+- All searches are put in the search history, including the ones that come
+  from commands like "*" and "#".  But for a mapping, only the last search is
+  remembered (to avoid that long mappings trash the history).
+{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>| feature}
+
+There is an automatic completion of names on the command-line; see
+|<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|.
+
+							<b class="vimtag">*<a name="c_CTRL-V">c_CTRL-V</a>*</b>
+<code class="keystroke">CTRL-V</code>		Insert next non-digit literally.  Up to three digits form the
+		decimal value of a single byte.  The non-digit and the three
+		digits are not considered for mapping.  This works the same
+		way as in Insert mode (see above, |<a href="insert.html#i_CTRL-V">i_CTRL-V</a>|).
+		<code class="note">Note:</code> Under MS-Windows <code class="keystroke">CTRL-V</code> is often mapped to paste text.
+		Use <code class="keystroke">CTRL-Q</code> instead then.
+		When |<a href="map.html#modifyOtherKeys">modifyOtherKeys</a>| is enabled then special Escape sequence
+		is converted back to what it was without |<a href="map.html#modifyOtherKeys">modifyOtherKeys</a>|,
+		unless the Shift key is also pressed.
+							<b class="vimtag">*<a name="c_CTRL-Q">c_CTRL-Q</a>*</b>
+<code class="keystroke">CTRL-Q</code>		Same as <code class="keystroke">CTRL-V</code>.  But with some terminals it is used for
+		control flow, it doesn't work then.
+
+<code class="keystroke">CTRL-SHIFT</code>-V				<b class="vimtag">*<a name="c_CTRL-SHIFT-V">c_CTRL-SHIFT-V</a>*</b> <b class="vimtag">*<a name="c_CTRL-SHIFT-Q">c_CTRL-SHIFT-Q</a>*</b>
+<code class="keystroke">CTRL-SHIFT</code>-Q	Works just like <code class="keystroke">CTRL-V</code>, unless |<a href="map.html#modifyOtherKeys">modifyOtherKeys</a>| is active,
+		then it inserts the Escape sequence for a key with modifiers.
+
+							<b class="vimtag">*<a name="c_%3CLeft%3E">c_&lt;Left&gt;</a>*</b> <b class="vimtag">*<a name="c_Left">c_Left</a>*</b>
+<code class="special">&lt;Left&gt;</code>		cursor left
+							<b class="vimtag">*<a name="c_%3CRight%3E">c_&lt;Right&gt;</a>*</b> <b class="vimtag">*<a name="c_Right">c_Right</a>*</b>
+<code class="special">&lt;Right&gt;</code>		cursor right
+							<b class="vimtag">*<a name="c_%3CS-Left%3E">c_&lt;S-Left&gt;</a>*</b>
+<code class="special">&lt;S-Left&gt;</code> or <code class="special">&lt;C-Left&gt;</code>					<b class="vimtag">*<a name="c_%3CC-Left%3E">c_&lt;C-Left&gt;</a>*</b>
+		cursor one WORD left
+							<b class="vimtag">*<a name="c_%3CS-Right%3E">c_&lt;S-Right&gt;</a>*</b>
+<code class="special">&lt;S-Right&gt;</code> or <code class="special">&lt;C-Right&gt;</code>					<b class="vimtag">*<a name="c_%3CC-Right%3E">c_&lt;C-Right&gt;</a>*</b>
+		cursor one WORD right
+<code class="keystroke">CTRL-B</code> or <code class="special">&lt;Home&gt;</code>				<b class="vimtag">*<a name="c_CTRL-B">c_CTRL-B</a>*</b> <b class="vimtag">*<a name="c_%3CHome%3E">c_&lt;Home&gt;</a>*</b> <b class="vimtag">*<a name="c_Home">c_Home</a>*</b>
+		cursor to beginning of command-line
+<code class="keystroke">CTRL-E</code> or <code class="special">&lt;End&gt;</code>					<b class="vimtag">*<a name="c_CTRL-E">c_CTRL-E</a>*</b> <b class="vimtag">*<a name="c_%3CEnd%3E">c_&lt;End&gt;</a>*</b> <b class="vimtag">*<a name="c_End">c_End</a>*</b>
+		cursor to end of command-line
+
+							<b class="vimtag">*<a name="c_%3CLeftMouse%3E">c_&lt;LeftMouse&gt;</a>*</b>
+<code class="special">&lt;LeftMouse&gt;</code>	Move the cursor to the position of the mouse click.
+
+							<b class="vimtag">*<a name="c_%3CMiddleMouse%3E">c_&lt;MiddleMouse&gt;</a>*</b>
+<code class="special">&lt;MiddleMouse&gt;</code>	Paste the contents of the clipboard (for X11 the primary
+		selection).  This is similar to using <code class="keystroke">CTRL-R</code> *, but no CR
+		characters are inserted between lines.
+
+<code class="keystroke">CTRL-H</code>						<b class="vimtag">*<a name="c_%3CBS%3E">c_&lt;BS&gt;</a>*</b> <b class="vimtag">*<a name="c_CTRL-H">c_CTRL-H</a>*</b> <b class="vimtag">*<a name="c_BS">c_BS</a>*</b>
+<code class="special">&lt;BS&gt;</code>		Delete the character in front of the cursor (see |<a href="options.html#:fixdel">:fixdel</a>| if
+		your <code class="special">&lt;BS&gt;</code> key does not do what you want).
+							<b class="vimtag">*<a name="c_%3CDel%3E">c_&lt;Del&gt;</a>*</b> <b class="vimtag">*<a name="c_Del">c_Del</a>*</b>
+<code class="special">&lt;Del&gt;</code>		Delete the character under the cursor (at end of line:
+		character before the cursor) (see |<a href="options.html#:fixdel">:fixdel</a>| if your <code class="special">&lt;Del&gt;</code>
+		key does not do what you want).
+							<b class="vimtag">*<a name="c_CTRL-W">c_CTRL-W</a>*</b>
+<code class="keystroke">CTRL-W</code>		Delete the |<a href="motion.html#word">word</a>| before the cursor.  This depends on the
+		'iskeyword' option.
+							<b class="vimtag">*<a name="c_CTRL-U">c_CTRL-U</a>*</b>
+<code class="keystroke">CTRL-U</code>		Remove all characters between the cursor position and
+		the beginning of the line.  Previous versions of vim
+		deleted all characters on the line.  If that is the
+		preferred behavior, add the following to your .vimrc:
+<code class="example">			:cnoremap <code class="special">&lt;C-U&gt;</code> <code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-U&gt;</code></code>
+
+						<b class="vimtag">*<a name="c_%3CInsert%3E">c_&lt;Insert&gt;</a>*</b> <b class="vimtag">*<a name="c_Insert">c_Insert</a>*</b>
+<code class="special">&lt;Insert&gt;</code>	Toggle between insert and overstrike.
+
+<code class="special">{char1}</code> <code class="special">&lt;BS&gt;</code> <code class="special">{char2}</code>	or				<b class="vimtag">*<a name="c_digraph">c_digraph</a>*</b>
+<code class="keystroke">CTRL-K</code> <code class="special">{char1}</code> <code class="special">{char2}</code>					<b class="vimtag">*<a name="c_CTRL-K">c_CTRL-K</a>*</b>
+		enter digraph (see |<a href="digraph.html#digraphs">digraphs</a>|).  When <code class="special">{char1}</code> is a special
+		key, the code for that key is inserted in <code class="special">&lt;&gt;</code> form.
+
+<code class="keystroke">CTRL-R</code> <code class="special">{register}</code>					<b class="vimtag">*<a name="c_CTRL-R">c_CTRL-R</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E">c_&lt;C-R&gt;</a>*</b>
+		Insert the contents of a numbered or named register.  Between
+		typing <code class="keystroke">CTRL-R</code> and the second character '"' will be displayed
+		to indicate that you are expected to enter the name of a
+		register.
+		The text is inserted as if you typed it, but mappings and
+		abbreviations are not used.  Command-line completion through
+		'wildchar' is not triggered though.  And characters that end
+		the command line are inserted literally (<code class="special">&lt;Esc&gt;</code>, <code class="special">&lt;CR&gt;</code>, <code class="special">&lt;NL&gt;</code>,
+		<code class="special">&lt;C-C&gt;</code>).  A <code class="special">&lt;BS&gt;</code> or <code class="keystroke">CTRL-W</code> could still end the command line
+		though, and remaining characters will then be interpreted in
+		another mode, which might not be what you intended.
+		Special registers:
+			'"'	the unnamed register, containing the text of
+				the last delete or yank
+			'%'	the current file name
+			'#'	the alternate file name
+			'*'	the clipboard contents (X11: primary selection)
+			'+'	the clipboard contents
+			'/'	the last search pattern
+			':'	the last command-line
+			'-'	the last small (less than a line) delete
+			'.'	the last inserted text
+							<b class="vimtag">*<a name="c_CTRL-R_%20">c_CTRL-R_=</a>*</b>
+			'='	the expression register: you are prompted to
+				enter an expression (see |<a href="eval.html#expression">expression</a>|)
+				(doesn't work at the expression prompt; some
+				things such as changing the buffer or current
+				window are not allowed to avoid side effects)
+				When the result is a |<a href="eval.html#List">List</a>| the items are used
+				as lines.  They can have line breaks inside
+				too.
+				When the result is a Float it's automatically
+				converted to a String.
+		See |<a href="change.html#registers">registers</a>| about registers.
+		Implementation detail: When using the |<a href="eval.html#expression">expression</a>| register
+		and invoking setcmdpos(), this sets the position before
+		inserting the resulting string.  Use <code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-R</code> to set the
+		position afterwards.
+
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-F</code>				<b class="vimtag">*<a name="c_CTRL-R_CTRL-F">c_CTRL-R_CTRL-F</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-F%3E">c_&lt;C-R&gt;_&lt;C-F&gt;</a>*</b>
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-P</code>				<b class="vimtag">*<a name="c_CTRL-R_CTRL-P">c_CTRL-R_CTRL-P</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-P%3E">c_&lt;C-R&gt;_&lt;C-P&gt;</a>*</b>
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-W</code>				<b class="vimtag">*<a name="c_CTRL-R_CTRL-W">c_CTRL-R_CTRL-W</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-W%3E">c_&lt;C-R&gt;_&lt;C-W&gt;</a>*</b>
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-A</code>				<b class="vimtag">*<a name="c_CTRL-R_CTRL-A">c_CTRL-R_CTRL-A</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-A%3E">c_&lt;C-R&gt;_&lt;C-A&gt;</a>*</b>
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-L</code>				<b class="vimtag">*<a name="c_CTRL-R_CTRL-L">c_CTRL-R_CTRL-L</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-L%3E">c_&lt;C-R&gt;_&lt;C-L&gt;</a>*</b>
+		Insert the object under the cursor:
+			<code class="keystroke">CTRL-F</code>	the Filename under the cursor
+			<code class="keystroke">CTRL-P</code>	the Filename under the cursor, expanded with
+				'path' as in |<a href="editing.html#gf">gf</a>|
+			<code class="keystroke">CTRL-W</code>	the Word under the cursor
+			<code class="keystroke">CTRL-A</code>	the WORD under the cursor; see |<a href="motion.html#WORD">WORD</a>|
+			<code class="keystroke">CTRL-L</code>	the line under the cursor
+
+		When 'incsearch' is set the cursor position at the end of the
+		currently displayed match is used.  With <code class="keystroke">CTRL-W</code> the part of
+		the word that was already typed is not inserted again.
+
+		<code class="keystroke">CTRL-F</code> and <code class="keystroke">CTRL-P</code>: {only when |<a href="various.html#+file_in_path">+file_in_path</a>| feature is
+		included}
+
+					<b class="vimtag">*<a name="c_CTRL-R_CTRL-R">c_CTRL-R_CTRL-R</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-R%3E">c_&lt;C-R&gt;_&lt;C-R&gt;</a>*</b>
+					<b class="vimtag">*<a name="c_CTRL-R_CTRL-O">c_CTRL-R_CTRL-O</a>*</b> <b class="vimtag">*<a name="c_%3CC-R%3E_%3CC-O%3E">c_&lt;C-R&gt;_&lt;C-O&gt;</a>*</b>
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-R</code> <code class="special">{register <code class="keystroke">CTRL-F</code> <code class="keystroke">CTRL-P</code> <code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-A</code> <code class="keystroke">CTRL-L</code>}</code>
+<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-O</code> <code class="special">{register <code class="keystroke">CTRL-F</code> <code class="keystroke">CTRL-P</code> <code class="keystroke">CTRL-W</code> <code class="keystroke">CTRL-A</code> <code class="keystroke">CTRL-L</code>}</code>
+		Insert register or object under the cursor.  Works like
+		|<a href="cmdline.html#c_CTRL-R">c_CTRL-R</a>| but inserts the text literally.  For example, if
+		register a contains "xy^Hz" (where ^H is a backspace),
+		"<code class="keystroke">CTRL-R</code> a" will insert "xz" while "<code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-R</code> a" will
+		insert "xy^Hz".
+
+CTRL-\ e <code class="special">{expr}</code>						<b class="vimtag">*<a name="c_CTRL-\_e">c_CTRL-\_e</a>*</b>
+		Evaluate <code class="special">{expr}</code> and replace the whole command line with the
+		result.  You will be prompted for the expression, type <code class="special">&lt;Enter&gt;</code>
+		to finish it.  It's most useful in mappings though.  See
+		|<a href="eval.html#expression">expression</a>|.
+		See |<a href="cmdline.html#c_CTRL-R_%20">c_CTRL-R_=</a>| for inserting the result of an expression.
+		Useful functions are |<a href="eval.html#getcmdtype()">getcmdtype()</a>|, |<a href="eval.html#getcmdline()">getcmdline()</a>| and
+		|<a href="eval.html#getcmdpos()">getcmdpos()</a>|.
+		The cursor position is unchanged, except when the cursor was
+		at the end of the line, then it stays at the end.
+		|<a href="eval.html#setcmdpos()">setcmdpos()</a>| can be used to set the cursor position.
+		The |<a href="eval.html#sandbox">sandbox</a>| is used for evaluating the expression to avoid
+		nasty side effects.
+		Example:
+<code class="example">			:cmap <code class="special">&lt;F7&gt;</code> <code class="special">&lt;C-\&gt;</code>eAppendSome()<code class="special">&lt;CR&gt;</code></code>
+<code class="example">			:func AppendSome()</code>
+<code class="example">			   :let cmd = getcmdline() . " Some()"</code>
+<code class="example">			   :" place the cursor on the )</code>
+<code class="example">			   :call setcmdpos(strlen(cmd))</code>
+<code class="example">			   :return cmd</code>
+<code class="example">			:endfunc</code>
+		This doesn't work recursively, thus not when already editing
+		an expression.  But it is possible to use in a mapping.
+
+							<b class="vimtag">*<a name="c_CTRL-Y">c_CTRL-Y</a>*</b>
+<code class="keystroke">CTRL-Y</code>		When there is a modeless selection, copy the selection into
+		the clipboard. |<a href="gui.html#modeless-selection">modeless-selection</a>|
+		If there is no selection <code class="keystroke">CTRL-Y</code> is inserted as a character.
+
+<code class="keystroke">CTRL-M</code> or <code class="keystroke">CTRL-J</code>		<b class="vimtag">*<a name="c_CTRL-M">c_CTRL-M</a>*</b> <b class="vimtag">*<a name="c_CTRL-J">c_CTRL-J</a>*</b> <b class="vimtag">*<a name="c_%3CNL%3E">c_&lt;NL&gt;</a>*</b> <b class="vimtag">*<a name="c_%3CCR%3E">c_&lt;CR&gt;</a>*</b> <b class="vimtag">*<a name="c_CR">c_CR</a>*</b>
+<code class="special">&lt;CR&gt;</code> or <code class="special">&lt;NL&gt;</code>	start entered command
+
+CTRL-[						<b class="vimtag">*<a name="c_CTRL-[">c_CTRL-[</a>*</b> <b class="vimtag">*<a name="c_%3CEsc%3E">c_&lt;Esc&gt;</a>*</b> <b class="vimtag">*<a name="c_Esc">c_Esc</a>*</b>
+<code class="special">&lt;Esc&gt;</code>		When typed and 'x' not present in 'cpoptions', quit
+		Command-line mode without executing.  In macros or when 'x'
+		present in 'cpoptions', start entered command.
+		<code class="note">Note:</code> If your <code class="special">&lt;Esc&gt;</code> key is hard to hit on your keyboard, train
+		yourself to use CTRL-[.
+							<b class="vimtag">*<a name="c_CTRL-C">c_CTRL-C</a>*</b>
+<code class="keystroke">CTRL-C</code>		quit command-line without executing
+
+							<b class="vimtag">*<a name="c_%3CUp%3E">c_&lt;Up&gt;</a>*</b> <b class="vimtag">*<a name="c_Up">c_Up</a>*</b>
+<code class="special">&lt;Up&gt;</code>		recall older command-line from history, whose beginning
+		matches the current command-line (see below).
+		{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>|
+		feature}
+							<b class="vimtag">*<a name="c_%3CDown%3E">c_&lt;Down&gt;</a>*</b> <b class="vimtag">*<a name="c_Down">c_Down</a>*</b>
+<code class="special">&lt;Down&gt;</code>		recall more recent command-line from history, whose beginning
+		matches the current command-line (see below).
+		{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>|
+		feature}
+
+							<b class="vimtag">*<a name="c_%3CS-Up%3E">c_&lt;S-Up&gt;</a>*</b> <b class="vimtag">*<a name="c_%3CPageUp%3E">c_&lt;PageUp&gt;</a>*</b>
+<code class="special">&lt;S-Up&gt;</code> or <code class="special">&lt;PageUp&gt;</code>
+		recall older command-line from history
+		{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>|
+		feature}
+						<b class="vimtag">*<a name="c_%3CS-Down%3E">c_&lt;S-Down&gt;</a>*</b> <b class="vimtag">*<a name="c_%3CPageDown%3E">c_&lt;PageDown&gt;</a>*</b>
+<code class="special">&lt;S-Down&gt;</code> or <code class="special">&lt;PageDown&gt;</code>
+		recall more recent command-line from history
+		{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>|
+		feature}
+
+<code class="keystroke">CTRL-D</code>		command-line completion (see |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|)
+'wildchar' option
+		command-line completion (see |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|)
+<code class="keystroke">CTRL-N</code>		command-line completion (see |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|)
+<code class="keystroke">CTRL-P</code>		command-line completion (see |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|)
+<code class="keystroke">CTRL-A</code>		command-line completion (see |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|)
+<code class="keystroke">CTRL-L</code>		command-line completion (see |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|)
+
+							<b class="vimtag">*<a name="c_CTRL-_">c_CTRL-_</a>*</b>
+<code class="keystroke">CTRL-_</code>		a - switch between Hebrew and English keyboard mode, which is
+		private to the command-line and not related to hkmap.
+		This is useful when Hebrew text entry is required in the
+		command-line, searches, abbreviations, etc.  Applies only if
+		Vim is compiled with the |<a href="various.html#+rightleft">+rightleft</a>| feature and the
+		'allowrevins' option is set.
+		See |<a href="rileft.html#rileft.txt">rileft</a>|.
+
+		b - switch between Farsi and English keyboard mode, which is
+		private to the command-line and not related to fkmap.  In
+		Farsi keyboard mode the characters are inserted in reverse
+		insert manner.  This is useful when Farsi text entry is
+		required in the command-line, searches, abbreviations, etc.
+		Applies only if Vim is compiled with the |<a href="various.html#+farsi">+farsi</a>| feature.
+		See |<a href="farsi.html#farsi.txt">farsi</a>|.
+
+							<b class="vimtag">*<a name="c_CTRL-^">c_CTRL-^</a>*</b>
+CTRL-^		Toggle the use of language |<a href="map.html#:lmap">:lmap</a>| mappings and/or Input
+		Method.
+		When typing a pattern for a search command and 'imsearch' is
+		not -1, VAL is the value of 'imsearch', otherwise VAL is the
+		value of 'iminsert'.
+		When language mappings are defined:
+		- If VAL is 1 (langmap mappings used) it becomes 0 (no langmap
+		  mappings used).
+		- If VAL was not 1 it becomes 1, thus langmap mappings are
+		  enabled.
+		When no language mappings are defined:
+		- If VAL is 2 (Input Method is used) it becomes 0 (no input
+		  method used)
+		- If VAL has another value it becomes 2, thus the Input Method
+		  is enabled.
+		These language mappings are normally used to type characters
+		that are different from what the keyboard produces.  The
+		'keymap' option can be used to install a whole number of them.
+		When entering a command line, langmap mappings are switched
+		off, since you are expected to type a command.  After
+		switching it on with CTRL-^, the new state is not used again
+		for the next command or Search pattern.
+
+						<b class="vimtag">*<a name="c_CTRL-]">c_CTRL-]</a>*</b>
+CTRL-]		Trigger abbreviation, without inserting a character.
+
+For Emacs-style editing on the command-line see |<a href="tips.html#emacs-keys">emacs-keys</a>|.
+
+The <code class="special">&lt;Up&gt;</code> and <code class="special">&lt;Down&gt;</code> keys take the current command-line as a search string.
+The beginning of the next/previous command-lines are compared with this
+string.  The first line that matches is the new command-line.  When typing
+these two keys repeatedly, the same string is used again.  For example, this
+can be used to find the previous substitute command: Type ":s" and then <code class="special">&lt;Up&gt;</code>.
+The same could be done by typing <code class="special">&lt;S-Up&gt;</code> a number of times until the desired
+command-line is shown.  (<code class="note">Note:</code> the shifted arrow keys do not work on all
+terminals)
+
+							<b class="vimtag">*<a name=":his">:his</a>*</b> <b class="vimtag">*<a name=":history">:history</a>*</b>
+:his[tory]	Print the history of last entered commands.
+		{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>|
+		feature}
+
+:his[tory] [<code class="special">{name}</code>] [<code class="special">{first}</code>][, [<code class="special">{last}</code>]]
+		List the contents of history <code class="special">{name}</code> which can be:
+		c[md]	 or :		command-line history
+		s[earch] or / or ?	search string history
+		e[xpr]	 or =		expression register history
+		i[nput]	 or @		input line history
+		d[ebug]	 or &gt;		debug command history
+		a[ll]			all of the above
+
+		If the numbers <code class="special">{first}</code> and/or <code class="special">{last}</code> are given, the respective
+		range of entries from a history is listed.  These numbers can
+		be specified in the following form:
+							<b class="vimtag">*<a name=":history-indexing">:history-indexing</a>*</b>
+		A positive number represents the absolute index of an entry
+		as it is given in the first column of a :history listing.
+		This number remains fixed even if other entries are deleted.
+
+		A negative number means the relative position of an entry,
+		counted from the newest entry (which has index -1) backwards.
+
+		Examples:
+		List entries 6 to 12 from the search history:
+<code class="example">			:history / 6,12</code>
+
+		List the penultimate entry from all histories:
+<code class="example">			:history all -2</code>
+
+		List the most recent two entries from all histories:
+<code class="example">			:history all -2,</code>
+<code class="example"></code>
+:keepp[atterns] <code class="special">{command}</code>			<b class="vimtag">*<a name=":keepp">:keepp</a>*</b> <b class="vimtag">*<a name=":keeppatterns">:keeppatterns</a>*</b>
+		Execute <code class="special">{command}</code>, without adding anything to the search
+		history
+
+</pre><hr/><pre>2. Command-line completion				<b class="vimtag">*<a name="cmdline-completion">cmdline-completion</a>*</b>
+
+When editing the command-line, a few commands can be used to complete the
+word before the cursor.  This is available for:
+
+- Command names: At the start of the command-line.
+- Tags: Only after the ":tag" command.
+- File names: Only after a command that accepts a file name or a setting for
+  an option that can be set to a file name.  This is called file name
+  completion.
+- Shell command names: After ":!cmd", ":r !cmd" and ":w !cmd".  $PATH is used.
+- Options: Only after the ":set" command.
+- Mappings: Only after a ":map" or similar command.
+- Variable and function names: Only after a ":if", ":call" or similar command.
+
+The number of help item matches is limited (currently to 300) to avoid a long
+delay when there are very many matches.
+
+These are the commands that can be used:
+
+							<b class="vimtag">*<a name="c_CTRL-D">c_CTRL-D</a>*</b>
+<code class="keystroke">CTRL-D</code>		List names that match the pattern in front of the cursor.
+		When showing file names, directories are highlighted (see
+		'highlight' option).  Names where 'suffixes' matches are moved
+		to the end.
+		The 'wildoptions' option can be set to "tagfile" to list the
+		file of matching tags.
+					<b class="vimtag">*<a name="c_CTRL-I">c_CTRL-I</a>*</b> <b class="vimtag">*<a name="c_wildchar">c_wildchar</a>*</b> <b class="vimtag">*<a name="c_%3CTab%3E">c_&lt;Tab&gt;</a>*</b>
+'wildchar' option
+		A match is done on the pattern in front of the cursor.  The
+		match (if there are several, the first match) is inserted
+		in place of the pattern.  (<code class="note">Note:</code> does not work inside a
+		macro, because <code class="special">&lt;Tab&gt;</code> or <code class="special">&lt;Esc&gt;</code> are mostly used as 'wildchar',
+		and these have a special meaning in some macros.) When typed
+		again and there were multiple matches, the next
+		match is inserted.  After the last match, the first is used
+		again (wrap around).
+		The behavior can be changed with the 'wildmode' option.
+							<b class="vimtag">*<a name="c_%3CS-Tab%3E">c_&lt;S-Tab&gt;</a>*</b>
+<code class="special">&lt;S-Tab&gt;</code>		Like 'wildchar' or <code class="special">&lt;Tab&gt;</code>, but begin with the last match and
+		then go to the previous match.
+		<code class="special">&lt;S-Tab&gt;</code> does not work everywhere.
+							<b class="vimtag">*<a name="c_CTRL-N">c_CTRL-N</a>*</b>
+<code class="keystroke">CTRL-N</code>		After using 'wildchar' which got multiple matches, go to next
+		match.  Otherwise recall more recent command-line from history.
+							<b class="vimtag">*<a name="c_CTRL-P">c_CTRL-P</a>*</b>
+<code class="keystroke">CTRL-P</code>		After using 'wildchar' which got multiple matches, go to
+		previous match.  Otherwise recall older command-line from
+		history.
+							<b class="vimtag">*<a name="c_CTRL-A">c_CTRL-A</a>*</b>
+<code class="keystroke">CTRL-A</code>		All names that match the pattern in front of the cursor are
+		inserted.
+							<b class="vimtag">*<a name="c_CTRL-L">c_CTRL-L</a>*</b>
+<code class="keystroke">CTRL-L</code>		A match is done on the pattern in front of the cursor.  If
+		there is one match, it is inserted in place of the pattern.
+		If there are multiple matches the longest common part is
+		inserted in place of the pattern.  If the result is shorter
+		than the pattern, no completion is done.
+							<b class="vimtag">*<a name="%2F_CTRL-L">/_CTRL-L</a>*</b>
+		When 'incsearch' is set, entering a search pattern for "/" or
+		"?" and the current match is displayed then <code class="keystroke">CTRL-L</code> will add
+		one character from the end of the current match.  If
+		'ignorecase' and 'smartcase' are set and the command line has
+		no uppercase characters, the added character is converted to
+		lowercase.
+	                                            <b class="vimtag">*<a name="c_CTRL-G">c_CTRL-G</a>*</b> <b class="vimtag">*<a name="%2F_CTRL-G">/_CTRL-G</a>*</b>
+<code class="keystroke">CTRL-G</code>		When 'incsearch' is set, entering a search pattern for "/" or
+		"?" and the current match is displayed then <code class="keystroke">CTRL-G</code> will move
+		to the next match (does not take |<a href="pattern.html#search-offset">search-offset</a>| into account)
+		Use <code class="keystroke">CTRL-T</code> to move to the previous match.  Hint: on a regular
+		keyboard T is above G.
+	                                            <b class="vimtag">*<a name="c_CTRL-T">c_CTRL-T</a>*</b> <b class="vimtag">*<a name="%2F_CTRL-T">/_CTRL-T</a>*</b>
+<code class="keystroke">CTRL-T</code>		When 'incsearch' is set, entering a search pattern for "/" or
+		"?" and the current match is displayed then <code class="keystroke">CTRL-T</code> will move
+		to the previous match (does not take |<a href="pattern.html#search-offset">search-offset</a>| into
+		account).
+		Use <code class="keystroke">CTRL-G</code> to move to the next match.  Hint: on a regular
+		keyboard T is above G.
+
+The 'wildchar' option defaults to <code class="special">&lt;Tab&gt;</code> (<code class="keystroke">CTRL-E</code> when in Vi compatible mode; in
+a previous version <code class="special">&lt;Esc&gt;</code> was used).  In the pattern standard wildcards '*' and
+'?' are accepted when matching file names.  '*' matches any string, '?'
+matches exactly one character.
+
+When repeating 'wildchar' or <code class="keystroke">CTRL-N</code> you cycle through the matches, eventually
+ending up back to what was typed.  If the first match is not what you wanted,
+you can use <code class="special">&lt;S-Tab&gt;</code> or <code class="keystroke">CTRL-P</code> to go straight back to what you typed.
+
+The 'wildignorecase' option can be set to ignore case in filenames.
+
+The 'wildmenu' option can be set to show the matches just above the command
+line.
+
+If you like tcsh's autolist completion, you can use this mapping:
+	:cnoremap X <code class="special">&lt;C-L&gt;</code><code class="special">&lt;C-D&gt;</code>
+(Where X is the command key to use, <code class="special">&lt;C-L&gt;</code> is <code class="keystroke">CTRL-L</code> and <code class="special">&lt;C-D&gt;</code> is <code class="keystroke">CTRL-D</code>)
+This will find the longest match and then list all matching files.
+
+If you like tcsh's autolist completion, you can use the 'wildmode' option to
+emulate it.  For example, this mimics autolist=ambiguous:
+	:set wildmode=longest,list
+This will find the longest match with the first 'wildchar', then list all
+matching files with the next.
+
+							<b class="vimtag">*<a name="suffixes">suffixes</a>*</b>
+For file name completion you can use the 'suffixes' option to set a priority
+between files with almost the same name.  If there are multiple matches,
+those files with an extension that is in the 'suffixes' option are ignored.
+The default is ".bak,~,.o,.h,.info,.swp,.obj", which means that files ending
+in ".bak", "~", ".o", ".h", ".info", ".swp" and ".obj" are sometimes ignored.
+
+An empty entry, two consecutive commas, match a file name that does not
+contain a ".", thus has no suffix.  This is useful to ignore "prog" and prefer
+"prog.c".
+
+Examples:
+
+<code class="section">  pattern:	files:				match:	</code>
+   test*	test.c test.h test.o		test.c
+   test*	test.h test.o			test.h and test.o
+   test*	test.i test.h test.c		test.i and test.c
+
+It is impossible to ignore suffixes with two dots.
+
+If there is more than one matching file (after ignoring the ones matching
+the 'suffixes' option) the first file name is inserted.  You can see that
+there is only one match when you type 'wildchar' twice and the completed
+match stays the same.  You can get to the other matches by entering
+'wildchar', <code class="keystroke">CTRL-N</code> or <code class="keystroke">CTRL-P</code>.  All files are included, also the ones with
+extensions matching the 'suffixes' option.
+
+To completely ignore files with some extension use 'wildignore'.
+
+To match only files that end at the end of the typed text append a "$".  For
+example, to match only files that end in ".c":
+<code class="example">	:e *.c$</code>
+This will not match a file ending in ".cpp".  Without the "$" it does match.
+
+The old value of an option can be obtained by hitting 'wildchar' just after
+the '='.  For example, typing 'wildchar' after ":set dir=" will insert the
+current value of 'dir'.  This overrules file name completion for the options
+that take a file name.
+
+If you would like using <code class="special">&lt;S-Tab&gt;</code> for <code class="keystroke">CTRL-P</code> in an xterm, put this command in
+your .cshrc:
+<code class="example">	xmodmap -e "keysym Tab = Tab Find"</code>
+And this in your .vimrc:
+<code class="example">	:cmap <code class="special">&lt;Esc&gt;</code>[1~ <code class="special">&lt;C-P&gt;</code></code>
+<code class="example"></code>
+</pre><hr/><pre>3. Ex command-lines					<b class="vimtag">*<a name="cmdline-lines">cmdline-lines</a>*</b>
+
+The Ex commands have a few specialties:
+
+							<b class="vimtag">*<a name=":quote">:quote</a>*</b> <b class="vimtag">*<a name=":comment">:comment</a>*</b>
+'"' at the start of a line causes the whole line to be ignored.  '"'
+after a command causes the rest of the line to be ignored.  This can be used
+to add comments.  Example:
+<code class="example">	:set ai		"set 'autoindent' option</code>
+It is not possible to add a comment to a shell command ":!cmd" or to the
+":map" command and a few others (mainly commands that expect expressions)
+that see the '"' as part of their argument:
+
+    :argdo
+    :autocmd
+    :bufdo
+    :cexpr (and the like)
+    :cdo (and the like)
+    :command
+    :cscope (and the like)
+    :debug
+    :display
+    :echo (and the like)
+    :elseif
+    :execute
+    :folddoopen
+    :folddoclosed
+    :for
+    :grep (and the like)
+    :help (and the like)
+    :if
+    :let
+    :make
+    :map (and the like including :abbrev commands)
+    :menu (and the like)
+    :mkspell
+    :normal
+    :ownsyntax
+    :popup
+    :promptfind (and the like)
+    :registers
+    :return
+    :sort
+    :syntax
+    :tabdo
+    :tearoff
+    :vimgrep (and the like)
+    :while
+    :windo
+
+							<b class="vimtag">*<a name=":bar">:bar</a>*</b> <b class="vimtag">*<a name=":\bar">:\bar</a>*</b>
+'|' can be used to separate commands, so you can give multiple commands in one
+line.  If you want to use '|' in an argument, precede it with '\'.
+
+These commands see the '|' as their argument, and can therefore not be
+followed by another Vim command:
+    :argdo
+    :autocmd
+    :bufdo
+    :cdo
+    :cfdo
+    :command
+    :cscope
+    :debug
+    :folddoopen
+    :folddoclosed
+    :function
+    :global
+    :help
+    :helpfind
+    :lcscope
+    :ldo
+    :lfdo
+    :make
+    :normal
+    :perl
+    :perldo
+    :promptfind
+    :promptrepl
+    :pyfile
+    :python
+    :registers
+    :read !
+    :scscope
+    :sign
+    :tcl
+    :tcldo
+    :tclfile
+    :vglobal
+    :windo
+    :write !
+    :<code class="special">[range]</code>!
+    a user defined command without the "-bar" argument |<a href="map.html#:command">:command</a>|
+
+<code class="note">Note</code> that this is confusing (inherited from Vi): With ":g" the '|' is included
+in the command, with ":s" it is not.
+
+To be able to use another command anyway, use the ":execute" command.
+Example (append the output of "ls" and jump to the first line):
+<code class="example">	:execute 'r !ls' | '[</code>
+<code class="example"></code>
+There is one exception: When the 'b' flag is present in 'cpoptions', with the
+":map" and ":abbr" commands and friends <code class="keystroke">CTRL-V</code> needs to be used instead of
+'\'.  You can also use "<code class="special">&lt;Bar&gt;</code>" instead.  See also |<a href="map.html#map_bar">map_bar</a>|.
+
+Examples:
+<code class="example">	:!ls | wc		view the output of two commands</code>
+<code class="example">	:r !ls | wc		insert the same output in the text</code>
+<code class="example">	:%g/foo/p|&gt;		moves all matching lines one shiftwidth</code>
+<code class="example">	:%s/foo/bar/|&gt;		moves one line one shiftwidth</code>
+<code class="example">	:map q 10^V|<code class="badlink">		map "q" to "10</code>|"</code>
+<code class="example">	:map q 10\| map \ l	map "q" to "10\" and map "\" to "l"</code>
+<code class="example">					(when 'b' is present in 'cpoptions')</code>
+<code class="example"></code>
+You can also use <code class="special">&lt;NL&gt;</code> to separate commands in the same way as with '|'.  To
+insert a <code class="special">&lt;NL&gt;</code> use <code class="keystroke">CTRL-V</code> <code class="keystroke">CTRL-J</code>.  "^@" will be shown.  Using '|' is the
+preferred method.  But for external commands a <code class="special">&lt;NL&gt;</code> must be used, because a
+'|' is included in the external command.  To avoid the special meaning of <code class="special">&lt;NL&gt;</code>
+it must be preceded with a backslash.  Example:
+<code class="example">	:r !date<code class="special">&lt;NL&gt;</code>-join</code>
+This reads the current date into the file and joins it with the previous line.
+
+<code class="note">Note</code> that when the command before the '|' generates an error, the following
+commands will not be executed.
+
+
+Because of Vi compatibility the following strange commands are supported:
+<code class="example">	:|			print current line (like ":p")</code>
+<code class="example">	:3|			print line 3 (like ":3p")</code>
+<code class="example">	:3			goto line 3</code>
+<code class="example"></code>
+A colon is allowed between the range and the command name.  It is ignored
+(this is Vi compatible).  For example:
+<code class="example">	:1,$:s/pat/string</code>
+<code class="example"></code>
+When the character '%' or '#' is used where a file name is expected, they are
+expanded to the current and alternate file name (see the chapter "editing
+files" |<a href="cmdline.html#:_%">:_%</a>| |<a href="cmdline.html#:_%23">:_#</a>|).
+
+Embedded spaces in file names are allowed on the Amiga if one file name is
+expected as argument.  Trailing spaces will be ignored, unless escaped with a
+backslash or <code class="keystroke">CTRL-V</code>.  <code class="note">Note</code> that the ":next" command uses spaces to separate
+file names.  Escape the spaces to include them in a file name.  Example:
+<code class="example">	:next foo\ bar goes\ to school\</code>
+starts editing the three files "foo bar", "goes to" and "school ".
+
+When you want to use the special characters '"' or '|' in a command, or want
+to use '%' or '#' in a file name, precede them with a backslash.  The
+backslash is not required in a range and in the ":substitute" command.
+See also |<a href="editing.html#`%20">`=</a>|.
+
+							<b class="vimtag">*<a name=":_!">:_!</a>*</b>
+The '!' (bang) character after an Ex command makes the command behave in a
+different way.  The '!' should be placed immediately after the command, without
+any blanks in between.  If you insert blanks the '!' will be seen as an
+argument for the command, which has a different meaning.  For example:
+	:w! name	write the current buffer to file "name", overwriting
+			any existing file
+	:w !name	send the current buffer as standard input to command
+			"name"
+
+</pre><hr/><pre>4. Ex command-line ranges	<b class="vimtag">*<a name="cmdline-ranges">cmdline-ranges</a>*</b> <b class="vimtag">*<a name="[range]">[range]</a>*</b> <b class="vimtag">*<a name="E16">E16</a>*</b>
+
+Some Ex commands accept a line range in front of them.  This is <code class="note">note</code>d as
+<code class="special">[range]</code>.  It consists of one or more line specifiers, separated with ',' or
+';'.
+
+The basics are explained in section |<a href="usr_10.html#10.3">10.3</a>| of the user manual.
+
+						<b class="vimtag">*<a name=":,">:,</a>*</b> <b class="vimtag">*<a name=":;">:;</a>*</b>
+When separated with ';' the cursor position will be set to that line
+before interpreting the next line specifier.  This doesn't happen for ','.
+Examples:
+<code class="example">   4,/this line/</code>
+&lt;	from line 4 till match with "this line" after the cursor line.
+<code class="example">   5;/that line/</code>
+	from line 5 till match with "that line" after line 5.
+
+The default line specifier for most commands is the cursor position, but the
+commands ":write" and ":global" have the whole file (1,$) as default.
+
+If more line specifiers are given than required for the command, the first
+one(s) will be ignored.
+
+Line numbers may be specified with:		<b class="vimtag">*<a name=":range">:range</a>*</b> <b class="vimtag">*<a name="{address}">{address}</a>*</b>
+	<code class="special">{number}</code>	an absolute line number
+	.		the current line			  <b class="vimtag">*<a name=":.">:.</a>*</b>
+	$		the last line in the file		  <b class="vimtag">*<a name=":$">:$</a>*</b>
+	%		equal to 1,$ (the entire file)		  <b class="vimtag">*<a name=":%">:%</a>*</b>
+	't		position of mark t (lowercase)		  <b class="vimtag">*<a name=":'">:'</a>*</b>
+	'T		position of mark T (uppercase); when the mark is in
+			another file it cannot be used in a range
+	/<code class="special">{pattern}</code>[/]	the next line where <code class="special">{pattern}</code> matches	  <b class="vimtag">*<a name=":%2F">:/</a>*</b>
+	?<code class="special">{pattern}</code>[?]	the previous line where <code class="special">{pattern}</code> matches <b class="vimtag">*<a name=":?">:?</a>*</b>
+	\/		the next line where the previously used search
+			pattern matches
+	\?		the previous line where the previously used search
+			pattern matches
+	\&amp;		the next line where the previously used substitute
+			pattern matches
+
+Each may be followed (several times) by '+' or '-' and an optional number.
+This number is added or subtracted from the preceding line number.  If the
+number is omitted, 1 is used.
+
+The "/" and "?" after <code class="special">{pattern}</code> are required to separate the pattern from
+anything that follows.
+
+The "/" and "?" may be preceded with another address.  The search starts from
+there.  The difference from using ';' is that the cursor isn't moved.
+Examples:
+<code class="example">	/pat1//pat2/	Find line containing "pat2" after line containing</code>
+<code class="example">			"pat1", without moving the cursor.</code>
+<code class="example">	7;/pat2/	Find line containing "pat2", after line 7, leaving</code>
+<code class="example">			the cursor in line 7.</code>
+<code class="example"></code>
+The <code class="special">{number}</code> must be between 0 and the number of lines in the file.  When
+using a 0 (zero) this is interpreted as a 1 by most commands.  Commands that
+use it as a count do use it as a zero (|<a href="tagsrch.html#:tag">:tag</a>|, |<a href="tagsrch.html#:pop">:pop</a>|, etc).  Some commands
+interpret the zero as "before the first line" (|<a href="insert.html#:read">:read</a>|, search pattern, etc).
+
+Examples:
+<code class="example">	.+3		three lines below the cursor</code>
+<code class="example">	/that/+1	the line below the next line containing "that"</code>
+<code class="example">	.,$		from current line until end of file</code>
+<code class="example">	0;/that		the first line containing "that", also matches in the</code>
+<code class="example">			first line.</code>
+<code class="example">	1;/that		the first line after line 1 containing "that"</code>
+<code class="example"></code>
+Some commands allow for a count after the command.  This count is used as the
+number of lines to be used, starting with the line given in the last line
+specifier (the default is the cursor line).  The commands that accept a count
+are the ones that use a range but do not have a file name argument (because
+a file name can also be a number).
+
+Examples:
+<code class="example">	:s/x/X/g 5	substitute 'x' by 'X' in the current line and four</code>
+<code class="example">			following lines</code>
+<code class="example">	:23d 4		delete lines 23, 24, 25 and 26</code>
+<code class="example"></code>
+<code class="example"></code>
+Folds and Range
+
+When folds are active the line numbers are rounded off to include the whole
+closed fold.  See |<a href="fold.html#fold-behavior">fold-behavior</a>|.
+
+
+Reverse Range						<b class="vimtag">*<a name="E493">E493</a>*</b>
+
+A range should have the lower line number first.  If this is not the case, Vim
+will ask you if it should swap the line numbers.
+<code class="section">	Backwards range given, OK to swap </code>
+This is not done within the global command ":g".
+
+You can use ":silent" before a command to avoid the question, the range will
+always be swapped then.
+
+
+Count and Range						<b class="vimtag">*<a name="N:">N:</a>*</b>
+
+When giving a count before entering ":", this is translated into:
+		:.,.+(count - 1)
+In words: The 'count' lines at and after the cursor.  Example: To delete
+three lines:
+<code class="example">		3:d<code class="special">&lt;CR&gt;</code>		is translated into: .,.+2d<code class="special">&lt;CR&gt;</code></code>
+
+
+Visual Mode and Range					<b class="vimtag">*<a name="v_:">v_:</a>*</b>
+
+<code class="special">{Visual}</code>:	Starts a command-line with the Visual selected lines as a
+		range.  The code `:'<code class="special">&lt;,'&gt;</code>` is used for this range, which makes
+		it possible to select a similar line from the command-line
+		history for repeating a command on different Visually selected
+		lines.
+		When Visual mode was already ended, a short way to use the
+		Visual area for a range is `:<b class="vimtag">*<a name="`.  This requires that %22">`.  This requires that "</a>*</b>" does
+		not appear in 'cpo', see |<a href="options.html#cpo-star">cpo-star</a>|.  Otherwise you will have
+		to type `:'<code class="special">&lt;,'&gt;</code>`
+
+
+</pre><hr/><pre>5. Ex command-line flags				<b class="vimtag">*<a name="ex-flags">ex-flags</a>*</b>
+
+These flags are supported by a selection of Ex commands.  They print the line
+that the cursor ends up after executing the command:
+
+	l	output like for |<a href="various.html#:list">:list</a>|
+	#	add line number
+	p	output like for |<a href="various.html#:print">:print</a>|
+
+The flags can be combined, thus "l#" uses both a line number and |<a href="various.html#:list">:list</a>| style
+output.
+
+</pre><hr/><pre>6. Ex special characters				<b class="vimtag">*<a name="cmdline-special">cmdline-special</a>*</b>
+
+<code class="note">Note:</code> These are special characters in the executed command line.  If you want
+to insert special things while typing you can use the <code class="keystroke">CTRL-R</code> command.  For
+example, "%" stands for the current file name, while <code class="keystroke">CTRL-R</code> % inserts the
+current file name right away.  See |<a href="cmdline.html#c_CTRL-R">c_CTRL-R</a>|.
+
+<code class="note">Note:</code>  If you want to avoid the effects of special characters in a Vim script
+you may want to use |<a href="eval.html#fnameescape()">fnameescape()</a>|.  Also see |<a href="editing.html#`%20">`=</a>|.
+
+
+In Ex commands, at places where a file name can be used, the following
+characters have a special meaning.  These can also be used in the expression
+function |<a href="eval.html#expand()">expand()</a>|.
+	%	Is replaced with the current file name.		  <b class="vimtag">*<a name=":_%">:_%</a>*</b> <b class="vimtag">*<a name="c_%">c_%</a>*</b>
+	#	Is replaced with the alternate file name.	  <b class="vimtag">*<a name=":_%23">:_#</a>*</b> <b class="vimtag">*<a name="c_%23">c_#</a>*</b>
+		This is remembered for every window.
+	#n	(where n is a number) is replaced with		  <b class="vimtag">*<a name=":_%230">:_#0</a>*</b> <b class="vimtag">*<a name=":_%23n">:_#n</a>*</b>
+		the file name of buffer n.  "#0" is the same as "#".     <b class="vimtag">*<a name="c_%23n">c_#n</a>*</b>
+	##	Is replaced with all names in the argument list	  <b class="vimtag">*<a name=":_%23%23">:_##</a>*</b> <b class="vimtag">*<a name="c_%23%23">c_##</a>*</b>
+		concatenated, separated by spaces.  Each space in a name
+		is preceded with a backslash.
+	#<code class="special">&lt;n	(where n is a number &gt;</code> 0) is replaced with old	  <b class="vimtag">*<a name=":_%23%3C">:_#&lt;</a>*</b> <b class="vimtag">*<a name="c_%23%3C">c_#&lt;</a>*</b>
+		file name n.  See |<a href="starting.html#:oldfiles">:oldfiles</a>| or |<a href="eval.html#v:oldfiles">v:oldfiles</a>| to get the
+		number.							<b class="vimtag">*<a name="E809">E809</a>*</b>
+		{only when compiled with the |<a href="various.html#+eval">+eval</a>| and |<a href="various.html#+viminfo">+viminfo</a>| features}
+
+<code class="note">Note</code> that these, except "#&lt;n", give the file name as it was typed.  If an
+absolute path is needed (when using the file name from a different directory),
+you need to add ":p".  See |<a href="cmdline.html#filename-modifiers">filename-modifiers</a>|.
+
+The "#&lt;n" item returns an absolute path, but it will start with "~/" for files
+below your home directory.
+
+<code class="note">Note</code> that backslashes are inserted before spaces, so that the command will
+correctly interpret the file name.  But this doesn't happen for shell
+commands.  For those you probably have to use quotes (this fails for files
+that contain a quote and wildcards):
+<code class="example">	:!ls "%"</code>
+<code class="example">	:r !spell "%"</code>
+<code class="example"></code>
+To avoid the special meaning of '%' and '#' insert a backslash before it.
+Detail: The special meaning is always escaped when there is a backslash before
+it, no matter how many backslashes.
+<code class="section">	you type:		result	</code>
+	   #			alternate.file
+	   \#			#
+	   \\#			\#
+Also see |<a href="editing.html#`%20">`=</a>|.
+
+			       <b class="vimtag">*<a name=":%3Ccword%3E">:&lt;cword&gt;</a>*</b> <b class="vimtag">*<a name="%3Ccword%3E">&lt;cword&gt;</a>*</b> <b class="vimtag">*<a name=":%3CcWORD%3E">:&lt;cWORD&gt;</a>*</b> <b class="vimtag">*<a name="%3CcWORD%3E">&lt;cWORD&gt;</a>*</b>
+			       <b class="vimtag">*<a name=":%3Ccexpr%3E">:&lt;cexpr&gt;</a>*</b> <b class="vimtag">*<a name="%3Ccexpr%3E">&lt;cexpr&gt;</a>*</b> <b class="vimtag">*<a name=":%3Ccfile%3E">:&lt;cfile&gt;</a>*</b> <b class="vimtag">*<a name="%3Ccfile%3E">&lt;cfile&gt;</a>*</b>
+			       <b class="vimtag">*<a name=":%3Cafile%3E">:&lt;afile&gt;</a>*</b> <b class="vimtag">*<a name="%3Cafile%3E">&lt;afile&gt;</a>*</b> <b class="vimtag">*<a name=":%3Cabuf%3E">:&lt;abuf&gt;</a>*</b> <b class="vimtag">*<a name="%3Cabuf%3E">&lt;abuf&gt;</a>*</b>
+			       <b class="vimtag">*<a name=":%3Camatch%3E">:&lt;amatch&gt;</a>*</b> <b class="vimtag">*<a name="%3Camatch%3E">&lt;amatch&gt;</a>*</b>
+			       <b class="vimtag">*<a name=":%3Csfile%3E">:&lt;sfile&gt;</a>*</b> <b class="vimtag">*<a name="%3Csfile%3E">&lt;sfile&gt;</a>*</b> <b class="vimtag">*<a name=":%3Cslnum%3E">:&lt;slnum&gt;</a>*</b> <b class="vimtag">*<a name="%3Cslnum%3E">&lt;slnum&gt;</a>*</b>
+			       <b class="vimtag">*<a name=":%3Csflnum%3E">:&lt;sflnum&gt;</a>*</b> <b class="vimtag">*<a name="%3Csflnum%3E">&lt;sflnum&gt;</a>*</b> <b class="vimtag">*<a name="E499">E499</a>*</b> <b class="vimtag">*<a name="E500">E500</a>*</b>
+<code class="note">Note:</code> these are typed literally, they are not special keys!
+	<code class="special">&lt;cword&gt;</code>    is replaced with the word under the cursor (like |<a href="pattern.html#star">star</a>|)
+	<code class="special">&lt;cWORD&gt;</code>    is replaced with the WORD under the cursor (see |<a href="motion.html#WORD">WORD</a>|)
+	<code class="special">&lt;cexpr&gt;</code>    is replaced with the word under the cursor, including more
+		   to form a C expression.  E.g., when the cursor is on "arg"
+		   of "ptr-&gt;arg" then the result is "ptr-&gt;arg"; when the
+		   cursor is on "]" of "list[idx]" then the result is
+		   "list[idx]".  This is used for |<a href="eval.html#v:beval_text">v:beval_text</a>|.
+	<code class="special">&lt;cfile&gt;</code>    is replaced with the path name under the cursor (like what
+		   |<a href="editing.html#gf">gf</a>| uses)
+	<code class="special">&lt;afile&gt;</code>    When executing autocommands, is replaced with the file name
+		   of the buffer being manipulated, or the file for a read or
+		   write.  <b class="vimtag">*<a name="E495">E495</a>*</b>
+	<code class="special">&lt;abuf&gt;</code>     When executing autocommands, is replaced with the currently
+		   effective buffer number (for ":r file" and ":so file" it is
+		   the current buffer, the file being read/sourced is not in a
+		   buffer).  <b class="vimtag">*<a name="E496">E496</a>*</b>
+	<code class="special">&lt;amatch&gt;</code>   When executing autocommands, is replaced with the match for
+		   which this autocommand was executed.  <b class="vimtag">*<a name="E497">E497</a>*</b>
+		   It differs from <code class="special">&lt;afile&gt;</code> only when the file name isn't used
+		   to match with (for FileType, Syntax and SpellFileMissing
+		   events).
+	<code class="special">&lt;sfile&gt;</code>    When executing a ":source" command, is replaced with the
+		   file name of the sourced file.  <b class="vimtag">*<a name="E498">E498</a>*</b>
+		   When executing a function, is replaced with:
+		   "function <code class="special">{function-name}</code>[<code class="special">{lnum}</code>]"
+		   function call nesting is indicated like this:
+		   "function <code class="special">{function-name1}</code>[<code class="special">{lnum}</code>]..<code class="special">{function-name2}</code>[<code class="special">{lnum}</code>]"
+		   <code class="note">Note</code> that filename-modifiers are useless when <code class="special">&lt;sfile&gt;</code> is
+		   used inside a function.
+	<code class="special">&lt;slnum&gt;</code>	   When executing a ":source" command, is replaced with the
+		   line number.  <b class="vimtag">*<a name="E842">E842</a>*</b>
+		   When executing a function it's the line number relative to
+		   the start of the function.
+	<code class="special">&lt;sflnum&gt;</code>   When executing a script, is replaced with the line number.
+		   It differs from <code class="special">&lt;slnum&gt;</code> in that <code class="special">&lt;sflnum&gt;</code> is replaced with
+		   the script line number in any situation.  <b class="vimtag">*<a name="E961">E961</a>*</b>
+
+							 <b class="vimtag">*<a name="filename-modifiers">filename-modifiers</a>*</b>
+<b class="vimtag">*<a name=":_%:">:_%:</a>*</b> <b class="vimtag">*<a name="::8">::8</a>*</b> <b class="vimtag">*<a name="::p">::p</a>*</b> <b class="vimtag">*<a name="::.">::.</a>*</b> <b class="vimtag">*<a name="::%7E">::~</a>*</b> <b class="vimtag">*<a name="::h">::h</a>*</b> <b class="vimtag">*<a name="::t">::t</a>*</b> <b class="vimtag">*<a name="::r">::r</a>*</b> <b class="vimtag">*<a name="::e">::e</a>*</b> <b class="vimtag">*<a name="::s">::s</a>*</b> <b class="vimtag">*<a name="::gs">::gs</a>*</b> <b class="vimtag">*<a name="::S">::S</a>*</b>
+     <b class="vimtag">*<a name="%:8">%:8</a>*</b> <b class="vimtag">*<a name="%:p">%:p</a>*</b> <b class="vimtag">*<a name="%:.">%:.</a>*</b> <b class="vimtag">*<a name="%:%7E">%:~</a>*</b> <b class="vimtag">*<a name="%:h">%:h</a>*</b> <b class="vimtag">*<a name="%:t">%:t</a>*</b> <b class="vimtag">*<a name="%:r">%:r</a>*</b> <b class="vimtag">*<a name="%:e">%:e</a>*</b> <b class="vimtag">*<a name="%:s">%:s</a>*</b> <b class="vimtag">*<a name="%:gs">%:gs</a>*</b> <b class="vimtag">*<a name="%:S">%:S</a>*</b>
+The file name modifiers can be used after "%", "#", "#n", "<code class="special">&lt;cfile&gt;</code>", "<code class="special">&lt;sfile&gt;</code>",
+"<code class="special">&lt;afile&gt;</code>" or "<code class="special">&lt;abuf&gt;</code>".  They are also used with the |<a href="eval.html#fnamemodify()">fnamemodify()</a>| function.
+
+These modifiers can be given, in this order:
+	:p	Make file name a full path.  Must be the first modifier.  Also
+		changes "~/" (and "~user/" for Unix and VMS) to the path for
+		the home directory.  If the name is a directory a path
+		separator is added at the end.  For a file name that does not
+		exist and does not have an absolute path the result is
+		unpredictable.  On MS-Windows an 8.3 filename is expanded to
+		the long name.
+	:8	Converts the path to 8.3 short format (currently only on
+		MS-Windows).  Will act on as much of a path that is an
+		existing path.
+	:~	Reduce file name to be relative to the home directory, if
+		possible.  File name is unmodified if it is not below the home
+		directory.
+	:.	Reduce file name to be relative to current directory, if
+		possible.  File name is unmodified if it is not below the
+		current directory.
+		For maximum shortness, use ":~:.".
+	:h	Head of the file name (the last component and any separators
+		removed).  Cannot be used with :e, :r or :t.
+		Can be repeated to remove several components at the end.
+		When the file name ends in a path separator, only the path
+		separator is removed.  Thus ":p:h" on a directory name results
+		on the directory name itself (without trailing slash).
+		When the file name is an absolute path (starts with "/" for
+		Unix; "x:\" for Win32; "drive:" for Amiga), that part is not
+		removed.  When there is no head (path is relative to current
+		directory) the result is empty.
+	:t	Tail of the file name (last component of the name).  Must
+		precede any :r or :e.
+	:r	Root of the file name (the last extension removed).  When
+		there is only an extension (file name that starts with '.',
+		e.g., ".vimrc"), it is not removed.  Can be repeated to remove
+		several extensions (last one first).
+	:e	Extension of the file name.  Only makes sense when used alone.
+		When there is no extension the result is empty.
+		When there is only an extension (file name that starts with
+		'.'), the result is empty.  Can be repeated to include more
+		extensions.  If there are not enough extensions (but at least
+		one) as much as possible are included.
+	:s?pat?sub?
+		Substitute the first occurrence of "pat" with "sub".  This
+		works like the |<a href="change.html#:s">:s</a>| command.  "pat" is a regular expression.
+		Any character can be used for '?', but it must not occur in
+		"pat" or "sub".
+		After this, the previous modifiers can be used again.  For
+		example ":p", to make a full path after the substitution.
+	:gs?pat?sub?
+		Substitute all occurrences of "pat" with "sub".  Otherwise
+		this works like ":s".
+	:S	Escape special characters for use with a shell command (see
+		|<a href="eval.html#shellescape()">shellescape()</a>|). Must be the last one. Examples:
+<code class="example">		    :!dir <code class="special">&lt;cfile&gt;</code>:S</code>
+<code class="example">		    :call system('chmod +w -- ' . expand('%:S'))</code>
+<code class="example"></code>
+Examples, when the file name is "src/version.c", current dir
+"/home/mool/vim":
+<code class="example">  :p			/home/mool/vim/src/version.c</code>
+<code class="example">  :p:.				       src/version.c</code>
+<code class="example">  :p:~				 ~/vim/src/version.c</code>
+<code class="example">  :h				       src</code>
+<code class="example">  :p:h			/home/mool/vim/src</code>
+<code class="example">  :p:h:h		/home/mool/vim</code>
+<code class="example">  :t					   version.c</code>
+<code class="example">  :p:t					   version.c</code>
+<code class="example">  :r				       src/version</code>
+<code class="example">  :p:r			/home/mool/vim/src/version</code>
+<code class="example">  :t:r					   version</code>
+<code class="example">  :e						   c</code>
+<code class="example">  :s?version?main?		       src/main.c</code>
+<code class="example">  :s?version?main?:p	/home/mool/vim/src/main.c</code>
+<code class="example">  :p:gs?/?\\?		\home\mool\vim\src\version.c</code>
+<code class="example"></code>
+Examples, when the file name is "src/version.c.gz":
+<code class="example">  :p			/home/mool/vim/src/version.c.gz</code>
+<code class="example">  :e						     gz</code>
+<code class="example">  :e:e						   c.gz</code>
+<code class="example">  :e:e:e					   c.gz</code>
+<code class="example">  :e:e:r					   c</code>
+<code class="example">  :r				       src/version.c</code>
+<code class="example">  :r:e						   c</code>
+<code class="example">  :r:r				       src/version</code>
+<code class="example">  :r:r:r			       src/version</code>
+
+					<b class="vimtag">*<a name="extension-removal">extension-removal</a>*</b> <b class="vimtag">*<a name=":_%%3C">:_%&lt;</a>*</b>
+If a "&lt;" is appended to "%", "#", "#n" or "<code class="keystroke">CTRL-V</code> p" the extension of the file
+name is removed (everything after and including the last '.' in the file
+name).  This is included for backwards compatibility with version 3.0, the
+":r" form is preferred.  Examples:
+<code class="example"></code>
+<code class="example">	%		current file name</code>
+<code class="example">	%&lt;		current file name without extension</code>
+<code class="example">	#		alternate file name for current window</code>
+<code class="example">	#&lt;		idem, without extension</code>
+<code class="example">	#31		alternate file number 31</code>
+<code class="example">	#31&lt;		idem, without extension</code>
+<code class="example">	<code class="special">&lt;cword&gt;</code>		word under the cursor</code>
+<code class="example">	<code class="special">&lt;cWORD&gt;</code>		WORD under the cursor (see |<a href="motion.html#WORD">WORD</a>|)</code>
+<code class="example">	<code class="special">&lt;cfile&gt;</code>		path name under the cursor</code>
+<code class="example">	<code class="special">&lt;cfile&gt;</code>&lt;	idem, without extension</code>
+<code class="example"></code>
+<code class="note">Note:</code> Where a file name is expected wildcards expansion is done.  On Unix the
+shell is used for this, unless it can be done internally (for speed).
+Unless in |<a href="starting.html#restricted-mode">restricted-mode</a>|, backticks work also, like in
+<code class="example">	:n `echo *.c`</code>
+But expansion is only done if there are any wildcards before expanding the
+'%', '#', etc..  This avoids expanding wildcards inside a file name.  If you
+want to expand the result of <code class="special">&lt;cfile&gt;</code>, add a wildcard character to it.
+Examples: (alternate file name is "?readme?")
+<code class="section">	command		expands to  </code>
+	:e #		:e ?readme?
+	:e `ls #`	:e <code class="special">{files matching "?readme?"}</code>
+	:e #.<b class="vimtag">*<a name="		:e {files matching %22?readme?.">		:e {files matching "?readme?.</a>*</b>"}
+	:cd <code class="special">&lt;cfile&gt;</code>	:cd <code class="special">{file name under cursor}</code>
+	:cd <code class="special">&lt;cfile&gt;</code><b class="vimtag">*<a name="	:cd {file name under cursor plus %22">	:cd {file name under cursor plus "</a>*</b>" and then expanded}
+Also see |<a href="editing.html#`%20">`=</a>|.
+
+When the expanded argument contains a "!" and it is used for a shell command
+(":!cmd", ":r !cmd" or ":w !cmd"), the "!" is escaped with a backslash to
+avoid it being expanded into a previously used command.  When the 'shell'
+option contains "sh", this is done twice, to avoid the shell trying to expand
+the "!".
+
+							<b class="vimtag">*<a name="filename-backslash">filename-backslash</a>*</b>
+For filesystems that use a backslash as directory separator (MS-Windows), it's
+a bit difficult to recognize a backslash that is used to escape the special
+meaning of the next character.  The general rule is: If the backslash is
+followed by a normal file name character, it does not have a special meaning.
+Therefore "\file\foo" is a valid file name, you don't have to type the
+backslash twice.
+
+An exception is the '$' sign.  It is a valid character in a file name.  But
+to avoid a file name like "$home" to be interpreted as an environment variable,
+it needs to be preceded by a backslash.  Therefore you need to use "/\$home"
+for the file "$home" in the root directory.  A few examples:
+
+<code class="section">	FILE NAME	INTERPRETED AS	</code>
+	$home		expanded to value of environment var $home
+	\$home		file "$home" in current directory
+	/\$home		file "$home" in root directory
+	\\$home		file "\\", followed by expanded $home
+
+Also see |<a href="editing.html#`%20">`=</a>|.
+
+</pre><hr/><pre>7. Command-line window				<b class="vimtag">*<a name="cmdline-window">cmdline-window</a>*</b> <b class="vimtag">*<a name="cmdwin">cmdwin</a>*</b>
+							<b class="vimtag">*<a name="command-line-window">command-line-window</a>*</b>
+In the command-line window the command line can be edited just like editing
+text in any window.  It is a special kind of window, because you cannot leave
+it in a normal way.
+{not available when compiled without the |<a href="various.html#+cmdline_hist">+cmdline_hist</a>| feature}
+
+
+OPEN						<b class="vimtag">*<a name="c_CTRL-F">c_CTRL-F</a>*</b> <b class="vimtag">*<a name="q:">q:</a>*</b> <b class="vimtag">*<a name="q%2F">q/</a>*</b> <b class="vimtag">*<a name="q?">q?</a>*</b>
+
+There are two ways to open the command-line window:
+1. From Command-line mode, use the key specified with the 'cedit' option.
+   The default is <code class="keystroke">CTRL-F</code> when 'compatible' is not set.
+2. From Normal mode, use the "q:", "q/" or "q?" command.
+   This starts editing an Ex command-line ("q:") or search string ("q/" or
+   "q?").  <code class="note">Note</code> that this is not possible while recording is in progress (the
+   "q" stops recording then).
+
+When the window opens it is filled with the command-line history.  The last
+line contains the command as typed so far.  The left column will show a
+character that indicates the type of command-line being edited, see
+|<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|.
+
+Vim will be in Normal mode when the editor is opened, except when 'insertmode'
+is set.
+
+The height of the window is specified with 'cmdwinheight' (or smaller if there
+is no room).  The window is always full width and is positioned just above the
+command-line.
+
+
+EDIT
+
+You can now use commands to move around and edit the text in the window.  Both
+in Normal mode and Insert mode.
+
+It is possible to use ":", "/" and other commands that use the command-line,
+but it's not possible to open another command-line window then.  There is no
+nesting.
+							<b class="vimtag">*<a name="E11">E11</a>*</b>
+The command-line window is not a normal window.  It is not possible to move to
+another window or edit another buffer.  All commands that would do this are
+disabled in the command-line window.  Of course it _is_ possible to execute
+any command that you entered in the command-line window.  Other text edits are
+discarded when closing the window.
+
+
+CLOSE							<b class="vimtag">*<a name="E199">E199</a>*</b>
+
+There are several ways to leave the command-line window:
+
+<code class="special">&lt;CR&gt;</code>		Execute the command-line under the cursor.  Works both in
+		Insert and in Normal mode.
+<code class="keystroke">CTRL-C</code>		Continue in Command-line mode.  The command-line under the
+		cursor is used as the command-line.  Works both in Insert and
+		in Normal mode.  There is no redraw, thus the window will
+		remain visible.
+:quit		Discard the command line and go back to Normal mode.
+		":close", ":exit", ":xit" and CTRL-\ <code class="keystroke">CTRL-N</code> also work.
+:qall		Quit Vim, unless there are changes in some buffer.
+:qall!		Quit Vim, discarding changes to any buffer.
+
+Once the command-line window is closed the old window sizes are restored.  The
+executed command applies to the window and buffer where the command-line was
+started from.  This works as if the command-line window was not there, except
+that there will be an extra screen redraw.
+The buffer used for the command-line window is deleted.  Any changes to lines
+other than the one that is executed with <code class="special">&lt;CR&gt;</code> are lost.
+
+If you would like to execute the command under the cursor and then have the
+command-line window open again, you may find this mapping useful:
+<code class="example"></code>
+<code class="example">	:autocmd CmdwinEnter * map <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;F5&gt;</code> <code class="special">&lt;CR&gt;</code>q:</code>
+<code class="example"></code>
+<code class="example"></code>
+VARIOUS
+
+The command-line window cannot be used:
+- when there already is a command-line window (no nesting)
+- for entering an encryption key or when using inputsecret()
+
+Some options are set when the command-line window is opened:
+'filetype'	"vim", when editing an Ex command-line; this starts Vim syntax
+		highlighting if it was enabled
+'rightleft'	off
+'modifiable'	on
+'buftype'	"nofile"
+'swapfile'	off
+
+It is allowed to write the buffer contents to a file.  This is an easy way to
+save the command-line history and read it back later.
+
+If the 'wildchar' option is set to <code class="special">&lt;Tab&gt;</code>, and the command-line window is used
+for an Ex command, then two mappings will be added to use <code class="special">&lt;Tab&gt;</code> for completion
+in the command-line window, like this:
+<code class="example">	:imap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;Tab&gt;</code> <code class="special">&lt;C-X&gt;</code><code class="special">&lt;C-V&gt;</code></code>
+<code class="example">	:nmap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;Tab&gt;</code> a<code class="special">&lt;C-X&gt;</code><code class="special">&lt;C-V&gt;</code></code>
+<code class="note">Note</code> that hitting <code class="special">&lt;Tab&gt;</code> in Normal mode will do completion on the next
+character.  That way it works at the end of the line.
+If you don't want these mappings, disable them with:
+<code class="example">	au CmdwinEnter [:&gt;] iunmap <code class="special">&lt;Tab&gt;</code></code>
+<code class="example">	au CmdwinEnter [:&gt;] nunmap <code class="special">&lt;Tab&gt;</code></code>
+You could put these lines in your vimrc file.
+
+While in the command-line window you cannot use the mouse to put the cursor in
+another window, or drag statuslines of other windows.  You can drag the
+statusline of the command-line window itself and the statusline above it.
+Thus you can resize the command-line window, but not others.
+
+The |<a href="eval.html#getcmdwintype()">getcmdwintype()</a>| function returns the type of the command-line being
+edited as described in |<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|.
+
+
+AUTOCOMMANDS
+
+Two autocommand events are used: |<a href="autocmd.html#CmdwinEnter">CmdwinEnter</a>| and |<a href="autocmd.html#CmdwinLeave">CmdwinLeave</a>|.  You can use
+the Cmdwin events to do settings specifically for the command-line window.
+Be careful not to cause side effects!
+Example:
+<code class="example">	:au CmdwinEnter :  let b:cpt_save = &amp;cpt | set cpt=.</code>
+<code class="example">	:au CmdwinLeave :  let &amp;cpt = b:cpt_save</code>
+This sets 'complete' to use completion in the current window for |<a href="insert.html#i_CTRL-N">i_CTRL-N</a>|.
+Another example:
+<code class="example">	:au CmdwinEnter [/?]  startinsert</code>
+This will make Vim start in Insert mode in the command-line window.
+
+						<b class="vimtag">*<a name="cmdwin-char">cmdwin-char</a>*</b>
+The character used for the pattern indicates the type of command-line:
+	:	normal Ex command
+	&gt;	debug mode command |<a href="repeat.html#debug-mode">debug-mode</a>|
+	/	forward search string
+	?	backward search string
+	=	expression for "= |<a href="eval.html#expr-register">expr-register</a>|
+	@	string for |<a href="eval.html#input()">input()</a>|
+	-	text for |<a href="insert.html#:insert">:insert</a>| or |<a href="insert.html#:append">:append</a>|
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

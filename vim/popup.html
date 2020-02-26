@@ -1,0 +1,1050 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: popup</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>POPUP</h2>
+<pre>
+<b class="vimtag">*<a name="popup.txt">popup.txt</a>*</b>  For Vim version 8.2.  Last change: 2020 Feb 20
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Displaying text in a floating window.	<b class="vimtag">*<a name="popup">popup</a>*</b> <b class="vimtag">*<a name="popup-window">popup-window</a>*</b> <b class="vimtag">*<a name="popupwin">popupwin</a>*</b>
+
+
+1. Introduction			|<a href="popup.html#popup-intro">popup-intro</a>|
+   Window position and size	|<a href="popup.html#popup-position">popup-position</a>|
+   Closing the popup window	|<a href="popup.html#popup-close">popup-close</a>|
+   Popup buffer and window	|<a href="popup.html#popup-buffer">popup-buffer</a>|
+   Terminal in popup window	|<a href="popup.html#popup-terminal">popup-terminal</a>|
+2. Functions			|<a href="popup.html#popup-functions">popup-functions</a>|
+   Details			|<a href="popup.html#popup-function-details">popup-function-details</a>|
+3. Usage			|<a href="popup.html#popup-usage">popup-usage</a>|
+   popup_create() arguments	|<a href="popup.html#popup_create-arguments">popup_create-arguments</a>|
+   Popup text properties	|<a href="popup.html#popup-props">popup-props</a>|
+   Position popup with textprop	|<a href="popup.html#popup-textprop-pos">popup-textprop-pos</a>|
+   Popup filter			|<a href="popup.html#popup-filter">popup-filter</a>|
+   Popup callback		|<a href="popup.html#popup-callback">popup-callback</a>|
+   Popup scrollbar		|<a href="popup.html#popup-scrollbar">popup-scrollbar</a>|
+   Popup mask			|<a href="popup.html#popup-mask">popup-mask</a>|
+4. Examples			|<a href="popup.html#popup-examples">popup-examples</a>|
+
+
+{not available if the |<a href="various.html#+popupwin">+popupwin</a>| feature was disabled at compile time}
+
+</pre><hr/><pre>1. Introduction						<b class="vimtag">*<a name="popup-intro">popup-intro</a>*</b>
+
+We are talking about popup windows here, text that goes on top of the regular
+windows and is under control of a plugin.  You cannot edit the text in the
+popup window like with regular windows.
+
+A popup window can be used for such things as:
+- briefly show a message without overwriting the command line
+- prompt the user with a dialog
+- display contextual information while typing
+- give extra information for auto-completion
+
+The text in the popup window can be colored with |<a href="textprop.html#text-properties">text-properties</a>|.  It is
+also possible to use syntax highlighting.
+
+The default color used is "Pmenu".  If you prefer something else use the
+"highlight" argument or the 'wincolor' option, e.g.:
+<code class="example">	hi MyPopupColor ctermbg=lightblue guibg=lightblue</code>
+<code class="example">	call setwinvar(winid, '&amp;wincolor', 'MyPopupColor')</code>
+<code class="example"></code>
+'hlsearch' highlighting is not displayed in a popup window.
+
+A popup window has a window-ID like other windows, but behaves differently.
+The size can be up to the whole Vim window and it overlaps other windows.
+Popup windows can also overlap each other.  The "zindex" property specifies
+what goes on top of what.
+
+The popup window contains a buffer, and that buffer is always associated with
+the popup window.  The window cannot be in Normal, Visual or Insert mode, it
+does not get keyboard focus.  You can use functions like `setbufline()` to
+change the text in the buffer.  There are more differences from how this
+window and buffer behave compared to regular windows and buffers, see
+|<a href="popup.html#popup-buffer">popup-buffer</a>|.
+
+If this is not what you are looking for, check out other popup functionality:
+- popup menu, see |<a href="gui.html#popup-menu">popup-menu</a>|
+- balloon, see |<a href="debugger.html#balloon-eval">balloon-eval</a>|
+
+
+WINDOW POSITION AND SIZE				<b class="vimtag">*<a name="popup-position">popup-position</a>*</b>
+
+The height of the window is normally equal to the number of, possibly
+wrapping, lines in the buffer.  It can be limited with the "maxheight"
+property.  You can use empty lines to increase the height or the "minheight"
+property.
+
+The width of the window is normally equal to the longest line in the buffer.
+It can be limited with the "maxwidth" property.  You can use spaces to
+increase the width or use the "minwidth" property.
+
+By default the 'wrap' option is set, so that no text disappears.  Otherwise,
+if there is not enough space then the window is shifted left in order to
+display more text.  When right-aligned the window is shifted right to display
+more text.  The shifting can be disabled with the "fixed" property.
+
+Vim tries to show the popup in the location you specify.  In some cases, e.g.
+when the popup would go outside of the Vim window, it will show it somewhere
+nearby.  E.g. if you use `popup_atcursor()` the popup normally shows just above
+the current cursor position, but if the cursor is close to the top of the Vim
+window it will be placed below the cursor position.
+
+When the screen scrolls up for output of an Ex command, popups move too, so
+that they will not cover the output.
+
+The current cursor position is displayed even when it is under a popup window.
+That way you can still see where it is, even though you cannot see the text
+that it is in.
+
+
+CLOSING THE POPUP WINDOW				<b class="vimtag">*<a name="popup-close">popup-close</a>*</b>
+
+Normally the plugin that created the popup window is also in charge of closing
+it.  If somehow a popup hangs around, you can close all of them with:
+<code class="example">	call popup_clear()</code>
+Some popups, such as notifications, close after a specified time.  This can be
+set with the "time" property on `popup_create()`.
+Otherwise, a popup can be closed by clicking on the X in the top-right corner
+or by clicking anywhere inside the popup.  This must be enabled with the
+"close" property.  It is set by default for notifications.
+
+
+POPUP BUFFER AND WINDOW					<b class="vimtag">*<a name="popup-buffer">popup-buffer</a>*</b>
+
+If a popup function is called to create a popup from text, a new buffer is
+created to hold the text and text properties of the popup window.  The buffer
+is always associated with the popup window and manipulation is restricted:
+- the buffer has no name
+- 'buftype' is "popup"
+- 'swapfile' is off
+- 'bufhidden' is "hide"
+- 'buflisted' is off
+- 'undolevels' is -1: no undo at all
+- all other buffer-local and window-local options are set to their Vim default
+  value.
+
+It is possible to change the specifically mentioned options, but anything
+might break then, so better leave them alone.
+
+The window does have a cursor position, but the cursor is not displayed.  In
+fact, the cursor in the underlying window is displayed, as if it peeks through
+the popup, so you can see where it is.
+
+To execute a command in the context of the popup window and buffer use
+`win_execute()`.  Example:
+<code class="example">	call win_execute(winid, 'syntax enable')</code>
+<code class="example"></code>
+Options can be set on the window with `setwinvar()`, e.g.:
+<code class="example">	call setwinvar(winid, '&amp;wrap', 0)</code>
+And options can be set on the buffer with `setbufvar()`, e.g.:
+<code class="example">	call setbufvar(winbufnr(winid), '&amp;filetype', 'java')</code>
+You can also use `win_execute()` with a ":setlocal" command.
+
+
+TERMINAL IN POPUP WINDOW				 <b class="vimtag">*<a name="popup-terminal">popup-terminal</a>*</b>
+
+A special case is running a terminal in a popup window.  Many rules are then
+different:						<b class="vimtag">*<a name="E863">E863</a>*</b>
+- The popup window always has focus, it is not possible to switch to another
+  window.
+- When the job ends, the popup window closes.
+- The popup window can be closed with `popup_close()`, the terminal buffer
+  then becomes hidden.
+- The default Pmenu color is only used for the border and padding.  To change
+  the color of the terminal itself set 'wincolor'.
+
+To run a terminal in a popup window, first create the terminal hidden.  Then
+pass the buffer number to popup_create().  Example:
+<code class="example">	let buf = term_start(['picker', 'Something'], #<code class="special">{hidden: 1, term_finish: 'close'}</code>)</code>
+<code class="example">	let winid = popup_create(buf, #<code class="special">{minwidth: 50, minheight: 20}</code>)</code>
+<code class="example">	set wincolor=Search</code>
+<code class="example"></code>
+</pre><hr/><pre>2. Functions						<b class="vimtag">*<a name="popup-functions">popup-functions</a>*</b>
+
+Creating a popup window:
+	|<a href="popup.html#popup_create()">popup_create()</a>|	centered in the screen
+	|<a href="popup.html#popup_atcursor()">popup_atcursor()</a>|	just above the cursor position, closes when
+				the cursor moves away
+	|<a href="popup.html#popup_beval()">popup_beval()</a>|		at the position indicated by v:beval_
+				variables, closes when the mouse moves away
+	|<a href="popup.html#popup_notification()">popup_notification()</a>|	show a notification for three seconds
+	|<a href="popup.html#popup_dialog()">popup_dialog()</a>|	centered with padding and border
+	|<a href="popup.html#popup_menu()">popup_menu()</a>|		prompt for selecting an item from a list
+
+Manipulating a popup window:
+	|<a href="popup.html#popup_hide()">popup_hide()</a>|		hide a popup temporarily
+	|<a href="popup.html#popup_show()">popup_show()</a>|		show a previously hidden popup
+	|<a href="popup.html#popup_move()">popup_move()</a>|		change the position and size of a popup
+	|<a href="popup.html#popup_setoptions()">popup_setoptions()</a>|	override options of a popup
+	|<a href="popup.html#popup_settext()">popup_settext()</a>|	replace the popup buffer contents
+
+Closing popup windows:
+	|<a href="popup.html#popup_close()">popup_close()</a>|		close one popup
+	|<a href="popup.html#popup_clear()">popup_clear()</a>|		close all popups
+
+Filter functions:
+	|<a href="popup.html#popup_filter_menu()">popup_filter_menu()</a>|	select from a list of items
+	|<a href="popup.html#popup_filter_yesno()">popup_filter_yesno()</a>|	blocks until 'y' or 'n' is pressed
+
+Other:
+	|<a href="popup.html#popup_getoptions()">popup_getoptions()</a>|	get current options for a popup
+	|<a href="popup.html#popup_getpos()">popup_getpos()</a>|	get actual position and size of a popup
+	|<a href="popup.html#popup_locate()">popup_locate()</a>|	find popup window at a screen position
+
+
+DETAILS						<b class="vimtag">*<a name="popup-function-details">popup-function-details</a>*</b>
+
+popup_atcursor(<code class="special">{what}</code>, <code class="special">{options}</code>)			<b class="vimtag">*<a name="popup_atcursor()">popup_atcursor()</a>*</b>
+		Show the <code class="special">{what}</code> above the cursor, and close it when the cursor
+		moves.  This works like:
+<code class="example">			call popup_create(<code class="special">{what}</code>, #{</code>
+<code class="example">				\ pos: 'botleft',</code>
+<code class="example">				\ line: 'cursor-1',</code>
+<code class="example">				\ col: 'cursor',</code>
+<code class="example">				\ moved: 'WORD',</code>
+<code class="example">				\ })</code>
+		Use <code class="special">{options}</code> to change the properties.
+		If "pos" is passed as "topleft" then the default for "line"
+		becomes "cursor+1".
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetText()-&gt;popup_atcursor(<code class="special">{}</code>)</code>
+<code class="example"></code>
+<code class="example"></code>
+popup_beval(<code class="special">{what}</code>, <code class="special">{options}</code>)			<b class="vimtag">*<a name="popup_beval()">popup_beval()</a>*</b>
+		Show the <code class="special">{what}</code> above the position from 'ballooneval' and
+		close it when the mouse moves.  This works like:
+<code class="example">		  let pos = screenpos(v:beval_winnr, v:beval_lnum, v:beval_col)</code>
+<code class="example">		  call popup_create(<code class="special">{what}</code>, #{</code>
+<code class="example">			\ pos: 'botleft',</code>
+<code class="example">			\ line: pos.row - 1,</code>
+<code class="example">			\ col: pos.col,</code>
+<code class="example">			\ mousemoved: 'WORD',</code>
+<code class="example">			\ })</code>
+		Use <code class="special">{options}</code> to change the properties.
+		See |<a href="popup.html#popup_beval_example">popup_beval_example</a>| for an example.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetText()-&gt;popup_beval(<code class="special">{}</code>)</code>
+
+							<b class="vimtag">*<a name="popup_clear()">popup_clear()</a>*</b>
+popup_clear()	Emergency solution to a misbehaving plugin: close all popup
+		windows for the current tab and global popups.
+
+
+popup_close(<code class="special">{id}</code> [, <code class="special">{result}</code>])				<b class="vimtag">*<a name="popup_close()">popup_close()</a>*</b>
+		Close popup <code class="special">{id}</code>.  The window and the associated buffer will
+		be deleted.
+
+		If the popup has a callback it will be called just before the
+		popup window is deleted.  If the optional <code class="special">{result}</code> is present
+		it will be passed as the second argument of the callback.
+		Otherwise zero is passed to the callback.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_close()</code>
+<code class="example"></code>
+popup_create(<code class="special">{what}</code>, <code class="special">{options}</code>)				<b class="vimtag">*<a name="popup_create()">popup_create()</a>*</b>
+		Open a popup window showing <code class="special">{what}</code>, which is either:
+		- a buffer number
+		- a string
+		- a list of strings
+		- a list of text lines with text properties
+		When <code class="special">{what}</code> is not a buffer number, a buffer is created with
+		'buftype' set to "popup".  That buffer will be wiped out once
+		the popup closes.
+
+		<code class="special">{options}</code> is a dictionary with many possible entries.
+		See |<a href="popup.html#popup_create-arguments">popup_create-arguments</a>| for details.
+
+		Returns a window-ID, which can be used with other popup
+		functions.  Use `winbufnr()` to get the number of the buffer
+		in the window:
+<code class="example">			let winid = popup_create('hello', <code class="special">{}</code>)</code>
+<code class="example">			let bufnr = winbufnr(winid)</code>
+<code class="example">			call setbufline(bufnr, 2, 'second line')</code>
+		In case of failure zero is returned.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetText()-&gt;popup_create(<code class="special">{}</code>)</code>
+<code class="example"></code>
+popup_dialog(<code class="special">{what}</code>, <code class="special">{options}</code>)				<b class="vimtag">*<a name="popup_dialog()">popup_dialog()</a>*</b>
+		Just like |<a href="popup.html#popup_create()">popup_create()</a>| but with these default options:
+<code class="example">			call popup_create(<code class="special">{what}</code>, #{</code>
+<code class="example">				\ pos: 'center',</code>
+<code class="example">				\ zindex: 200,</code>
+<code class="example">				\ drag: 1,</code>
+<code class="example">				\ border: [],</code>
+<code class="example">				\ padding: [],</code>
+<code class="example">				\ mapping: 0,</code>
+<code class="example">				\})</code>
+		Use <code class="special">{options}</code> to change the properties. E.g. add a 'filter'
+		option with value 'popup_filter_yesno'.  Example:
+<code class="example">			call popup_create('do you want to quit (Yes/no)?', #{</code>
+<code class="example">				\ filter: 'popup_filter_yesno',</code>
+<code class="example">				\ callback: 'QuitCallback',</code>
+<code class="example">				\ })</code>
+<code class="example"></code>
+		By default the dialog can be dragged, so that text below it
+		can be read if needed.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetText()-&gt;popup_dialog(<code class="special">{}</code>)</code>
+<code class="example"></code>
+popup_filter_menu(<code class="special">{id}</code>, <code class="special">{key}</code>)				<b class="vimtag">*<a name="popup_filter_menu()">popup_filter_menu()</a>*</b>
+		Filter that can be used for a popup. These keys can be used:
+		    j <code class="special">&lt;Down&gt;</code>		select item below
+		    k <code class="special">&lt;Up&gt;</code>		select item above
+		    <code class="special">&lt;Space&gt;</code> <code class="special">&lt;Enter&gt;</code>	accept current selection
+		    x Esc <code class="keystroke">CTRL-C</code>	cancel the menu
+		Other keys are ignored.
+
+		A match is set on that line to highlight it, see
+		|<a href="popup.html#popup_menu()">popup_menu()</a>|.
+
+		When the current selection is accepted the "callback" of the
+		popup menu is invoked with the index of the selected line as
+		the second argument.  The first entry has index one.
+		Cancelling the menu invokes the callback with -1.
+
+		To add shortcut keys, see the example here:
+		|<a href="popup.html#popup_menu-shortcut-example">popup_menu-shortcut-example</a>|
+
+
+popup_filter_yesno(<code class="special">{id}</code>, <code class="special">{key}</code>)				<b class="vimtag">*<a name="popup_filter_yesno()">popup_filter_yesno()</a>*</b>
+		Filter that can be used for a popup. It handles only the keys
+		'y', 'Y' and 'n' or 'N'.  Invokes the "callback" of the
+		popup menu with the 1 for 'y' or 'Y' and zero for 'n' or 'N'
+		as the second argument.  Pressing Esc and 'x' works like
+		pressing 'n'.  <code class="keystroke">CTRL-C</code> invokes the callback with -1.  Other
+		keys are ignored.
+		See the example here: |<a href="popup.html#popup_dialog-example">popup_dialog-example</a>|
+
+
+popup_findinfo()					<b class="vimtag">*<a name="popup_findinfo()">popup_findinfo()</a>*</b>
+		Get the |<a href="windows.html#window-ID">window-ID</a>| for the popup info window, as it used by
+		the popup menu.  See |<a href="insert.html#complete-popup">complete-popup</a>|.  The info popup is
+		hidden when not used, it can be deleted with |<a href="popup.html#popup_clear()">popup_clear()</a>|
+		and |<a href="popup.html#popup_close()">popup_close()</a>|.  Use |<a href="popup.html#popup_show()">popup_show()</a>| to reposition it to
+		the item in the popup menu.
+		Returns zero if there is none.
+
+
+popup_findpreview()					<b class="vimtag">*<a name="popup_findpreview()">popup_findpreview()</a>*</b>
+		Get the |<a href="windows.html#window-ID">window-ID</a>| for the popup preview window.
+		Return zero if there is none.
+
+
+popup_getoptions(<code class="special">{id}</code>)					<b class="vimtag">*<a name="popup_getoptions()">popup_getoptions()</a>*</b>
+		Return the <code class="special">{options}</code> for popup <code class="special">{id}</code> in a Dict.
+		A zero value means the option was not set.  For "zindex" the
+		default value is returned, not zero.
+
+		The "moved" entry is a list with line number, minimum and
+		maximum column, [0, 0, 0] when not set.
+
+		The "mousemoved" entry is a list with screen row, minimum and
+		maximum screen column, [0, 0, 0] when not set.
+
+		"firstline" is the property set on the popup, unlike the
+		"firstline" obtained with |<a href="popup.html#popup_getpos()">popup_getpos()</a>| which is the actual
+		buffer line at the top of the popup window.
+
+		"border" and "padding" are not included when all values are
+		zero.  When all values are one then an empty list is included.
+
+		"borderhighlight" is not included when all values are empty.
+		"scrollbarhighlight" and "thumbhighlight" are only included
+		when set.
+
+		"tabpage" will be -1 for a global popup, zero for a popup on
+		the current tabpage and a positive number for a popup on
+		another tabpage.
+
+		"textprop", "textpropid" and "textpropwin" are only present
+		when "textprop" was set.
+
+		If popup window <code class="special">{id}</code> is not found an empty Dict is returned.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_getoptions()</code>
+<code class="example"></code>
+popup_getpos(<code class="special">{id}</code>)					<b class="vimtag">*<a name="popup_getpos()">popup_getpos()</a>*</b>
+		Return the position and size of popup <code class="special">{id}</code>.  Returns a Dict
+		with these entries:
+		    col		screen column of the popup, one-based
+		    line	screen line of the popup, one-based
+		    width	width of the whole popup in screen cells
+		    height	height of the whole popup in screen cells
+		    core_col	screen column of the text box
+		    core_line	screen line of the text box
+		    core_width	width of the text box in screen cells
+		    core_height	height of the text box in screen cells
+		    firstline	line of the buffer at top (1 unless scrolled)
+				(not the value of the "firstline" property)
+		    lastline	line of the buffer at the bottom (updated when
+				the popup is redrawn)
+		    scrollbar	non-zero if a scrollbar is displayed
+		    visible	one if the popup is displayed, zero if hidden
+		<code class="note">Note</code> that these are the actual screen positions.  They differ
+		from the values in `popup_getoptions()` for the sizing and
+		positioning mechanism applied.
+
+		The "core_" values exclude the padding and border.
+
+		If popup window <code class="special">{id}</code> is not found an empty Dict is returned.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_getpos()</code>
+<code class="example"></code>
+popup_hide(<code class="special">{id}</code>)						<b class="vimtag">*<a name="popup_hide()">popup_hide()</a>*</b>
+		If <code class="special">{id}</code> is a displayed popup, hide it now. If the popup has a
+		filter it will not be invoked for so long as the popup is
+		hidden.
+		If window <code class="special">{id}</code> does not exist nothing happens.  If window <code class="special">{id}</code>
+		exists but is not a popup window an error is given. <b class="vimtag">*<a name="E993">E993</a>*</b>
+		If popup window <code class="special">{id}</code> contains a terminal an error is given.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_hide()</code>
+<code class="example"></code>
+popup_locate(<code class="special">{row}</code>, <code class="special">{col}</code>)				 <b class="vimtag">*<a name="popup_locate()">popup_locate()</a>*</b>
+		Return the |<a href="windows.html#window-ID">window-ID</a>| of the popup at screen position <code class="special">{row}</code>
+		and <code class="special">{col}</code>.  If there are multiple popups the one with the
+		highest zindex is returned.  If there are no popups at this
+		position then zero is returned.
+
+
+popup_menu(<code class="special">{what}</code>, <code class="special">{options}</code>)				 <b class="vimtag">*<a name="popup_menu()">popup_menu()</a>*</b>
+		Show the <code class="special">{what}</code> near the cursor, handle selecting one of the
+		items with cursorkeys, and close it an item is selected with
+		Space or Enter. <code class="special">{what}</code> should have multiple lines to make this
+		useful.  This works like:
+<code class="example">			call popup_create(<code class="special">{what}</code>, #{</code>
+<code class="example">				\ pos: 'center',</code>
+<code class="example">				\ zindex: 200,</code>
+<code class="example">				\ drag: 1,</code>
+<code class="example">				\ wrap: 0,</code>
+<code class="example">				\ border: [],</code>
+<code class="example">				\ cursorline: 1,</code>
+<code class="example">				\ padding: [0,1,0,1],</code>
+<code class="example">				\ filter: 'popup_filter_menu',</code>
+<code class="example">				\ mapping: 0,</code>
+<code class="example">				\ })</code>
+		The current line is highlighted with a match using
+		"PopupSelected", or "PmenuSel" if that is not defined.
+
+		Use <code class="special">{options}</code> to change the properties.  Should at least set
+		"callback" to a function that handles the selected item.
+		Example:
+<code class="example">			func ColorSelected(id, result)</code>
+<code class="example">			   " use a:result</code>
+<code class="example">			endfunc</code>
+<code class="example">			call popup_menu(['red', 'green', 'blue'], #{</code>
+<code class="example">				\ callback: 'ColorSelected',</code>
+<code class="example">				\ })</code>
+<code class="example"></code>
+&lt;		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChoices()-&gt;popup_menu(<code class="special">{}</code>)</code>
+<code class="example"></code>
+popup_move(<code class="special">{id}</code>, <code class="special">{options}</code>)					<b class="vimtag">*<a name="popup_move()">popup_move()</a>*</b>
+		Move popup <code class="special">{id}</code> to the position specified with <code class="special">{options}</code>.
+		<code class="special">{options}</code> may contain the items from |<a href="popup.html#popup_create()">popup_create()</a>| that
+		specify the popup position:
+			line
+			col
+			pos
+			maxheight
+			minheight
+			maxwidth
+			minwidth
+			fixed
+		For <code class="special">{id}</code> see `popup_hide()`.
+		For other options see |<a href="popup.html#popup_setoptions()">popup_setoptions()</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_move(options)</code>
+<code class="example"></code>
+popup_notification(<code class="special">{what}</code>, <code class="special">{options}</code>)			 <b class="vimtag">*<a name="popup_notification()">popup_notification()</a>*</b>
+		Show the <code class="special">{what}</code> for 3 seconds at the top of the Vim window.
+		This works like:
+<code class="example">			call popup_create(<code class="special">{what}</code>, #{</code>
+<code class="example">				\ line: 1,</code>
+<code class="example">				\ col: 10,</code>
+<code class="example">				\ minwidth: 20,</code>
+<code class="example">				\ time: 3000,</code>
+<code class="example">				\ tabpage: -1,</code>
+<code class="example">				\ zindex: 300,</code>
+<code class="example">				\ drag: 1,</code>
+<code class="example">				\ highlight: 'WarningMsg',</code>
+<code class="example">				\ border: [],</code>
+<code class="example">				\ close: 'click',</code>
+<code class="example">				\ padding: [0,1,0,1],</code>
+<code class="example">				\ })</code>
+		The PopupNotification highlight group is used instead of
+		WarningMsg if it is defined.
+
+		Without the |<a href="various.html#+timers">+timers</a>| feature the popup will not disappear
+		automatically, the user has to click in it.
+
+		The position will be adjusted to avoid overlap with other
+		notifications.
+		Use <code class="special">{options}</code> to change the properties.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetText()-&gt;popup_notification(<code class="special">{}</code>)</code>
+<code class="example"></code>
+popup_show(<code class="special">{id}</code>)						<b class="vimtag">*<a name="popup_show()">popup_show()</a>*</b>
+		If <code class="special">{id}</code> is a hidden popup, show it now.
+		For <code class="special">{id}</code> see `popup_hide()`.
+		If <code class="special">{id}</code> is the info popup it will be positioned next to the
+		current popup menu item.
+
+
+popup_setoptions(<code class="special">{id}</code>, <code class="special">{options}</code>)			<b class="vimtag">*<a name="popup_setoptions()">popup_setoptions()</a>*</b>
+		Override options in popup <code class="special">{id}</code> with entries in <code class="special">{options}</code>.
+		These options can be set:
+			border
+			borderchars
+			borderhighlight
+			callback
+			close
+			cursorline
+			drag
+			filter
+			firstline
+			flip
+			highlight
+			mapping
+			mask
+			moved
+			padding
+			resize
+			scrollbar
+			scrollbarhighlight
+			thumbhighlight
+			time
+			title
+			wrap
+			zindex
+		The options from |<a href="popup.html#popup_move()">popup_move()</a>| can also be used.
+		For "hidden" use |<a href="popup.html#popup_hide()">popup_hide()</a>| and |<a href="popup.html#popup_show()">popup_show()</a>|.
+		"tabpage" cannot be changed.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_setoptions(options)</code>
+<code class="example"></code>
+popup_settext(<code class="special">{id}</code>, <code class="special">{text}</code>)				<b class="vimtag">*<a name="popup_settext()">popup_settext()</a>*</b>
+		Set the text of the buffer in popup win <code class="special">{id}</code>. <code class="special">{text}</code> is the
+		same as supplied to |<a href="popup.html#popup_create()">popup_create()</a>|, except that a buffer
+		number is not allowed.
+		Does not change the window size or position, other than caused
+		by the different text.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPopup()-&gt;popup_settext('hello')</code>
+<code class="example"></code>
+</pre><hr/><pre>3. Usage						<b class="vimtag">*<a name="popup-usage">popup-usage</a>*</b>
+
+POPUP_CREATE() ARGUMENTS			 <b class="vimtag">*<a name="popup_create-arguments">popup_create-arguments</a>*</b>
+
+The first argument of |<a href="popup.html#popup_create()">popup_create()</a>| (and the second argument to
+|<a href="popup.html#popup_settext()">popup_settext()</a>|) specifies the text to be displayed, and optionally text
+properties.  It is in one of four forms:
+- a buffer number
+- a string
+- a list of strings
+- a list of dictionaries, where each dictionary has these entries:
+	text		String with the text to display.
+	props		A list of text properties.  Optional.
+			Each entry is a dictionary, like the third argument of
+			|<a href="textprop.html#prop_add()">prop_add()</a>|, but specifying the column in the
+			dictionary with a "col" entry, see below:
+			|<a href="popup.html#popup-props">popup-props</a>|.
+
+If you want to create a new buffer yourself use |<a href="eval.html#bufadd()">bufadd()</a>| and pass the buffer
+number to popup_create().
+It is not possible to use the buffer of a terminal window. <b class="vimtag">*<a name="E278">E278</a>*</b>
+
+The second argument of |<a href="popup.html#popup_create()">popup_create()</a>| is a dictionary with options:
+	line		Screen line where to position the popup.  Can use a
+			number or "cursor", "cursor+1" or "cursor-1" to use
+			the line of the cursor and add or subtract a number of
+			lines.  If omitted the popup is vertically centered.
+			The first line is 1.
+			When using "textprop" the number is relative to the
+			text property and can be negative.
+	col		Screen column where to position the popup.  Can use a
+			number or "cursor" to use the column of the cursor,
+			"cursor+9" or "cursor-9" to add or subtract a number
+			of columns.  If omitted the popup is horizontally
+			centered.  The first column is 1.
+			When using "textprop" the number is relative to the
+			text property and can be negative.
+	pos		"topleft", "topright", "botleft" or "botright":
+			defines what corner of the popup "line" and "col" are
+			used for.  When not set "topleft" is used.
+			Alternatively "center" can be used to position the
+			popup in the center of the Vim window, in which case
+			"line" and "col" are ignored.
+	posinvert	When FALSE the value of "pos" is always used.  When
+			TRUE (the default) and the popup does not fit
+			vertically and there is more space on the other side
+			then the popup is placed on the other side of the
+			position indicated by "line".
+	textprop	When present the popup is positioned next to a text
+			property with this name and will move when the text
+			property moves.  Use an empty string to remove.  See
+			|<a href="popup.html#popup-textprop-pos">popup-textprop-pos</a>|.
+	textpropwin	What window to search for the text property.  When
+			omitted or invalid the current window is used.
+	textpropid	Used to identify the text property when "textprop" is
+			present. Use zero to reset.
+	fixed		When FALSE (the default), and:
+			 - "pos" is "botleft" or "topleft", and
+			 - "wrap" is off, and
+			 - the popup would be truncated at the right edge of
+			   the screen, then
+			the popup is moved to the left so as to fit the
+			contents on the screen.  Set to TRUE to disable this.
+	flip		When TRUE (the default) and the position is relative
+			to the cursor, flip to below or above the cursor to
+			avoid overlap with the |<a href="insert.html#popupmenu-completion">popupmenu-completion</a>| or
+			another popup with a higher "zindex".  When there is
+			no space above/below the cursor then show the popup to
+			the side of the popup or popup menu.
+			<code class="special">{not implemented yet}</code>
+	maxheight	Maximum height of the contents, excluding border and
+			padding.
+	minheight	Minimum height of the contents, excluding border and
+			padding.
+	maxwidth	Maximum width of the contents, excluding border,
+			padding and scrollbar.
+	minwidth	Minimum width of the contents, excluding border,
+			padding and scrollbar.
+	firstline	First buffer line to display.  When larger than one it
+			looks like the text scrolled up.  When out of range
+			the last buffer line will at the top of the window.
+			Set to zero to leave the position as set by commands.
+			Also see "scrollbar".
+	hidden		When TRUE the popup exists but is not displayed; use
+			`popup_show()` to unhide it.
+	tabpage		When -1: display the popup on all tab pages.
+			When 0 (the default): display the popup on the current
+			tab page.
+			Otherwise the number of the tab page the popup is
+			displayed on; when invalid the popup is not created
+			and an error is given. <b class="vimtag">*<a name="E997">E997</a>*</b>
+	title		Text to be displayed above the first item in the
+			popup, on top of any border.  If there is no top
+			border one line of padding is added to put the title
+			on.  You might want to add one or more spaces at the
+			start and end as padding.
+	wrap		TRUE to make the lines wrap (default TRUE).
+	drag		TRUE to allow the popup to be dragged with the mouse
+			by grabbing at the border.  Has no effect if the
+			popup does not have a border. As soon as dragging
+			starts and "pos" is "center" it is changed to
+			"topleft".
+	resize		TRUE to allow the popup to be resized with the mouse
+			by grabbing at the bottom right corner.  Has no effect
+			if the popup does not have a border.
+	close		When "button" an X is displayed in the top-right, on
+			top of any border, padding or text.  When clicked on
+			the X the popup will close.  Any callback is invoked
+			with the value -2.
+			When "click" any mouse click in the popup will close
+			it.
+			When "none" (the default) mouse clicks do not close
+			the popup window.
+	highlight	Highlight group name to use for the text, stored in
+			the 'wincolor' option.
+	padding		List with numbers, defining the padding
+			above/right/below/left of the popup (similar to CSS).
+			An empty list uses a padding of 1 all around.  The
+			padding goes around the text, inside any border.
+			Padding uses the 'wincolor' highlight.
+			Example: [1, 2, 1, 3] has 1 line of padding above, 2
+			columns on the right, 1 line below and 3 columns on
+			the left.
+	border		List with numbers, defining the border thickness
+			above/right/below/left of the popup (similar to CSS).
+			Only values of zero and non-zero are recognized.
+			An empty list uses a border all around.
+	borderhighlight	List of highlight group names to use for the border.
+			When one entry it is used for all borders, otherwise
+			the highlight for the top/right/bottom/left border.
+			Example: ['TopColor', 'RightColor', 'BottomColor,
+			'LeftColor']
+	borderchars	List with characters, defining the character to use
+			for the top/right/bottom/left border.  Optionally
+			followed by the character to use for the
+			topleft/topright/botright/botleft corner.
+			Example: ['-', '|<code class="badlink">', '-', '</code>|', '┌', '┐', '┘', '└']
+			When the list has one character it is used for all.
+			When the list has two characters the first is used for
+			the border lines, the second for the corners.
+			By default a double line is used all around when
+			'encoding' is "utf-8" and 'ambiwidth' is "single",
+			otherwise ASCII characters are used.
+	scrollbar	non-zero: show a scrollbar when the text doesn't fit.
+			zero: do not show a scrollbar.  Default is non-zero.
+			Also see |<a href="popup.html#popup-scrollbar">popup-scrollbar</a>|.
+	scrollbarhighlight  Highlight group name for the scrollbar. The
+			background color is what matters.  When not given then
+			PmenuSbar is used.
+	thumbhighlight  Highlight group name for the scrollbar thumb. The
+			background color is what matters.  When not given then
+			PmenuThumb is used.
+	zindex		Priority for the popup, default 50.  Minimum value is
+			1, maximum value is 32000.
+	mask		A list of lists with coordinates, defining parts of
+			the popup that are transparent.  See |<a href="popup.html#popup-mask">popup-mask</a>|.
+	time		Time in milliseconds after which the popup will close.
+			When omitted |<a href="popup.html#popup_close()">popup_close()</a>| must be used.
+	moved		Specifies to close the popup if the cursor moved:
+			- "any": if the cursor moved at all
+			- "word": if the cursor moved outside |<a href="cmdline.html#%3Ccword%3E">&lt;cword&gt;</a>|
+			- "WORD": if the cursor moved outside |<a href="cmdline.html#%3CcWORD%3E">&lt;cWORD&gt;</a>|
+			- "expr": if the cursor moved outside |<a href="cmdline.html#%3Ccexpr%3E">&lt;cexpr&gt;</a>|
+			- [<code class="special">{start}</code>, <code class="special">{end}</code>]: if the cursor moved before column
+			  <code class="special">{start}</code> or after <code class="special">{end}</code>
+			- [<code class="special">{lnum}</code>, <code class="special">{start}</code>, <code class="special">{end}</code>]: if the cursor moved away
+			  from line <code class="special">{lnum}</code>, before column <code class="special">{start}</code> or after
+			  <code class="special">{end}</code>
+			- [0, 0, 0] do not close the popup when the cursor
+			  moves
+			The popup also closes if the cursor moves to another
+			line or to another window.
+	mousemoved	Like "moved" but referring to the mouse pointer
+			position
+	cursorline	non-zero: Highlight the cursor line. Also scrolls the
+				  text to show this line (only works properly
+				  when 'wrap' is off).
+			zero: 	  Do not highlight the cursor line.
+			Default is zero, except for |<a href="popup.html#popup_menu()">popup_menu()</a>|.
+	filter		A callback that can filter typed characters, see
+			|<a href="popup.html#popup-filter">popup-filter</a>|.
+	mapping		Allow for key mapping.  When FALSE and the popup is
+			visible and has a filter callback key mapping is
+			disabled.  Default value is TRUE.
+	filtermode	In which modes the filter is used (same flags as with
+			|<a href="eval.html#hasmapto()">hasmapto()</a>| plus "a"):
+				n	Normal mode
+				v	Visual and Select mode
+				x	Visual mode
+				s	Select mode
+				o	Operator-pending mode
+				i	Insert mode
+				l	Language-Argument ("r", "f", "t", etc.)
+				c	Command-line mode
+				a	all modes
+			The default value is "a".
+	callback	A callback that is called when the popup closes, e.g.
+			when using |<a href="popup.html#popup_filter_menu()">popup_filter_menu()</a>|, see |<a href="popup.html#popup-callback">popup-callback</a>|.
+
+Depending on the "zindex" the popup goes under or above other popups.  The
+completion menu (|<a href="gui.html#popup-menu">popup-menu</a>|) has zindex 100.  For messages that occur for a
+short time the suggestion is to use zindex 1000.
+
+By default text wraps, which causes a line in <code class="special">{lines}</code> to occupy more than one
+screen line.  When "wrap" is FALSE then the text outside of the popup or
+outside of the Vim window will not be displayed, thus truncated.
+
+
+POPUP TEXT PROPERTIES					<b class="vimtag">*<a name="popup-props">popup-props</a>*</b>
+
+These are similar to the third argument of |<a href="textprop.html#prop_add()">prop_add()</a>| except:
+- "lnum" is always the current line in the list
+- "bufnr" is always the buffer of the popup
+- "col" is in the Dict instead of a separate argument
+So we get:
+	col		starting column, counted in bytes, use one for the
+			first column.
+	length		length of text in bytes; can be zero
+	end_lnum	line number for the end of the text
+	end_col		column just after the text; not used when "length" is
+			present; when <code class="special">{col}</code> and "end_col" are equal, this is a
+			zero-width text property
+	id		user defined ID for the property; when omitted zero is
+			used
+	type		name of the text property type, as added with
+			|<a href="textprop.html#prop_type_add()">prop_type_add()</a>|
+
+
+POSITION POPUP WITH TEXTPROP				<b class="vimtag">*<a name="popup-textprop-pos">popup-textprop-pos</a>*</b>
+
+Positioning a popup next to a text property causes the popup to move when text
+is inserted or deleted.  The popup functions like a tooltip.
+
+These steps are needed to make this work:
+
+- Define a text property type, it defines the name.
+<code class="example">	call prop_type_add('popupMarker', <code class="special">{}</code>)</code>
+<code class="example"></code>
+- Place a text property at the desired text:
+<code class="example">	let lnum = <code class="special">{line of the text}</code></code>
+<code class="example">	let col = <code class="special">{start column of the text}</code></code>
+<code class="example">	let len = <code class="special">{length of the text}</code></code>
+<code class="example">	let propId = <code class="special">{arbitrary but unique number}</code></code>
+<code class="example">	call prop_add(lnum, col, #{</code>
+<code class="example">		\ length: len,</code>
+<code class="example">		\ type: 'popupMarker',</code>
+<code class="example">		\ id: propId,</code>
+<code class="example">		\ })</code>
+<code class="example"></code>
+- Create a popup:
+<code class="example">	let winid = popup_create('the text', #{</code>
+<code class="example">		\ pos: 'botleft',</code>
+<code class="example">		\ textprop: 'popupMarker',</code>
+<code class="example">		\ textpropid: propId,</code>
+<code class="example">		\ border: [],</code>
+<code class="example">		\ padding: [0,1,0,1],</code>
+<code class="example">		\ close: 'click',</code>
+<code class="example">		\ })</code>
+<code class="example"></code>
+By default the popup is positioned at the corner of the text, opposite of the
+"pos" specified for the popup.  Thus when the popup uses "botleft", the
+bottom-left corner of the popup is positioned next to the top-right corner of
+the text property:
+			  +----------+
+			  |<code class="badlink"> the text </code>|
+			  +----------+
+	just some PROPERTY as an example
+
+Here the text property is on "PROPERTY".  Move the popup to the left by
+passing a negative "col" value to popup_create().  With "col: -5" you get:
+
+		     +----------+
+		     |<code class="badlink"> the text </code>|
+		     +----------+
+	just some PROPERTY as an example
+
+If the text property moves out of view then the popup will be hidden.
+If the window for which the popup was defined is closed, the popup is closed.
+
+If the popup cannot fit in the desired position, it may show at a nearby
+position.
+
+Some hints:
+- To avoid collision with other plugins the text property type name has to be
+  unique.  You can also use the "bufnr" item to make it local to a buffer.
+- You can leave out the text property ID if there is only ever one text
+  property visible.
+- The popup may be in the way of what the user is doing, making it close with
+  a click, as in the example above, helps for that.
+- If the text property is removed the popup is closed.  Use something like
+  this:
+<code class="example">	call prop_remove(#<code class="special">{type: 'popupMarker', id: propId}</code>)</code>
+<code class="example"></code>
+<code class="example"></code>
+POPUP FILTER						<b class="vimtag">*<a name="popup-filter">popup-filter</a>*</b>
+
+A callback that gets any typed keys while a popup is displayed.  The filter is
+not invoked when the popup is hidden.
+
+The filter can return TRUE to indicate the key has been handled and is to be
+discarded, or FALSE to let Vim handle the key as usual in the current state.
+In case it returns FALSE and there is another popup window visible, that
+filter is also called.  The filter of the popup window with the highest zindex
+is called first.
+
+The filter function is called with two arguments: the ID of the popup and the
+key as a string, e.g.:
+<code class="example">	func MyFilter(winid, key)</code>
+<code class="example">	  if a:key == "\<code class="special">&lt;F2&gt;</code>"</code>
+<code class="example">	    " do something</code>
+<code class="example">	    return 1</code>
+<code class="example">	  endif</code>
+<code class="example">	  if a:key == 'x'</code>
+<code class="example">	    call popup_close(a:winid)</code>
+<code class="example">	    return 1</code>
+<code class="example">	  endif</code>
+<code class="example">	  return 0</code>
+<code class="example">	endfunc</code>
+							<b class="vimtag">*<a name="popup-filter-mode">popup-filter-mode</a>*</b>
+The "filtermode" property can be used to specify in what mode the filter is
+invoked.  The default is "a": all modes.  When using "nvi" Command-line mode
+is not included, so that any command typed on the command line is not
+filtered.  However, to get to Command-line mode the filter must not consume
+":".  Just like it must not consume "v" to allow for entering Visual mode.
+
+							<b class="vimtag">*<a name="popup-mapping">popup-mapping</a>*</b>
+Normally the key is what results after any mapping, since the keys pass on as
+normal input if the filter does not use it.  If the filter consumes all the
+keys, set the "mapping" property to zero so that mappings do not get in the
+way.  This is default for |<a href="popup.html#popup_menu()">popup_menu()</a>| and |<a href="popup.html#popup_dialog()">popup_dialog()</a>|.
+
+Some recommended key actions:
+	x		close the popup (see <code class="note">note</code> below)
+	cursor keys	select another entry
+	Tab		accept current suggestion
+
+A mouse click arrives as <code class="special">&lt;LeftMouse&gt;</code>.  The coordinates can be obtained with
+|<a href="eval.html#getmousepos()">getmousepos()</a>|.
+
+Vim provides standard filters |<a href="popup.html#popup_filter_menu()">popup_filter_menu()</a>| and
+|<a href="popup.html#popup_filter_yesno()">popup_filter_yesno()</a>|.
+
+<code class="note">Note</code> that "x" is the normal way to close a popup.  You may want to use Esc,
+but since many keys start with an Esc character, there may be a delay before
+Vim recognizes the Esc key.  If you do use Esc, it is recommended to set the
+'ttimeoutlen' option to 100 and set 'timeout' and/or 'ttimeout'.
+
+
+POPUP CALLBACK						<b class="vimtag">*<a name="popup-callback">popup-callback</a>*</b>
+
+A callback that is invoked when the popup closes.
+
+The callback is invoked with two arguments: the ID of the popup window and the
+result, which could be an index in the popup lines, or whatever was passed as
+the second argument of `popup_close()`.
+
+If the popup is force-closed, e.g. because the cursor moved or <code class="keystroke">CTRL-C</code> was
+pressed, the number -1 is passed to the callback.
+
+Example:
+<code class="example">	func SelectedColor(id, result)</code>
+<code class="example">	   echo 'choice made: ' .. a:result</code>
+<code class="example">	endfunc</code>
+<code class="example"></code>
+<code class="example"></code>
+POPUP SCROLLBAR						<b class="vimtag">*<a name="popup-scrollbar">popup-scrollbar</a>*</b>
+
+If the text does not fit in the popup a scrollbar is displayed on the right of
+the window.  This can be disabled by setting the "scrollbar" option to zero.
+When the scrollbar is displayed mouse scroll events, while the mouse pointer
+is on the popup, will cause the text to scroll up or down as you would expect.
+A click in the upper half of the scrollbar will scroll the text down one line.
+A click in the lower half will scroll the text up one line.  However, this is
+limited so that the popup does not get smaller.
+
+
+POPUP MASK						<b class="vimtag">*<a name="popup-mask">popup-mask</a>*</b>
+
+To minimize the text that the popup covers, parts of it can be made
+transparent.  This is defined by a "mask" which is a list of lists, where each
+list has four numbers:
+    col		start column, positive for counting from the left, 1 for
+		leftmost, negative for counting from the right, -1 for
+		rightmost
+    endcol	last column, like "col"
+    line	start line, positive for counting from the top, 1 for top,
+		negative for counting from the bottom, -1 for bottom
+    endline	end line, like "line"
+
+For example, to make the last 10 columns of the last line transparent:
+	[[-10, -1, -1, -1]]
+
+To make the four corners transparent:
+	[[1, 1, 1, 1], [-1, -1, 1, 1], [1, 1, -1, -1], [-1, -1, -1, -1]]
+
+</pre><hr/><pre>4. Examples						<b class="vimtag">*<a name="popup-examples">popup-examples</a>*</b>
+
+TODO: more interesting examples
+					<b class="vimtag">*<a name="popup_dialog-example">popup_dialog-example</a>*</b>
+Prompt the user to press y/Y or n/N:
+<code class="example"></code>
+<code class="example">	func MyDialogHandler(id, result)</code>
+<code class="example">	   if a:result</code>
+<code class="example">	      " ... 'y' or 'Y' was pressed</code>
+<code class="example">	   endif</code>
+<code class="example">	endfunc</code>
+<code class="example"></code>
+<code class="example">	call popup_dialog('Continue? y/n', #{</code>
+<code class="example">		\ filter: 'popup_filter_yesno',</code>
+<code class="example">		\ callback: 'MyDialogHandler',</code>
+<code class="example">		\ })</code>
+
+					<b class="vimtag">*<a name="popup_menu-shortcut-example">popup_menu-shortcut-example</a>*</b>
+Extend popup_filter_menu() with shortcut keys:
+<code class="example"></code>
+<code class="example">	call popup_menu(['Save', 'Cancel', 'Discard'], #{</code>
+<code class="example">		\ filter: 'MyMenuFilter',</code>
+<code class="example">		\ callback: 'MyMenuHandler',</code>
+<code class="example">		\ })</code>
+<code class="example"></code>
+<code class="example">	func MyMenuFilter(id, key)</code>
+<code class="example">	  " Handle shortcuts</code>
+<code class="example">	  if a:key == 'S'</code>
+<code class="example">	     call popup_close(a:id, 1)</code>
+<code class="example">	     return 1</code>
+<code class="example">	  endif</code>
+<code class="example">	  if a:key == 'C'</code>
+<code class="example">	     call popup_close(a:id, 2)</code>
+<code class="example">	     return 1</code>
+<code class="example">	  endif</code>
+<code class="example">	  if a:key == 'D'</code>
+<code class="example">	     call popup_close(a:id, 3)</code>
+<code class="example">	     return 1</code>
+<code class="example">	  endif</code>
+<code class="example"></code>
+<code class="example">	  " No shortcut, pass to generic filter</code>
+<code class="example">	  return popup_filter_menu(a:id, a:key)</code>
+<code class="example">	endfunc</code>
+
+					<b class="vimtag">*<a name="popup_beval_example">popup_beval_example</a>*</b>
+Example for using a popup window for 'ballooneval':
+<code class="example"></code>
+<code class="example">	set ballooneval balloonevalterm</code>
+<code class="example">	set balloonexpr=BalloonExpr()</code>
+<code class="example">	let s:winid = 0</code>
+<code class="example">	let s:last_text = ''</code>
+<code class="example"></code>
+<code class="example">	func BalloonExpr()</code>
+<code class="example">	  if s:winid &amp;&amp; popup_getpos(s:winid) != <code class="special">{}</code></code>
+<code class="example">	    " previous popup window still shows</code>
+<code class="example">	    if v:beval_text == s:last_text</code>
+<code class="example">	      " Still the same text, keep the existing popup</code>
+<code class="example">	      return ''</code>
+<code class="example">	    endif</code>
+<code class="example">	    call popup_close(s:winid)</code>
+<code class="example">	  endif</code>
+<code class="example">	  let s:winid = popup_beval(v:beval_text, #<code class="special">{mousemoved: 'word'}</code>)</code>
+<code class="example">	  let s:last_text = v:beval_text</code>
+<code class="example">	  return ''</code>
+<code class="example">	endfunc</code>
+
+If the text has to be obtained asynchronously return an empty string from the
+expression function and call popup_beval() once the text is available.  In
+this example simulated with a timer callback:
+<code class="example"></code>
+<code class="example">	set ballooneval balloonevalterm</code>
+<code class="example">	set balloonexpr=BalloonExpr()</code>
+<code class="example">	let s:winid = 0</code>
+<code class="example">	let s:balloonText = ''</code>
+<code class="example"></code>
+<code class="example">	func BalloonExpr()</code>
+<code class="example">	  if s:winid &amp;&amp; popup_getpos(s:winid) != <code class="special">{}</code></code>
+<code class="example">	    " previous popup window still shows</code>
+<code class="example">	    if  v:beval_text == s:balloonText</code>
+<code class="example">	      " Still the same text, keep the existing popup</code>
+<code class="example">	      return ''</code>
+<code class="example">	    endif</code>
+<code class="example">	    call popup_close(s:winid)</code>
+<code class="example">	    let s:winid = 0</code>
+<code class="example">	  endif</code>
+<code class="example">	  " simulate an asynchronous lookup for the text to display</code>
+<code class="example">	  let s:balloonText = v:beval_text</code>
+<code class="example">	  call timer_start(100, 'ShowPopup')</code>
+<code class="example">	  return ''</code>
+<code class="example">	endfunc</code>
+<code class="example"></code>
+<code class="example">	func ShowPopup(id)</code>
+<code class="example">	  let s:winid = popup_beval(s:balloonText, #<code class="special">{mousemoved: 'word'}</code>)</code>
+<code class="example">	endfunc</code>
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

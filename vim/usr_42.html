@@ -1,0 +1,374 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_42</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_42</h2>
+<pre>
+<b class="vimtag">*<a name="usr_42.txt">usr_42.txt</a>*</b>	For Vim version 8.2.  Last change: 2008 May 05
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			      Add new menus
+
+
+By now you know that Vim is very flexible.  This includes the menus used in
+the GUI.  You can define your own menu entries to make certain commands easily
+accessible.  This is for mouse-happy users only.
+
+|<a href="usr_42.html#42.1">42.1</a>|	Introduction
+|<a href="usr_42.html#42.2">42.2</a>|	Menu commands
+|<a href="usr_42.html#42.3">42.3</a>|	Various
+|<a href="usr_42.html#42.4">42.4</a>|	Toolbar and popup menus
+
+     Next chapter: |<a href="usr_43.html#usr_43.txt">usr_43</a>|  Using filetypes
+ Previous chapter: |<a href="usr_41.html#usr_41.txt">usr_41</a>|  Write a Vim script
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="42.1">42.1</a>*</b>	Introduction
+
+The menus that Vim uses are defined in the file "$VIMRUNTIME/menu.vim".  If
+you want to write your own menus, you might first want to look through that
+file.
+   To define a menu item, use the ":menu" command.  The basic form of this
+command is as follows:
+<code class="example"></code>
+<code class="example">	:menu <code class="special">{menu-item}</code> <code class="special">{keys}</code></code>
+<code class="example"></code>
+The <code class="special">{menu-item}</code> describes where on the menu to put the item.  A typical
+<code class="special">{menu-item}</code> is "File.Save", which represents the item "Save" under the
+"File" menu.  A dot is used to separate the names.  Example:
+<code class="example"></code>
+<code class="example">	:menu File.Save  :update<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+The ":update" command writes the file when it was modified.
+   You can add another level: "Edit.Settings.Shiftwidth" defines a submenu
+"Settings" under the "Edit" menu, with an item "Shiftwidth".  You could use
+even deeper levels.  Don't use this too much, you need to move the mouse quite
+a bit to use such an item.
+   The ":menu" command is very similar to the ":map" command: the left side
+specifies how the item is triggered and the right hand side defines the
+characters that are executed.  <code class="special">{keys}</code> are characters, they are used just like
+you would have typed them.  Thus in Insert mode, when <code class="special">{keys}</code> is plain text,
+that text is inserted.
+
+
+ACCELERATORS
+
+The ampersand character (&amp;) is used to indicate an accelerator.  For instance,
+you can use Alt-F to select "File" and S to select "Save".  (The 'winaltkeys'
+option may disable this though!).  Therefore, the <code class="special">{menu-item}</code> looks like
+"&amp;File.&amp;Save".  The accelerator characters will be underlined in the menu.
+   You must take care that each key is used only once in each menu.  Otherwise
+you will not know which of the two will actually be used.  Vim doesn't warn
+you for this.
+
+
+PRIORITIES
+
+The actual definition of the File.Save menu item is as follows:
+<code class="example"></code>
+<code class="example">	:menu 10.340 &amp;File.&amp;Save<code class="special">&lt;Tab&gt;</code>:w  :confirm w<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+The number 10.340 is called the priority number.  It is used by the editor to
+decide where it places the menu item.  The first number (10) indicates the
+position on the menu bar.  Lower numbered menus are positioned to the left,
+higher numbers to the right.
+   These are the priorities used for the standard menus:
+
+	  10	20     40     50      60       70		9999
+
+	+------------------------------------------------------------+
+	|<code class="badlink"> File	Edit  Tools  Syntax  Buffers  Window		Help </code>|
+	+------------------------------------------------------------+
+
+Notice that the Help menu is given a very high number, to make it appear on
+the far right.
+   The second number (340) determines the location of the item within the
+pull-down menu.  Lower numbers go on top, higher number on the bottom.  These
+are the priorities in the File menu:
+
+			+-----------------+
+	    10.310	|<code class="badlink">Open...	  </code>|
+	    10.320	|<code class="badlink">Split-Open...	  </code>|
+	    10.325	|<code class="badlink">New		  </code>|
+	    10.330	|<code class="badlink">Close		  </code>|
+	    10.335	|<code class="badlink">---------------- </code>|
+	    10.340	|<code class="badlink">Save		  </code>|
+	    10.350	|<code class="badlink">Save As...	  </code>|
+	    10.400	|<code class="badlink">---------------- </code>|
+	    10.410	|<code class="badlink">Split Diff with  </code>|
+	    10.420	|<code class="badlink">Split Patched By </code>|
+	    10.500	|<code class="badlink">---------------- </code>|
+	    10.510	|<code class="badlink">Print		  </code>|
+	    10.600	|<code class="badlink">---------------- </code>|
+	    10.610	|<code class="badlink">Save-Exit	  </code>|
+	    10.620	|<code class="badlink">Exit		  </code>|
+			+-----------------+
+
+Notice that there is room in between the numbers.  This is where you can
+insert your own items, if you really want to (it's often better to leave the
+standard menus alone and add a new menu for your own items).
+   When you create a submenu, you can add another ".number" to the priority.
+Thus each name in <code class="special">{menu-item}</code> has its priority number.
+
+
+SPECIAL CHARACTERS
+
+The <code class="special">{menu-item}</code> in this example is "&amp;File.&amp;Save<code class="special">&lt;Tab&gt;</code>:w".  This brings up an
+important point: <code class="special">{menu-item}</code> must be one word.  If you want to put a dot,
+space or tabs in the name, you either use the <code class="special">&lt;&gt;</code> notation (<code class="special">&lt;Space&gt;</code> and <code class="special">&lt;Tab&gt;</code>,
+for instance) or use the backslash (\) escape.
+<code class="example"></code>
+<code class="example">	:menu 10.305 &amp;File.&amp;Do\ It\.\.\. :exit<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+In this example, the name of the menu item "Do It..." contains a space and the
+command is ":exit<code class="special">&lt;CR&gt;</code>".
+
+The <code class="special">&lt;Tab&gt;</code> character in a menu name is used to separate the part that defines
+the menu name from the part that gives a hint to the user.  The part after the
+<code class="special">&lt;Tab&gt;</code> is displayed right aligned in the menu.  In the File.Save menu the name
+used is "&amp;File.&amp;Save<code class="special">&lt;Tab&gt;</code>:w".  Thus the menu name is "File.Save" and the hint
+is ":w".
+
+
+SEPARATORS
+
+The separator lines, used to group related menu items together, can be defined
+by using a name that starts and ends in a '-'.  For example "-sep-".  When
+using several separators the names must be different.  Otherwise the names
+don't matter.
+   The command from a separator will never be executed, but you have to define
+one anyway.  A single colon will do.  Example:
+<code class="example"></code>
+<code class="example">	:amenu 20.510 Edit.-sep3- :</code>
+<code class="example"></code>
+</pre><hr/><pre><b class="vimtag">*<a name="42.2">42.2</a>*</b>	Menu commands
+
+You can define menu items that exist for only certain modes.  This works just
+like the variations on the ":map" command:
+
+	:menu		Normal, Visual and Operator-pending mode
+	:nmenu		Normal mode
+	:vmenu		Visual mode
+	:omenu		Operator-pending mode
+	:menu!		Insert and Command-line mode
+	:imenu		Insert mode
+	:cmenu		Command-line mode
+	:tlmenu		Terminal mode
+	:amenu		All modes (except for Terminal mode)
+
+To avoid that the commands of a menu item are being mapped, use the command
+":noremenu", ":nnoremenu", ":anoremenu", etc.
+
+
+USING :AMENU
+
+The ":amenu" command is a bit different.  It assumes that the <code class="special">{keys}</code> you
+give are to be executed in Normal mode.  When Vim is in Visual or Insert mode
+when the menu is used, Vim first has to go back to Normal mode.  ":amenu"
+inserts a <code class="keystroke">CTRL-C</code> or <code class="keystroke">CTRL-O</code> for you.  For example, if you use this command:
+
+<code class="example">	:amenu  90.100 Mine.Find\ Word  *</code>
+<code class="example"></code>
+Then the resulting menu commands will be:
+
+	Normal mode:		*
+	Visual mode:		<code class="keystroke">CTRL-C</code> *
+	Operator-pending mode:	<code class="keystroke">CTRL-C</code> *
+	Insert mode:		<code class="keystroke">CTRL-O</code> *
+	Command-line mode:	<code class="keystroke">CTRL-C</code> *
+
+When in Command-line mode the <code class="keystroke">CTRL-C</code> will abandon the command typed so far.
+In Visual and Operator-pending mode <code class="keystroke">CTRL-C</code> will stop the mode.  The <code class="keystroke">CTRL-O</code> in
+Insert mode will execute the command and then return to Insert mode.
+   <code class="keystroke">CTRL-O</code> only works for one command.  If you need to use two or more
+commands, put them in a function and call that function.  Example:
+<code class="example"></code>
+<code class="example">	:amenu  Mine.Next\ File  :call <code class="special">&lt;SID&gt;</code>NextFile()<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	:function <code class="special">&lt;SID&gt;</code>NextFile()</code>
+<code class="example">	:  next</code>
+<code class="example">	:  1/^Code</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+This menu entry goes to the next file in the argument list with ":next".  Then
+it searches for the line that starts with "Code".
+   The <code class="special">&lt;SID&gt;</code> before the function name is the script ID.  This makes the
+function local to the current Vim script file.  This avoids problems when a
+function with the same name is defined in another script file.  See |<a href="map.html#%3CSID%3E">&lt;SID&gt;</a>|.
+
+
+SILENT MENUS
+
+The menu executes the <code class="special">{keys}</code> as if you typed them.  For a ":" command this
+means you will see the command being echoed on the command line.  If it's a
+long command, the hit-Enter prompt will appear.  That can be very annoying!
+   To avoid this, make the menu silent.  This is done with the <code class="special">&lt;silent&gt;</code>
+argument.  For example, take the call to NextFile() in the previous example.
+When you use this menu, you will see this on the command line:
+
+<code class="section">	:call <code class="special">&lt;SNR&gt;</code>34_NextFile() </code>
+
+To avoid this text on the command line, insert "<code class="special">&lt;silent&gt;</code>" as the first
+argument:
+<code class="example"></code>
+<code class="example">	:amenu <code class="special">&lt;silent&gt;</code> Mine.Next\ File :call <code class="special">&lt;SID&gt;</code>NextFile()<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+Don't use "<code class="special">&lt;silent&gt;</code>" too often.  It is not needed for short commands.  If you
+make a menu for someone else, being able the see the executed command will
+give him a hint about what he could have typed, instead of using the mouse.
+
+
+LISTING MENUS
+
+When a menu command is used without a <code class="special">{keys}</code> part, it lists the already
+defined menus.  You can specify a <code class="special">{menu-item}</code>, or part of it, to list specific
+menus.  Example:
+<code class="example"></code>
+<code class="example">	:amenu</code>
+<code class="example"></code>
+This lists all menus.  That's a long list!  Better specify the name of a menu
+to get a shorter list:
+<code class="example"></code>
+<code class="example">	:amenu Edit</code>
+<code class="example"></code>
+This lists only the "Edit" menu items for all modes.  To list only one
+specific menu item for Insert mode:
+<code class="example"></code>
+<code class="example">	:imenu Edit.Undo</code>
+<code class="example"></code>
+Take care that you type exactly the right name.  Case matters here.  But the
+'&amp;' for accelerators can be omitted.  The <code class="special">&lt;Tab&gt;</code> and what comes after it can be
+left out as well.
+
+
+DELETING MENUS
+
+To delete a menu, the same command is used as for listing, but with "menu"
+changed to "unmenu".  Thus ":menu" becomes, ":unmenu", ":nmenu" becomes
+":nunmenu", etc.  To delete the "Tools.Make" item for Insert mode:
+<code class="example"></code>
+<code class="example">	:iunmenu Tools.Make</code>
+<code class="example"></code>
+You can delete a whole menu, with all its items, by using the menu name.
+Example:
+<code class="example"></code>
+<code class="example">	:aunmenu Syntax</code>
+<code class="example"></code>
+This deletes the Syntax menu and all the items in it.
+
+</pre><hr/><pre><b class="vimtag">*<a name="42.3">42.3</a>*</b>	Various
+
+You can change the appearance of the menus with flags in 'guioptions'.  In the
+default value they are all included, except "M".  You can remove a flag with a
+command like:
+<code class="example"></code>
+<code class="example">	:set guioptions-=m</code>
+
+	m		When removed the menubar is not displayed.
+
+	M		When added the default menus are not loaded.
+
+	g		When removed the inactive menu items are not made grey
+			but are completely removed.  (Does not work on all
+			systems.)
+
+	t		When removed the tearoff feature is not enabled.
+
+The dotted line at the top of a menu is not a separator line.  When you select
+this item, the menu is "teared-off": It is displayed in a separate window.
+This is called a tearoff menu.  This is useful when you use the same menu
+often.
+
+For translating menu items, see |<a href="mlang.html#:menutrans">:menutrans</a>|.
+
+Since the mouse has to be used to select a menu item, it is a good idea to use
+the ":browse" command for selecting a file.  And ":confirm" to get a dialog
+instead of an error message, e.g., when the current buffer contains changes.
+These two can be combined:
+<code class="example"></code>
+<code class="example">	:amenu File.Open  :browse confirm edit<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+The ":browse" makes a file browser appear to select the file to edit.  The
+":confirm" will pop up a dialog when the current buffer has changes.  You can
+then select to save the changes, throw them away or cancel the command.
+   For more complicated items, the confirm() and inputdialog() functions can
+be used.  The default menus contain a few examples.
+
+</pre><hr/><pre><b class="vimtag">*<a name="42.4">42.4</a>*</b>	Toolbar and popup menus
+
+There are two special menus: ToolBar and PopUp.  Items that start with these
+names do not appear in the normal menu bar.
+
+
+TOOLBAR
+
+The toolbar appears only when the "T" flag is included in the 'guioptions'
+option.
+   The toolbar uses icons rather than text to represent the command.  For
+example, the <code class="special">{menu-item}</code> named "ToolBar.New" causes the "New" icon to appear
+on the toolbar.
+   The Vim editor has 28 built-in icons.  You can find a table here:
+|<a href="gui.html#builtin-tools">builtin-tools</a>|.  Most of them are used in the default toolbar.  You can
+redefine what these items do (after the default menus are setup).
+   You can add another bitmap for a toolbar item.  Or define a new toolbar
+item with a bitmap.  For example, define a new toolbar item with:
+<code class="example"></code>
+<code class="example">	:tmenu ToolBar.Compile  Compile the current file</code>
+<code class="example">	:amenu ToolBar.Compile  :!cc %:S -o %:r:S<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+Now you need to create the icon.  For MS-Windows it must be in bitmap format,
+with the name "Compile.bmp".  For Unix XPM format is used, the file name is
+"Compile.xpm".  The size must be 18 by 18 pixels.  On MS-Windows other sizes
+can be used as well, but it will look ugly.
+   Put the bitmap in the directory "bitmaps" in one of the directories from
+'runtimepath'.  E.g., for Unix "~/.vim/bitmaps/Compile.xpm".
+
+You can define tooltips for the items in the toolbar.  A tooltip is a short
+text that explains what a toolbar item will do.  For example "Open file".  It
+appears when the mouse pointer is on the item, without moving for a moment.
+This is very useful if the meaning of the picture isn't that obvious.
+Example:
+<code class="example"></code>
+<code class="example">	:tmenu ToolBar.Make  Run make in the current directory</code>
+
+	<code class="note">Note:</code>
+	Pay attention to the case used.  "Toolbar" and "toolbar" are different
+	from "ToolBar"!
+
+To remove a tooltip, use the |<a href="gui.html#:tunmenu">:tunmenu</a>| command.
+
+The 'toolbar' option can be used to display text instead of a bitmap, or both
+text and a bitmap.  Most people use just the bitmap, since the text takes
+quite a bit of space.
+
+
+POPUP MENU
+
+The popup menu pops up where the mouse pointer is.  On MS-Windows you activate
+it by clicking the right mouse button.  Then you can select an item with the
+left mouse button.  On Unix the popup menu is used by pressing and holding the
+right mouse button.
+   The popup menu only appears when the 'mousemodel' has been set to "popup"
+or "popup_setpos".  The difference between the two is that "popup_setpos"
+moves the cursor to the mouse pointer position.  When clicking inside a
+selection, the selection will be used unmodified.  When there is a selection
+but you click outside of it, the selection is removed.
+   There is a separate popup menu for each mode.  Thus there are never grey
+items like in the normal menus.
+
+What is the meaning of life, the universe and everything?  <b class="vimtag">*<a name="42">42</a>*</b>
+Douglas Adams, the only person who knew what this question really was about is
+now dead, unfortunately.  So now you might wonder what the meaning of death
+is...
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_43.html#usr_43.txt">usr_43</a>|  Using filetypes
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: scroll</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>SCROLL</h2>
+<pre>
+<b class="vimtag">*<a name="scroll.txt">scroll.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 May 13
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Scrolling						<b class="vimtag">*<a name="scrolling">scrolling</a>*</b>
+
+These commands move the contents of the window.  If the cursor position is
+moved off of the window, the cursor is moved onto the window (with
+'scrolloff' screen lines around it).  A page is the number of lines in the
+window minus two.  The mnemonics for these commands may be a bit confusing.
+Remember that the commands refer to moving the window (the part of the buffer
+that you see) upwards or downwards in the buffer.  When the window moves
+upwards in the buffer, the text in the window moves downwards on your screen.
+
+See section |<a href="usr_03.html#03.7">03.7</a>| of the user manual for an introduction.
+
+1. Scrolling downwards		|<a href="scroll.html#scroll-down">scroll-down</a>|
+2. Scrolling upwards		|<a href="scroll.html#scroll-up">scroll-up</a>|
+3. Scrolling relative to cursor	|<a href="scroll.html#scroll-cursor">scroll-cursor</a>|
+4. Scrolling horizontally	|<a href="scroll.html#scroll-horizontal">scroll-horizontal</a>|
+5. Scrolling synchronously	|<a href="scroll.html#scroll-binding">scroll-binding</a>|
+6. Scrolling with a mouse wheel |<a href="scroll.html#scroll-mouse-wheel">scroll-mouse-wheel</a>|
+
+</pre><hr/><pre>1. Scrolling downwards					<b class="vimtag">*<a name="scroll-down">scroll-down</a>*</b>
+
+The following commands move the edit window (the part of the buffer that you
+see) downwards (this means that more lines downwards in the text buffer can be
+seen):
+
+							<b class="vimtag">*<a name="CTRL-E">CTRL-E</a>*</b>
+<code class="keystroke">CTRL-E</code>			Scroll window <code class="special">[count]</code> lines downwards in the buffer.
+			The text moves upwards on the screen.
+			Mnemonic: Extra lines.
+
+							<b class="vimtag">*<a name="CTRL-D">CTRL-D</a>*</b>
+<code class="keystroke">CTRL-D</code>			Scroll window Downwards in the buffer.  The number of
+			lines comes from the 'scroll' option (default: half a
+			screen).  If <code class="special">[count]</code> given, first set 'scroll' option
+			to <code class="special">[count]</code>.  The cursor is moved the same number of
+			lines down in the file (if possible; when lines wrap
+			and when hitting the end of the file there may be a
+			difference).  When the cursor is on the last line of
+			the buffer nothing happens and a beep is produced.
+			See also 'startofline' option.
+
+<code class="special">&lt;S-Down&gt;</code>	or				<b class="vimtag">*<a name="%3CS-Down%3E">&lt;S-Down&gt;</a>*</b> <b class="vimtag">*<a name="%3CkPageDown%3E">&lt;kPageDown&gt;</a>*</b>
+<code class="special">&lt;PageDown&gt;</code>	or				<b class="vimtag">*<a name="%3CPageDown%3E">&lt;PageDown&gt;</a>*</b> <b class="vimtag">*<a name="CTRL-F">CTRL-F</a>*</b>
+<code class="keystroke">CTRL-F</code>			Scroll window <code class="special">[count]</code> pages Forwards (downwards) in
+			the buffer.  See also 'startofline' option.
+			When there is only one window the 'window' option
+			might be used.
+
+							<b class="vimtag">*<a name="z+">z+</a>*</b>
+z+			Without <code class="special">[count]</code>: Redraw with the line just below the
+			window at the top of the window.  Put the cursor in
+			that line, at the first non-blank in the line.
+			With <code class="special">[count]</code>: just like "z<code class="special">&lt;CR&gt;</code>".
+
+</pre><hr/><pre>2. Scrolling upwards					<b class="vimtag">*<a name="scroll-up">scroll-up</a>*</b>
+
+The following commands move the edit window (the part of the buffer that you
+see) upwards (this means that more lines upwards in the text buffer can be
+seen):
+
+							<b class="vimtag">*<a name="CTRL-Y">CTRL-Y</a>*</b>
+<code class="keystroke">CTRL-Y</code>			Scroll window <code class="special">[count]</code> lines upwards in the buffer.
+			The text moves downwards on the screen.
+			<code class="note">Note:</code> When using the MS-Windows key bindings <code class="keystroke">CTRL-Y</code> is
+			remapped to redo.
+
+							<b class="vimtag">*<a name="CTRL-U">CTRL-U</a>*</b>
+<code class="keystroke">CTRL-U</code>			Scroll window Upwards in the buffer.  The number of
+			lines comes from the 'scroll' option (default: half a
+			screen).  If <code class="special">[count]</code> given, first set the 'scroll'
+			option to <code class="special">[count]</code>.  The cursor is moved the same
+			number of lines up in the file (if possible; when
+			lines wrap and when hitting the end of the file there
+			may be a difference).  When the cursor is on the first
+			line of the buffer nothing happens and a beep is
+			produced.  See also 'startofline' option.
+
+<code class="special">&lt;S-Up&gt;</code>		or					<b class="vimtag">*<a name="%3CS-Up%3E">&lt;S-Up&gt;</a>*</b> <b class="vimtag">*<a name="%3CkPageUp%3E">&lt;kPageUp&gt;</a>*</b>
+<code class="special">&lt;PageUp&gt;</code>	or					<b class="vimtag">*<a name="%3CPageUp%3E">&lt;PageUp&gt;</a>*</b> <b class="vimtag">*<a name="CTRL-B">CTRL-B</a>*</b>
+<code class="keystroke">CTRL-B</code>			Scroll window <code class="special">[count]</code> pages Backwards (upwards) in the
+			buffer.  See also 'startofline' option.
+			When there is only one window the 'window' option
+			might be used.
+
+							<b class="vimtag">*<a name="z^">z^</a>*</b>
+z^			Without <code class="special">[count]</code>: Redraw with the line just above the
+			window at the bottom of the window.  Put the cursor in
+			that line, at the first non-blank in the line.
+			With <code class="special">[count]</code>: First scroll the text to put the <code class="special">[count]</code>
+			line at the bottom of the window, then redraw with the
+			line which is now at the top of the window at the
+			bottom of the window.  Put the cursor in that line, at
+			the first non-blank in the line.
+
+</pre><hr/><pre>3. Scrolling relative to cursor				<b class="vimtag">*<a name="scroll-cursor">scroll-cursor</a>*</b>
+
+The following commands reposition the edit window (the part of the buffer that
+you see) while keeping the cursor on the same line.  <code class="note">Note</code> that the 'scrolloff'
+option may cause context lines to show above and below the cursor.
+
+							<b class="vimtag">*<a name="z%3CCR%3E">z&lt;CR&gt;</a>*</b>
+z<code class="special">&lt;CR&gt;</code>			Redraw, line <code class="special">[count]</code> at top of window (default
+			cursor line).  Put cursor at first non-blank in the
+			line.
+
+							<b class="vimtag">*<a name="zt">zt</a>*</b>
+zt			Like "z<code class="special">&lt;CR&gt;</code>", but leave the cursor in the same
+			column.
+
+							<b class="vimtag">*<a name="zN%3CCR%3E">zN&lt;CR&gt;</a>*</b>
+z<code class="special">{height}</code><code class="special">&lt;CR&gt;</code>		Redraw, make window <code class="special">{height}</code> lines tall.  This is
+			useful to make the number of lines small when screen
+			updating is very slow.  Cannot make the height more
+			than the physical screen height.
+
+							<b class="vimtag">*<a name="z.">z.</a>*</b>
+z.			Redraw, line <code class="special">[count]</code> at center of window (default
+			cursor line).  Put cursor at first non-blank in the
+			line.
+
+							<b class="vimtag">*<a name="zz">zz</a>*</b>
+zz			Like "z.", but leave the cursor in the same column.
+			Careful: If caps-lock is on, this command becomes
+			"ZZ": write buffer and exit!
+
+							<b class="vimtag">*<a name="z-">z-</a>*</b>
+z-			Redraw, line <code class="special">[count]</code> at bottom of window (default
+			cursor line).  Put cursor at first non-blank in the
+			line.
+
+							<b class="vimtag">*<a name="zb">zb</a>*</b>
+zb			Like "z-", but leave the cursor in the same column.
+
+</pre><hr/><pre>4. Scrolling horizontally				<b class="vimtag">*<a name="scroll-horizontal">scroll-horizontal</a>*</b>
+
+For the following four commands the cursor follows the screen.  If the
+character that the cursor is on is moved off the screen, the cursor is moved
+to the closest character that is on the screen.  The value of 'sidescroll' is
+not used.
+
+z<code class="special">&lt;Right&gt;</code>    or						<b class="vimtag">*<a name="zl">zl</a>*</b> <b class="vimtag">*<a name="z%3CRight%3E">z&lt;Right&gt;</a>*</b>
+zl			Move the view on the text <code class="special">[count]</code> characters to the
+			right, thus scroll the text <code class="special">[count]</code> characters to the
+			left.  This only works when 'wrap' is off.
+
+z<code class="special">&lt;Left&gt;</code>      or						<b class="vimtag">*<a name="zh">zh</a>*</b> <b class="vimtag">*<a name="z%3CLeft%3E">z&lt;Left&gt;</a>*</b>
+zh			Move the view on the text <code class="special">[count]</code> characters to the
+			left, thus scroll the text <code class="special">[count]</code> characters to the
+			right.  This only works when 'wrap' is off.
+
+							<b class="vimtag">*<a name="zL">zL</a>*</b>
+zL			Move the view on the text half a screenwidth to the
+			right, thus scroll the text half a screenwidth to the
+			left.  This only works when 'wrap' is off.
+
+							<b class="vimtag">*<a name="zH">zH</a>*</b>
+zH			Move the view on the text half a screenwidth to the
+			left, thus scroll the text half a screenwidth to the
+			right.  This only works when 'wrap' is off.
+
+For the following two commands the cursor is not moved in the text, only the
+text scrolls on the screen.
+
+							<b class="vimtag">*<a name="zs">zs</a>*</b>
+zs			Scroll the text horizontally to position the cursor
+			at the start (left side) of the screen.  This only
+			works when 'wrap' is off.
+
+							<b class="vimtag">*<a name="ze">ze</a>*</b>
+ze			Scroll the text horizontally to position the cursor
+			at the end (right side) of the screen.  This only
+			works when 'wrap' is off.
+
+</pre><hr/><pre>5. Scrolling synchronously				<b class="vimtag">*<a name="scroll-binding">scroll-binding</a>*</b>
+
+Occasionally, it is desirable to bind two or more windows together such that
+when one window is scrolled, the other windows are also scrolled.  In Vim,
+windows can be given this behavior by setting the (window-specific)
+'scrollbind' option.  When a window that has 'scrollbind' set is scrolled, all
+other 'scrollbind' windows are scrolled the same amount, if possible.  The
+behavior of 'scrollbind' can be modified by the 'scrollopt' option.
+
+When using the scrollbars, the binding only happens when scrolling the window
+with focus (where the cursor is).  You can use this to avoid scroll-binding
+for a moment without resetting options.
+
+When a window also has the 'diff' option set, the scroll-binding uses the
+differences between the two buffers to synchronize the position precisely.
+Otherwise the following method is used.
+
+							<b class="vimtag">*<a name="scrollbind-relative">scrollbind-relative</a>*</b>
+Each 'scrollbind' window keeps track of its "relative offset," which can be
+thought of as the difference between the current window's vertical scroll
+position and the other window's vertical scroll position.  When one of the
+'scrollbind' windows is asked to vertically scroll past the beginning or end
+limit of its text, the window no longer scrolls, but remembers how far past
+the limit it wishes to be.  The window keeps this information so that it can
+maintain the same relative offset, regardless of its being asked to scroll
+past its buffer's limits.
+
+However, if a 'scrollbind' window that has a relative offset that is past its
+buffer's limits is given the cursor focus, the other 'scrollbind' windows must
+jump to a location where the current window's relative offset is valid.  This
+behavior can be changed by clearing the "jump" flag from the 'scrollopt'
+option.
+
+						<b class="vimtag">*<a name="syncbind">syncbind</a>*</b> <b class="vimtag">*<a name=":syncbind">:syncbind</a>*</b> <b class="vimtag">*<a name=":sync">:sync</a>*</b>
+:syncbind		Force all 'scrollbind' windows to have the same
+			relative offset.  I.e., when any of the 'scrollbind'
+			windows is scrolled to the top of its buffer, all of
+			the 'scrollbind' windows will also be at the top of
+			their buffers.
+
+							<b class="vimtag">*<a name="scrollbind-quickadj">scrollbind-quickadj</a>*</b>
+The 'scrollbind' flag is meaningful when using keyboard commands to vertically
+scroll a window, and also meaningful when using the vertical scrollbar of the
+window which has the cursor focus.  However, when using the vertical scrollbar
+of a window which doesn't have the cursor focus, 'scrollbind' is ignored.
+This allows quick adjustment of the relative offset of 'scrollbind' windows.
+
+</pre><hr/><pre>6. Scrolling with a mouse wheel				<b class="vimtag">*<a name="scroll-mouse-wheel">scroll-mouse-wheel</a>*</b>
+
+When your mouse has a scroll wheel, it should work with Vim in the GUI.  How
+it works depends on your system.  It might also work in an xterm
+|<a href="scroll.html#xterm-mouse-wheel">xterm-mouse-wheel</a>|.  By default only vertical scroll wheels are supported,
+but some GUIs also support horizontal scroll wheels.
+
+For the Win32 GUI the scroll action is hard coded.  It works just like
+dragging the scrollbar of the current window.  How many lines are scrolled
+depends on your mouse driver.  If the scroll action causes input focus
+problems, see |<a href="gui_w32.html#intellimouse-wheel-problems">intellimouse-wheel-problems</a>|.
+
+For the X11 GUIs (Motif, Athena and GTK) scrolling the wheel generates key
+presses <code class="special">&lt;ScrollWheelUp&gt;</code>, <code class="special">&lt;ScrollWheelDown&gt;</code>, <code class="special">&lt;ScrollWheelLeft&gt;</code> and
+<code class="special">&lt;ScrollWheelRight&gt;</code>.  For example, if you push the scroll wheel upwards a
+<code class="special">&lt;ScrollWheelUp&gt;</code> key press is generated causing the window to scroll upwards
+(while the text is actually moving downwards).  The default action for these
+keys are:
+    <code class="special">&lt;ScrollWheelUp&gt;</code>	    scroll three lines up	<b class="vimtag">*<a name="%3CScrollWheelUp%3E">&lt;ScrollWheelUp&gt;</a>*</b>
+    <code class="special">&lt;S-ScrollWheelUp&gt;</code>	    scroll one page up		<b class="vimtag">*<a name="%3CS-ScrollWheelUp%3E">&lt;S-ScrollWheelUp&gt;</a>*</b>
+    <code class="special">&lt;C-ScrollWheelUp&gt;</code>	    scroll one page up		<b class="vimtag">*<a name="%3CC-ScrollWheelUp%3E">&lt;C-ScrollWheelUp&gt;</a>*</b>
+    <code class="special">&lt;ScrollWheelDown&gt;</code>	    scroll three lines down	<b class="vimtag">*<a name="%3CScrollWheelDown%3E">&lt;ScrollWheelDown&gt;</a>*</b>
+    <code class="special">&lt;S-ScrollWheelDown&gt;</code>	    scroll one page down	<b class="vimtag">*<a name="%3CS-ScrollWheelDown%3E">&lt;S-ScrollWheelDown&gt;</a>*</b>
+    <code class="special">&lt;C-ScrollWheelDown&gt;</code>	    scroll one page down	<b class="vimtag">*<a name="%3CC-ScrollWheelDown%3E">&lt;C-ScrollWheelDown&gt;</a>*</b>
+    <code class="special">&lt;ScrollWheelLeft&gt;</code>	    scroll six columns left	<b class="vimtag">*<a name="%3CScrollWheelLeft%3E">&lt;ScrollWheelLeft&gt;</a>*</b>
+    <code class="special">&lt;S-ScrollWheelLeft&gt;</code>	    scroll one page left	<b class="vimtag">*<a name="%3CS-ScrollWheelLeft%3E">&lt;S-ScrollWheelLeft&gt;</a>*</b>
+    <code class="special">&lt;C-ScrollWheelLeft&gt;</code>	    scroll one page left	<b class="vimtag">*<a name="%3CC-ScrollWheelLeft%3E">&lt;C-ScrollWheelLeft&gt;</a>*</b>
+    <code class="special">&lt;ScrollWheelRight&gt;</code>	    scroll six columns right	<b class="vimtag">*<a name="%3CScrollWheelRight%3E">&lt;ScrollWheelRight&gt;</a>*</b>
+    <code class="special">&lt;S-ScrollWheelRight&gt;</code>    scroll one page right	<b class="vimtag">*<a name="%3CS-ScrollWheelRight%3E">&lt;S-ScrollWheelRight&gt;</a>*</b>
+    <code class="special">&lt;C-ScrollWheelRight&gt;</code>    scroll one page right	<b class="vimtag">*<a name="%3CC-ScrollWheelRight%3E">&lt;C-ScrollWheelRight&gt;</a>*</b>
+This should work in all modes, except when editing the command line.
+
+<code class="note">Note</code> that horizontal scrolling only works if 'nowrap' is set.  Also, unless
+the "h" flag in 'guioptions' is set, the cursor moves to the longest visible
+line if the cursor line is about to be scrolled off the screen (similarly to
+how the horizontal scrollbar works).
+
+You can modify the default behavior by mapping the keys.  For example, to make
+the scroll wheel move one line or half a page in Normal mode:
+<code class="example">   :map <code class="special">&lt;ScrollWheelUp&gt;</code> <code class="special">&lt;C-Y&gt;</code></code>
+<code class="example">   :map <code class="special">&lt;S-ScrollWheelUp&gt;</code> <code class="special">&lt;C-U&gt;</code></code>
+<code class="example">   :map <code class="special">&lt;ScrollWheelDown&gt;</code> <code class="special">&lt;C-E&gt;</code></code>
+<code class="example">   :map <code class="special">&lt;S-ScrollWheelDown&gt;</code> <code class="special">&lt;C-D&gt;</code></code>
+You can also use Alt and Ctrl modifiers.
+
+This only works when Vim gets the scroll wheel events, of course.  You can
+check if this works with the "xev" program.
+
+When using XFree86, the /etc/XF86Config file should have the correct entry for
+your mouse.  For FreeBSD, this entry works for a Logitech scrollmouse:
+<code class="example">    Protocol     "MouseMan"</code>
+<code class="example">    Device       "/dev/psm0"</code>
+<code class="example">    ZAxisMapping 4 5</code>
+See the XFree86 documentation for information.
+
+						<b class="vimtag">*<a name="%3CMouseDown%3E">&lt;MouseDown&gt;</a>*</b> <b class="vimtag">*<a name="%3CMouseUp%3E">&lt;MouseUp&gt;</a>*</b>
+The keys <code class="special">&lt;MouseDown&gt;</code> and <code class="special">&lt;MouseUp&gt;</code> have been deprecated.  Use <code class="special">&lt;ScrollWheelUp&gt;</code>
+instead of <code class="special">&lt;MouseDown&gt;</code> and use <code class="special">&lt;ScrollWheelDown&gt;</code> instead of <code class="special">&lt;MouseUp&gt;</code>.
+
+							<b class="vimtag">*<a name="xterm-mouse-wheel">xterm-mouse-wheel</a>*</b>
+To use the mouse wheel in a new xterm you only have to make the scroll wheel
+work in your Xserver, as mentioned above.
+
+To use the mouse wheel in an older xterm you must do this:
+1. Make it work in your Xserver, as mentioned above.
+2. Add translations for the xterm, so that the xterm will pass a scroll event
+   to Vim as an escape sequence.
+3. Add mappings in Vim, to interpret the escape sequences as <code class="special">&lt;ScrollWheelDown&gt;</code>
+   or <code class="special">&lt;ScrollWheelUp&gt;</code> keys.
+
+You can do the translations by adding this to your ~.Xdefaults file (or other
+file where your X resources are kept):
+<code class="example"></code>
+<code class="example">  XTerm*VT100.Translations:		#override \n\</code>
+<code class="example">		s<code class="special">&lt;Btn4Down&gt;</code>: string("0x9b") string("[64~") \n\</code>
+<code class="example">		s<code class="special">&lt;Btn5Down&gt;</code>: string("0x9b") string("[65~") \n\</code>
+<code class="example">		<code class="special">&lt;Btn4Down&gt;</code>: string("0x9b") string("[62~") \n\</code>
+<code class="example">		<code class="special">&lt;Btn5Down&gt;</code>: string("0x9b") string("[63~") \n\</code>
+<code class="example">		<code class="special">&lt;Btn4Up&gt;</code>: \n\</code>
+<code class="example">		<code class="special">&lt;Btn5Up&gt;</code>:</code>
+<code class="example"></code>
+Add these mappings to your vimrc file:
+<code class="example">	:map <code class="special">&lt;M-Esc&gt;</code>[62~ <code class="special">&lt;ScrollWheelUp&gt;</code></code>
+<code class="example">	:map! <code class="special">&lt;M-Esc&gt;</code>[62~ <code class="special">&lt;ScrollWheelUp&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;M-Esc&gt;</code>[63~ <code class="special">&lt;ScrollWheelDown&gt;</code></code>
+<code class="example">	:map! <code class="special">&lt;M-Esc&gt;</code>[63~ <code class="special">&lt;ScrollWheelDown&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;M-Esc&gt;</code>[64~ <code class="special">&lt;S-ScrollWheelUp&gt;</code></code>
+<code class="example">	:map! <code class="special">&lt;M-Esc&gt;</code>[64~ <code class="special">&lt;S-ScrollWheelUp&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;M-Esc&gt;</code>[65~ <code class="special">&lt;S-ScrollWheelDown&gt;</code></code>
+<code class="example">	:map! <code class="special">&lt;M-Esc&gt;</code>[65~ <code class="special">&lt;S-ScrollWheelDown&gt;</code></code>
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

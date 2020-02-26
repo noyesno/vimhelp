@@ -1,0 +1,1000 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: term</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>TERM</h2>
+<pre>
+<b class="vimtag">*<a name="term.txt">term.txt</a>*</b>      For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Terminal information					<b class="vimtag">*<a name="terminal-info">terminal-info</a>*</b>
+
+Vim uses information about the terminal you are using to fill the screen and
+recognize what keys you hit.  If this information is not correct, the screen
+may be messed up or keys may not be recognized.  The actions which have to be
+performed on the screen are accomplished by outputting a string of
+characters.  Special keys produce a string of characters.  These strings are
+stored in the terminal options, see |<a href="term.html#terminal-options">terminal-options</a>|.
+
+<code class="note">NOTE:</code> Most of this is not used when running the |<a href="gui.html#GUI">GUI</a>|.
+
+1. Startup			|<a href="term.html#startup-terminal">startup-terminal</a>|
+2. Terminal options		|<a href="term.html#terminal-options">terminal-options</a>|
+3. Window size			|<a href="term.html#window-size">window-size</a>|
+4. Slow and fast terminals	|<a href="term.html#slow-fast-terminal">slow-fast-terminal</a>|
+5. Using the mouse		|<a href="term.html#mouse-using">mouse-using</a>|
+
+</pre><hr/><pre>1. Startup						<b class="vimtag">*<a name="startup-terminal">startup-terminal</a>*</b>
+
+When Vim is started a default terminal type is assumed.  For the Amiga this is
+a standard CLI window, for MS-Windows the pc terminal, for Unix an ansi
+terminal.  A few other terminal types are always available, see below
+|<a href="term.html#builtin-terms">builtin-terms</a>|.
+
+You can give the terminal name with the '-T' Vim argument.  If it is not given
+Vim will try to get the name from the TERM environment variable.
+
+				<b class="vimtag">*<a name="termcap">termcap</a>*</b> <b class="vimtag">*<a name="terminfo">terminfo</a>*</b> <b class="vimtag">*<a name="E557">E557</a>*</b> <b class="vimtag">*<a name="E558">E558</a>*</b> <b class="vimtag">*<a name="E559">E559</a>*</b>
+On Unix the terminfo database or termcap file is used.  This is referred to as
+"termcap" in all the documentation.  At compile time, when running configure,
+the choice whether to use terminfo or termcap is done automatically.  When
+running Vim the output of ":version" will show |<a href="various.html#+terminfo">+terminfo</a>| if terminfo is
+used.  Also see |<a href="tips.html#xterm-screens">xterm-screens</a>|.
+
+On non-Unix systems a termcap is only available if Vim was compiled with
+TERMCAP defined.
+
+					<b class="vimtag">*<a name="builtin-terms">builtin-terms</a>*</b> <b class="vimtag">*<a name="builtin_terms">builtin_terms</a>*</b>
+Which builtin terminals are available depends on a few defines in feature.h,
+which need to be set at compile time:
+<code class="section">    define		output of ":version"	terminals builtin	</code>
+NO_BUILTIN_TCAPS	-builtin_terms		none
+SOME_BUILTIN_TCAPS	+builtin_terms		most common ones (default)
+ALL_BUILTIN_TCAPS	++builtin_terms		all available
+
+You can see a list of available builtin terminals with ":set term=xxx" (when
+not running the GUI).  Also see |<a href="various.html#+builtin_terms">+builtin_terms</a>|.
+
+If the termcap code is included Vim will try to get the strings for the
+terminal you are using from the termcap file and the builtin termcaps.  Both
+are always used, if an entry for the terminal you are using is present.  Which
+one is used first depends on the 'ttybuiltin' option:
+
+'ttybuiltin' on		1: builtin termcap	2: external termcap
+'ttybuiltin' off	1: external termcap	2: builtin termcap
+
+If an option is missing in one of them, it will be obtained from the other
+one.  If an option is present in both, the one first encountered is used.
+
+Which external termcap file is used varies from system to system and may
+depend on the environment variables "TERMCAP" and "TERMPATH".  See "man
+tgetent".
+
+Settings depending on terminal			<b class="vimtag">*<a name="term-dependent-settings">term-dependent-settings</a>*</b>
+
+If you want to set options or mappings, depending on the terminal name, you
+can do this best in your .vimrc.  Example:
+<code class="example"></code>
+<code class="example">   if &amp;term == "xterm"</code>
+<code class="example">     ... xterm maps and settings ...</code>
+<code class="example">   elseif &amp;term =~ "vt10."</code>
+<code class="example">     ... vt100, vt102 maps and settings ...</code>
+<code class="example">   endif</code>
+
+						<b class="vimtag">*<a name="raw-terminal-mode">raw-terminal-mode</a>*</b>
+For normal editing the terminal will be put into "raw" mode.  The strings
+defined with 't_ti', 't_TI' and 't_ks' will be sent to the terminal.  Normally
+this puts the terminal in a state where the termcap codes are valid and
+activates the cursor and function keys.
+When Vim exits the terminal will be put back into the mode it was before Vim
+started.  The strings defined with 't_te', 't_TE' and 't_ke' will be sent to
+the terminal.  On the Amiga, with commands that execute an external command
+(e.g., "!!"), the terminal will be put into Normal mode for a moment.  This
+means that you can stop the output to the screen by hitting a printing key.
+Output resumes when you hit <code class="special">&lt;BS&gt;</code>.
+
+<code class="note">Note:</code> When 't_ti' is not empty, Vim assumes that it causes switching to the
+alternate screen.  This may slightly change what happens when executing a
+shell command or exiting Vim.  To avoid this use 't_TI' and 't_TE'.
+
+						<b class="vimtag">*<a name="xterm-bracketed-paste">xterm-bracketed-paste</a>*</b>
+When the 't_BE' option is set then 't_BE' will be sent to the
+terminal when entering "raw" mode and 't_BD' when leaving "raw" mode.  The
+terminal is then expected to put 't_PS' before pasted text and 't_PE' after
+pasted text.  This way Vim can separate text that is pasted from characters
+that are typed.  The pasted text is handled like when the middle mouse button
+is used, it is inserted literally and not interpreted as commands.
+
+When the cursor is in the first column, the pasted text will be inserted
+before it.  Otherwise the pasted text is appended after the cursor position.
+This means one cannot paste after the first column.  Unfortunately Vim does
+not have a way to tell where the mouse pointer was.
+
+<code class="note">Note</code> that in some situations Vim will not recognize the bracketed paste and
+you will get the raw text.  In other situations Vim will only get the first
+pasted character and drop the rest, e.g. when using the "r" command.  If you
+have a problem with this, disable bracketed paste by putting this in your
+.vimrc:
+<code class="example">	set t_BE=</code>
+If this is done while Vim is running the 't_BD' will be sent to the terminal
+to disable bracketed paste.
+
+If your terminal supports bracketed paste, but the options are not set
+automatically, you can try using something like this:
+<code class="example"></code>
+<code class="example">	if &amp;term =~ "screen"</code>
+<code class="example">	  let &amp;t_BE = "\e[?2004h"</code>
+<code class="example">	  let &amp;t_BD = "\e[?2004l"</code>
+<code class="example">	  exec "set t_PS=\e[200~"</code>
+<code class="example">	  exec "set t_PE=\e[201~"</code>
+<code class="example">	endif</code>
+
+							<b class="vimtag">*<a name="cs7-problem">cs7-problem</a>*</b>
+<code class="note">Note:</code> If the terminal settings are changed after running Vim, you might have
+an illegal combination of settings.  This has been reported on Solaris 2.5
+with "stty cs8 parenb", which is restored as "stty cs7 parenb".  Use
+"stty cs8 -parenb -istrip" instead, this is restored correctly.
+
+Some termcap entries are wrong in the sense that after sending 't_ks' the
+cursor keys send codes different from the codes defined in the termcap.  To
+avoid this you can set 't_ks' (and 't_ke') to empty strings.  This must be
+done during initialization (see |<a href="starting.html#initialization">initialization</a>|), otherwise it's too late.
+
+Some termcap entries assume that the highest bit is always reset.  For
+example: The cursor-up entry for the Amiga could be ":ku=\E[A:".  But the
+Amiga really sends "\233A".  This works fine if the highest bit is reset,
+e.g., when using an Amiga over a serial line.  If the cursor keys don't work,
+try the entry ":ku=\233A:".
+
+Some termcap entries have the entry ":ku=\E[A:".  But the Amiga really sends
+"\233A".  On output "\E[" and "\233" are often equivalent, on input they
+aren't.  You will have to change the termcap entry, or change the key code with
+the :set command to fix this.
+
+Many cursor key codes start with an <code class="special">&lt;Esc&gt;</code>.  Vim must find out if this is a
+single hit of the <code class="special">&lt;Esc&gt;</code> key or the start of a cursor key sequence.  It waits
+for a next character to arrive.  If it does not arrive within one second a
+single <code class="special">&lt;Esc&gt;</code> is assumed.  On very slow systems this may fail, causing cursor
+keys not to work sometimes.  If you discover this problem reset the 'timeout'
+option.  Vim will wait for the next character to arrive after an <code class="special">&lt;Esc&gt;</code>.  If
+you want to enter a single <code class="special">&lt;Esc&gt;</code> you must type it twice.  Resetting the
+'esckeys' option avoids this problem in Insert mode, but you lose the
+possibility to use cursor and function keys in Insert mode.
+
+On the Amiga the recognition of window resizing is activated only when the
+terminal name is "amiga" or "builtin_amiga".
+
+Some terminals have confusing codes for the cursor keys.  The televideo 925 is
+such a terminal.  It sends a <code class="keystroke">CTRL-H</code> for cursor-left.  This would make it
+impossible to distinguish a backspace and cursor-left.  To avoid this problem
+<code class="keystroke">CTRL-H</code> is never recognized as cursor-left.
+
+					<b class="vimtag">*<a name="vt100-cursor-keys">vt100-cursor-keys</a>*</b> <b class="vimtag">*<a name="xterm-cursor-keys">xterm-cursor-keys</a>*</b>
+Other terminals (e.g., vt100 and xterm) have cursor keys that send <code class="special">&lt;Esc&gt;</code>OA,
+<code class="special">&lt;Esc&gt;</code>OB, etc.  Unfortunately these are valid commands in insert mode: Stop
+insert, Open a new line above the new one, start inserting 'A', 'B', etc.
+Instead of performing these commands Vim will erroneously recognize this typed
+key sequence as a cursor key movement.  To avoid this and make Vim do what you
+want in either case you could use these settings:
+<code class="example">	:set notimeout		" don't timeout on mappings</code>
+<code class="example">	:set ttimeout		" do timeout on terminal key codes</code>
+<code class="example">	:set timeoutlen=100	" timeout after 100 msec</code>
+This requires the key-codes to be sent within 100 msec in order to recognize
+them as a cursor key.  When you type you normally are not that fast, so they
+are recognized as individual typed commands, even though Vim receives the same
+sequence of bytes.
+
+				<b class="vimtag">*<a name="vt100-function-keys">vt100-function-keys</a>*</b> <b class="vimtag">*<a name="xterm-function-keys">xterm-function-keys</a>*</b>
+An xterm can send function keys F1 to F4 in two modes: vt100 compatible or
+not.  Because Vim may not know what the xterm is sending, both types of keys
+are recognized.  The same happens for the <code class="special">&lt;Home&gt;</code> and <code class="special">&lt;End&gt;</code> keys.
+<code class="section">			normal			vt100 </code>
+	<code class="special">&lt;F1&gt;</code>	t_k1	<code class="special">&lt;Esc&gt;</code>[11~	<code class="special">&lt;xF1&gt;</code>	<code class="special">&lt;Esc&gt;</code>OP	    <b class="vimtag">*<a name="%3CxF1%3E-xterm">&lt;xF1&gt;-xterm</a>*</b>
+	<code class="special">&lt;F2&gt;</code>	t_k2	<code class="special">&lt;Esc&gt;</code>[12~	<code class="special">&lt;xF2&gt;</code>	<code class="special">&lt;Esc&gt;</code>OQ	    <b class="vimtag">*<a name="%3CxF2%3E-xterm">&lt;xF2&gt;-xterm</a>*</b>
+	<code class="special">&lt;F3&gt;</code>	t_k3	<code class="special">&lt;Esc&gt;</code>[13~	<code class="special">&lt;xF3&gt;</code>	<code class="special">&lt;Esc&gt;</code>OR	    <b class="vimtag">*<a name="%3CxF3%3E-xterm">&lt;xF3&gt;-xterm</a>*</b>
+	<code class="special">&lt;F4&gt;</code>	t_k4	<code class="special">&lt;Esc&gt;</code>[14~	<code class="special">&lt;xF4&gt;</code>	<code class="special">&lt;Esc&gt;</code>OS	    <b class="vimtag">*<a name="%3CxF4%3E-xterm">&lt;xF4&gt;-xterm</a>*</b>
+	<code class="special">&lt;Home&gt;</code>	t_kh	<code class="special">&lt;Esc&gt;</code>[7~	<code class="special">&lt;xHome&gt;</code>	<code class="special">&lt;Esc&gt;</code>OH	    <b class="vimtag">*<a name="%3CxHome%3E-xterm">&lt;xHome&gt;-xterm</a>*</b>
+	<code class="special">&lt;End&gt;</code>	t_@7	<code class="special">&lt;Esc&gt;</code>[4~	<code class="special">&lt;xEnd&gt;</code>	<code class="special">&lt;Esc&gt;</code>OF	    <b class="vimtag">*<a name="%3CxEnd%3E-xterm">&lt;xEnd&gt;-xterm</a>*</b>
+
+When Vim starts, <code class="special">&lt;xF1&gt;</code> is mapped to <code class="special">&lt;F1&gt;</code>, <code class="special">&lt;xF2&gt;</code> to <code class="special">&lt;F2&gt;</code> etc.  This means that
+by default both codes do the same thing.  If you make a mapping for <code class="special">&lt;xF2&gt;</code>,
+because your terminal does have two keys, the default mapping is overwritten,
+thus you can use the <code class="special">&lt;F2&gt;</code> and <code class="special">&lt;xF2&gt;</code> keys for something different.
+
+							<b class="vimtag">*<a name="xterm-shifted-keys">xterm-shifted-keys</a>*</b>
+Newer versions of xterm support shifted function keys and special keys.  Vim
+recognizes most of them.  Use ":set termcap" to check which are supported and
+what the codes are.  Mostly these are not in a termcap, they are only
+supported by the builtin_xterm termcap.
+
+							<b class="vimtag">*<a name="xterm-modifier-keys">xterm-modifier-keys</a>*</b>
+Newer versions of xterm support Alt and Ctrl for most function keys.  To avoid
+having to add all combinations of Alt, Ctrl and Shift for every key a special
+sequence is recognized at the end of a termcap entry: ";*X".  The "X" can be
+any character, often '~' is used.  The ";*" stands for an optional modifier
+argument.  ";2" is Shift, ";3" is Alt, ";5" is Ctrl and ";9" is Meta (when
+it's different from Alt).  They can be combined.  Examples:
+<code class="example"><code class="section">	:set <code class="special">&lt;F8&gt;</code>=^[[19;*</code></code>
+<code class="example">	:set <code class="special">&lt;Home&gt;</code>=^[[1;*H</code>
+Another speciality about these codes is that they are not overwritten by
+another code.  That is to avoid that the codes obtained from xterm directly
+|<a href="term.html#t_RV">t_RV</a>| overwrite them.
+							<b class="vimtag">*<a name="xterm-scroll-region">xterm-scroll-region</a>*</b>
+The default termcap entry for xterm on Sun and other platforms does not
+contain the entry for scroll regions.  Add ":cs=\E[%i%d;%dr:" to the xterm
+entry in /etc/termcap and everything should work.
+
+							<b class="vimtag">*<a name="xterm-end-home-keys">xterm-end-home-keys</a>*</b>
+On some systems (at least on FreeBSD with XFree86 3.1.2) the codes that the
+<code class="special">&lt;End&gt;</code> and <code class="special">&lt;Home&gt;</code> keys send contain a <code class="special">&lt;Nul&gt;</code> character.  To make these keys send
+the proper key code, add these lines to your ~/.Xdefaults file:
+
+*VT100.Translations:		#override \n\
+		<code class="special">&lt;Key&gt;</code>Home: string("0x1b") string("[7~") \n\
+		<code class="special">&lt;Key&gt;</code>End: string("0x1b") string("[8~")
+
+						<b class="vimtag">*<a name="xterm-8bit">xterm-8bit</a>*</b> <b class="vimtag">*<a name="xterm-8-bit">xterm-8-bit</a>*</b>
+Xterm can be run in a mode where it uses 8-bit escape sequences.  The CSI code
+is used instead of <code class="special">&lt;Esc&gt;</code>[.  The advantage is that an <code class="special">&lt;Esc&gt;</code> can quickly be
+recognized in Insert mode, because it can't be confused with the start of a
+special key.
+For the builtin termcap entries, Vim checks if the 'term' option contains
+"8bit" anywhere.  It then uses 8-bit characters for the termcap entries, the
+mouse and a few other things.  You would normally set $TERM in your shell to
+"xterm-8bit" and Vim picks this up and adjusts to the 8-bit setting
+automatically.
+When Vim receives a response to the |<a href="term.html#t_RV">t_RV</a>| (request version) sequence and it
+starts with CSI, it assumes that the terminal is in 8-bit mode and will
+convert all key sequences to their 8-bit variants.
+
+</pre><hr/><pre>2. Terminal options		<b class="vimtag">*<a name="terminal-options">terminal-options</a>*</b> <b class="vimtag">*<a name="termcap-options">termcap-options</a>*</b> <b class="vimtag">*<a name="E436">E436</a>*</b>
+
+The terminal options can be set just like normal options.  But they are not
+shown with the ":set all" command.  Instead use ":set termcap".
+
+It is always possible to change individual strings by setting the
+appropriate option.  For example:
+<code class="example">	:set t_ce=^V^[[K	(<code class="keystroke">CTRL-V</code>, <code class="special">&lt;Esc&gt;</code>, [, K)</code>
+<code class="example"></code>
+The options are listed below.  The associated termcap code is always equal to
+the last two characters of the option name.  Only one termcap code is
+required: Cursor motion, 't_cm'.
+
+The options 't_da', 't_db', 't_ms', 't_xs', 't_xn' represent flags in the
+termcap.  When the termcap flag is present, the option will be set to "y".
+But any non-empty string means that the flag is set.  An empty string means
+that the flag is not set.  't_CS' works like this too, but it isn't a termcap
+flag.
+
+OUTPUT CODES						<b class="vimtag">*<a name="terminal-output-codes">terminal-output-codes</a>*</b>
+<code class="section">	option	meaning	</code>
+
+	t_AB	set background color (ANSI)			<b class="vimtag">*<a name="t_AB">t_AB</a>*</b> <b class="vimtag">*<a name="'t_AB'">'t_AB'</a>*</b>
+	t_AF	set foreground color (ANSI)			<b class="vimtag">*<a name="t_AF">t_AF</a>*</b> <b class="vimtag">*<a name="'t_AF'">'t_AF'</a>*</b>
+	t_AL	add number of blank lines			<b class="vimtag">*<a name="t_AL">t_AL</a>*</b> <b class="vimtag">*<a name="'t_AL'">'t_AL'</a>*</b>
+	t_al	add new blank line				<b class="vimtag">*<a name="t_al">t_al</a>*</b> <b class="vimtag">*<a name="'t_al'">'t_al'</a>*</b>
+	t_bc	backspace character				<b class="vimtag">*<a name="t_bc">t_bc</a>*</b> <b class="vimtag">*<a name="'t_bc'">'t_bc'</a>*</b>
+	t_cd	clear to end of screen				<b class="vimtag">*<a name="t_cd">t_cd</a>*</b> <b class="vimtag">*<a name="'t_cd'">'t_cd'</a>*</b>
+	t_ce	clear to end of line				<b class="vimtag">*<a name="t_ce">t_ce</a>*</b> <b class="vimtag">*<a name="'t_ce'">'t_ce'</a>*</b>
+	t_cl	clear screen					<b class="vimtag">*<a name="t_cl">t_cl</a>*</b> <b class="vimtag">*<a name="'t_cl'">'t_cl'</a>*</b>
+	t_cm	cursor motion (required!)		  <b class="vimtag">*<a name="E437">E437</a>*</b> <b class="vimtag">*<a name="t_cm">t_cm</a>*</b> <b class="vimtag">*<a name="'t_cm'">'t_cm'</a>*</b>
+	t_Co	number of colors				<b class="vimtag">*<a name="t_Co">t_Co</a>*</b> <b class="vimtag">*<a name="'t_Co'">'t_Co'</a>*</b>
+	t_CS	if non-empty, cursor relative to scroll region	<b class="vimtag">*<a name="t_CS">t_CS</a>*</b> <b class="vimtag">*<a name="'t_CS'">'t_CS'</a>*</b>
+	t_cs	define scrolling region				<b class="vimtag">*<a name="t_cs">t_cs</a>*</b> <b class="vimtag">*<a name="'t_cs'">'t_cs'</a>*</b>
+	t_CV	define vertical scrolling region		<b class="vimtag">*<a name="t_CV">t_CV</a>*</b> <b class="vimtag">*<a name="'t_CV'">'t_CV'</a>*</b>
+	t_da	if non-empty, lines from above scroll down	<b class="vimtag">*<a name="t_da">t_da</a>*</b> <b class="vimtag">*<a name="'t_da'">'t_da'</a>*</b>
+	t_db	if non-empty, lines from below scroll up	<b class="vimtag">*<a name="t_db">t_db</a>*</b> <b class="vimtag">*<a name="'t_db'">'t_db'</a>*</b>
+	t_DL	delete number of lines				<b class="vimtag">*<a name="t_DL">t_DL</a>*</b> <b class="vimtag">*<a name="'t_DL'">'t_DL'</a>*</b>
+	t_dl	delete line					<b class="vimtag">*<a name="t_dl">t_dl</a>*</b> <b class="vimtag">*<a name="'t_dl'">'t_dl'</a>*</b>
+	t_fs	set window title end (from status line)		<b class="vimtag">*<a name="t_fs">t_fs</a>*</b> <b class="vimtag">*<a name="'t_fs'">'t_fs'</a>*</b>
+	t_ke	exit "keypad transmit" mode			<b class="vimtag">*<a name="t_ke">t_ke</a>*</b> <b class="vimtag">*<a name="'t_ke'">'t_ke'</a>*</b>
+	t_ks	start "keypad transmit" mode			<b class="vimtag">*<a name="t_ks">t_ks</a>*</b> <b class="vimtag">*<a name="'t_ks'">'t_ks'</a>*</b>
+	t_le	move cursor one char left			<b class="vimtag">*<a name="t_le">t_le</a>*</b> <b class="vimtag">*<a name="'t_le'">'t_le'</a>*</b>
+	t_mb	blinking mode					<b class="vimtag">*<a name="t_mb">t_mb</a>*</b> <b class="vimtag">*<a name="'t_mb'">'t_mb'</a>*</b>
+	t_md	bold mode					<b class="vimtag">*<a name="t_md">t_md</a>*</b> <b class="vimtag">*<a name="'t_md'">'t_md'</a>*</b>
+	t_me	Normal mode (undoes t_mr, t_mb, t_md and color)	<b class="vimtag">*<a name="t_me">t_me</a>*</b> <b class="vimtag">*<a name="'t_me'">'t_me'</a>*</b>
+	t_mr	reverse (invert) mode				<b class="vimtag">*<a name="t_mr">t_mr</a>*</b> <b class="vimtag">*<a name="'t_mr'">'t_mr'</a>*</b>
+								<b class="vimtag">*<a name="t_ms">t_ms</a>*</b> <b class="vimtag">*<a name="'t_ms'">'t_ms'</a>*</b>
+	t_ms	if non-empty, cursor can be moved in standout/inverse mode
+	t_nd	non destructive space character			<b class="vimtag">*<a name="t_nd">t_nd</a>*</b> <b class="vimtag">*<a name="'t_nd'">'t_nd'</a>*</b>
+	t_op	reset to original color pair			<b class="vimtag">*<a name="t_op">t_op</a>*</b> <b class="vimtag">*<a name="'t_op'">'t_op'</a>*</b>
+	t_RI	cursor number of chars right			<b class="vimtag">*<a name="t_RI">t_RI</a>*</b> <b class="vimtag">*<a name="'t_RI'">'t_RI'</a>*</b>
+	t_Sb	set background color				<b class="vimtag">*<a name="t_Sb">t_Sb</a>*</b> <b class="vimtag">*<a name="'t_Sb'">'t_Sb'</a>*</b>
+	t_Sf	set foreground color				<b class="vimtag">*<a name="t_Sf">t_Sf</a>*</b> <b class="vimtag">*<a name="'t_Sf'">'t_Sf'</a>*</b>
+	t_se	standout end					<b class="vimtag">*<a name="t_se">t_se</a>*</b> <b class="vimtag">*<a name="'t_se'">'t_se'</a>*</b>
+	t_so	standout mode					<b class="vimtag">*<a name="t_so">t_so</a>*</b> <b class="vimtag">*<a name="'t_so'">'t_so'</a>*</b>
+	t_sr	scroll reverse (backward)			<b class="vimtag">*<a name="t_sr">t_sr</a>*</b> <b class="vimtag">*<a name="'t_sr'">'t_sr'</a>*</b>
+	t_te	end of "termcap" mode				<b class="vimtag">*<a name="t_te">t_te</a>*</b> <b class="vimtag">*<a name="'t_te'">'t_te'</a>*</b>
+	t_ti	put terminal into "termcap" mode		<b class="vimtag">*<a name="t_ti">t_ti</a>*</b> <b class="vimtag">*<a name="'t_ti'">'t_ti'</a>*</b>
+	t_ts	set window title start (to status line)		<b class="vimtag">*<a name="t_ts">t_ts</a>*</b> <b class="vimtag">*<a name="'t_ts'">'t_ts'</a>*</b>
+	t_ue	underline end					<b class="vimtag">*<a name="t_ue">t_ue</a>*</b> <b class="vimtag">*<a name="'t_ue'">'t_ue'</a>*</b>
+	t_us	underline mode					<b class="vimtag">*<a name="t_us">t_us</a>*</b> <b class="vimtag">*<a name="'t_us'">'t_us'</a>*</b>
+	t_ut	clearing uses the current background color	<b class="vimtag">*<a name="t_ut">t_ut</a>*</b> <b class="vimtag">*<a name="'t_ut'">'t_ut'</a>*</b>
+	t_vb	visual bell					<b class="vimtag">*<a name="t_vb">t_vb</a>*</b> <b class="vimtag">*<a name="'t_vb'">'t_vb'</a>*</b>
+	t_ve	cursor visible					<b class="vimtag">*<a name="t_ve">t_ve</a>*</b> <b class="vimtag">*<a name="'t_ve'">'t_ve'</a>*</b>
+	t_vi	cursor invisible				<b class="vimtag">*<a name="t_vi">t_vi</a>*</b> <b class="vimtag">*<a name="'t_vi'">'t_vi'</a>*</b>
+	t_vs	cursor very visible (blink)			<b class="vimtag">*<a name="t_vs">t_vs</a>*</b> <b class="vimtag">*<a name="'t_vs'">'t_vs'</a>*</b>
+								<b class="vimtag">*<a name="t_xs">t_xs</a>*</b> <b class="vimtag">*<a name="'t_xs'">'t_xs'</a>*</b>
+	t_xs	if non-empty, standout not erased by overwriting (hpterm)
+								<b class="vimtag">*<a name="t_xn">t_xn</a>*</b> <b class="vimtag">*<a name="'t_xn'">'t_xn'</a>*</b>
+	t_xn	if non-empty, writing a character at the last screen cell
+		does not cause scrolling
+	t_ZH	italics mode					<b class="vimtag">*<a name="t_ZH">t_ZH</a>*</b> <b class="vimtag">*<a name="'t_ZH'">'t_ZH'</a>*</b>
+	t_ZR	italics end					<b class="vimtag">*<a name="t_ZR">t_ZR</a>*</b> <b class="vimtag">*<a name="'t_ZR'">'t_ZR'</a>*</b>
+
+Added by Vim (there are no standard codes for these):
+	t_Ce	undercurl end					<b class="vimtag">*<a name="t_Ce">t_Ce</a>*</b> <b class="vimtag">*<a name="'t_Ce'">'t_Ce'</a>*</b>
+	t_Cs	undercurl mode					<b class="vimtag">*<a name="t_Cs">t_Cs</a>*</b> <b class="vimtag">*<a name="'t_Cs'">'t_Cs'</a>*</b>
+	t_Te	strikethrough end				<b class="vimtag">*<a name="t_Te">t_Te</a>*</b> <b class="vimtag">*<a name="'t_Te'">'t_Te'</a>*</b>
+	t_Ts	strikethrough mode				<b class="vimtag">*<a name="t_Ts">t_Ts</a>*</b> <b class="vimtag">*<a name="'t_Ts'">'t_Ts'</a>*</b>
+	t_IS	set icon text start				<b class="vimtag">*<a name="t_IS">t_IS</a>*</b> <b class="vimtag">*<a name="'t_IS'">'t_IS'</a>*</b>
+	t_IE	set icon text end				<b class="vimtag">*<a name="t_IE">t_IE</a>*</b> <b class="vimtag">*<a name="'t_IE'">'t_IE'</a>*</b>
+	t_WP	set window position (Y, X) in pixels		<b class="vimtag">*<a name="t_WP">t_WP</a>*</b> <b class="vimtag">*<a name="'t_WP'">'t_WP'</a>*</b>
+	t_GP	get window position (Y, X) in pixels		<b class="vimtag">*<a name="t_GP">t_GP</a>*</b> <b class="vimtag">*<a name="'t_GP'">'t_GP'</a>*</b>
+	t_WS	set window size (height, width in cells)	<b class="vimtag">*<a name="t_WS">t_WS</a>*</b> <b class="vimtag">*<a name="'t_WS'">'t_WS'</a>*</b>
+	t_VS	cursor normally visible (no blink)		<b class="vimtag">*<a name="t_VS">t_VS</a>*</b> <b class="vimtag">*<a name="'t_VS'">'t_VS'</a>*</b>
+	t_SI	start insert mode (bar cursor shape)		<b class="vimtag">*<a name="t_SI">t_SI</a>*</b> <b class="vimtag">*<a name="'t_SI'">'t_SI'</a>*</b>
+	t_SR	start replace mode (underline cursor shape)	<b class="vimtag">*<a name="t_SR">t_SR</a>*</b> <b class="vimtag">*<a name="'t_SR'">'t_SR'</a>*</b>
+	t_EI	end insert or replace mode (block cursor shape)	<b class="vimtag">*<a name="t_EI">t_EI</a>*</b> <b class="vimtag">*<a name="'t_EI'">'t_EI'</a>*</b>
+		|<a href="term.html#termcap-cursor-shape">termcap-cursor-shape</a>|
+	t_RV	request terminal version string (for xterm)	<b class="vimtag">*<a name="t_RV">t_RV</a>*</b> <b class="vimtag">*<a name="'t_RV'">'t_RV'</a>*</b>
+		The response is stored in |<a href="eval.html#v:termresponse">v:termresponse</a>|
+		|<a href="term.html#xterm-8bit">xterm-8bit</a>| |<a href="options.html#'ttymouse'">'ttymouse'</a>| |<a href="term.html#xterm-codes">xterm-codes</a>|
+	t_u7	request cursor position (for xterm)		<b class="vimtag">*<a name="t_u7">t_u7</a>*</b> <b class="vimtag">*<a name="'t_u7'">'t_u7'</a>*</b>
+		see |<a href="options.html#'ambiwidth'">'ambiwidth'</a>|
+		The response is stored in |<a href="eval.html#v:termu7resp">v:termu7resp</a>|
+	t_RF	request terminal foreground color		<b class="vimtag">*<a name="t_RF">t_RF</a>*</b> <b class="vimtag">*<a name="'t_RF'">'t_RF'</a>*</b>
+		The response is stored in |<a href="eval.html#v:termrfgresp">v:termrfgresp</a>|
+	t_RB	request terminal background color		<b class="vimtag">*<a name="t_RB">t_RB</a>*</b> <b class="vimtag">*<a name="'t_RB'">'t_RB'</a>*</b>
+		The response is stored in |<a href="eval.html#v:termrbgresp">v:termrbgresp</a>|
+	t_8f	set foreground color (R, G, B)			<b class="vimtag">*<a name="t_8f">t_8f</a>*</b> <b class="vimtag">*<a name="'t_8f'">'t_8f'</a>*</b>
+		|<a href="term.html#xterm-true-color">xterm-true-color</a>|
+	t_8b	set background color (R, G, B)			<b class="vimtag">*<a name="t_8b">t_8b</a>*</b> <b class="vimtag">*<a name="'t_8b'">'t_8b'</a>*</b>
+		|<a href="term.html#xterm-true-color">xterm-true-color</a>|
+	t_BE	enable bracketed paste mode			<b class="vimtag">*<a name="t_BE">t_BE</a>*</b> <b class="vimtag">*<a name="'t_BE'">'t_BE'</a>*</b>
+		|<a href="term.html#xterm-bracketed-paste">xterm-bracketed-paste</a>|
+	t_BD	disable bracketed paste mode			<b class="vimtag">*<a name="t_BD">t_BD</a>*</b> <b class="vimtag">*<a name="'t_BD'">'t_BD'</a>*</b>
+		|<a href="term.html#xterm-bracketed-paste">xterm-bracketed-paste</a>|
+	t_SC	set cursor color start				<b class="vimtag">*<a name="t_SC">t_SC</a>*</b> <b class="vimtag">*<a name="'t_SC'">'t_SC'</a>*</b>
+	t_EC	set cursor color end				<b class="vimtag">*<a name="t_EC">t_EC</a>*</b> <b class="vimtag">*<a name="'t_EC'">'t_EC'</a>*</b>
+	t_SH	set cursor shape				<b class="vimtag">*<a name="t_SH">t_SH</a>*</b> <b class="vimtag">*<a name="'t_SH'">'t_SH'</a>*</b>
+	t_RC	request terminal cursor blinking		<b class="vimtag">*<a name="t_RC">t_RC</a>*</b> <b class="vimtag">*<a name="'t_RC'">'t_RC'</a>*</b>
+		The response is stored in |<a href="eval.html#v:termblinkresp">v:termblinkresp</a>|
+	t_RS	request terminal cursor style			<b class="vimtag">*<a name="t_RS">t_RS</a>*</b> <b class="vimtag">*<a name="'t_RS'">'t_RS'</a>*</b>
+		The response is stored in |<a href="eval.html#v:termstyleresp">v:termstyleresp</a>|
+	t_ST	save window title to stack			<b class="vimtag">*<a name="t_ST">t_ST</a>*</b> <b class="vimtag">*<a name="'t_ST'">'t_ST'</a>*</b>
+	t_RT	restore window title from stack			<b class="vimtag">*<a name="t_RT">t_RT</a>*</b> <b class="vimtag">*<a name="'t_RT'">'t_RT'</a>*</b>
+	t_Si	save icon text to stack				<b class="vimtag">*<a name="t_Si">t_Si</a>*</b> <b class="vimtag">*<a name="'t_Si'">'t_Si'</a>*</b>
+	t_Ri	restore icon text from stack			<b class="vimtag">*<a name="t_Ri">t_Ri</a>*</b> <b class="vimtag">*<a name="'t_Ri'">'t_Ri'</a>*</b>
+	t_TE	end of "raw" mode				<b class="vimtag">*<a name="t_TE">t_TE</a>*</b> <b class="vimtag">*<a name="'t_TE'">'t_TE'</a>*</b>
+	t_TI	put terminal into "raw" mode 			<b class="vimtag">*<a name="t_TI">t_TI</a>*</b> <b class="vimtag">*<a name="'t_TI'">'t_TI'</a>*</b>
+
+Some codes have a start, middle and end part.  The start and end are defined
+by the termcap option, the middle part is text.
+	set title text:     t_ts <code class="special">{title text}</code> t_fs
+	set icon text:      t_IS <code class="special">{icon text}</code> t_IE
+	set cursor color:   t_SC  <code class="special">{color name}</code>  t_EC
+
+t_SH must take one argument:
+	0, 1 or none  	blinking block cursor
+	2	      	block cursor
+	3		blinking underline cursor
+	4		underline cursor
+	5		blinking vertical bar cursor
+	6		vertical bar cursor
+
+t_RS is sent only if the response to t_RV has been received.  It is not used
+on Mac OS when Terminal.app could be recognized from the termresponse.
+
+
+KEY CODES						<b class="vimtag">*<a name="terminal-key-codes">terminal-key-codes</a>*</b>
+<code class="note">Note:</code> Use the <code class="special">&lt;&gt;</code> form if possible
+
+<code class="section">	option	name		meaning	</code>
+
+	t_ku	<code class="special">&lt;Up&gt;</code>		arrow up			<b class="vimtag">*<a name="t_ku">t_ku</a>*</b> <b class="vimtag">*<a name="'t_ku'">'t_ku'</a>*</b>
+	t_kd	<code class="special">&lt;Down&gt;</code>		arrow down			<b class="vimtag">*<a name="t_kd">t_kd</a>*</b> <b class="vimtag">*<a name="'t_kd'">'t_kd'</a>*</b>
+	t_kr	<code class="special">&lt;Right&gt;</code>		arrow right			<b class="vimtag">*<a name="t_kr">t_kr</a>*</b> <b class="vimtag">*<a name="'t_kr'">'t_kr'</a>*</b>
+	t_kl	<code class="special">&lt;Left&gt;</code>		arrow left			<b class="vimtag">*<a name="t_kl">t_kl</a>*</b> <b class="vimtag">*<a name="'t_kl'">'t_kl'</a>*</b>
+		<code class="special">&lt;xUp&gt;</code>		alternate arrow up		<b class="vimtag">*<a name="%3CxUp%3E">&lt;xUp&gt;</a>*</b>
+		<code class="special">&lt;xDown&gt;</code>		alternate arrow down		<b class="vimtag">*<a name="%3CxDown%3E">&lt;xDown&gt;</a>*</b>
+		<code class="special">&lt;xRight&gt;</code>	alternate arrow right		<b class="vimtag">*<a name="%3CxRight%3E">&lt;xRight&gt;</a>*</b>
+		<code class="special">&lt;xLeft&gt;</code>		alternate arrow left		<b class="vimtag">*<a name="%3CxLeft%3E">&lt;xLeft&gt;</a>*</b>
+		<code class="special">&lt;S-Up&gt;</code>		shift arrow up
+		<code class="special">&lt;S-Down&gt;</code>	shift arrow down
+	t_%i	<code class="special">&lt;S-Right&gt;</code>	shift arrow right		<b class="vimtag">*<a name="t_%i">t_%i</a>*</b> <b class="vimtag">*<a name="'t_%i'">'t_%i'</a>*</b>
+	t_#4	<code class="special">&lt;S-Left&gt;</code>	shift arrow left		<b class="vimtag">*<a name="t_%234">t_#4</a>*</b> <b class="vimtag">*<a name="'t_%234'">'t_#4'</a>*</b>
+	t_k1	<code class="special">&lt;F1&gt;</code>		function key 1			<b class="vimtag">*<a name="t_k1">t_k1</a>*</b> <b class="vimtag">*<a name="'t_k1'">'t_k1'</a>*</b>
+		<code class="special">&lt;xF1&gt;</code>		alternate F1			<b class="vimtag">*<a name="%3CxF1%3E">&lt;xF1&gt;</a>*</b>
+	t_k2	<code class="special">&lt;F2&gt;</code>		function key 2		<b class="vimtag">*<a name="%3CF2%3E">&lt;F2&gt;</a>*</b>	<b class="vimtag">*<a name="t_k2">t_k2</a>*</b> <b class="vimtag">*<a name="'t_k2'">'t_k2'</a>*</b>
+		<code class="special">&lt;xF2&gt;</code>		alternate F2			<b class="vimtag">*<a name="%3CxF2%3E">&lt;xF2&gt;</a>*</b>
+	t_k3	<code class="special">&lt;F3&gt;</code>		function key 3		<b class="vimtag">*<a name="%3CF3%3E">&lt;F3&gt;</a>*</b>	<b class="vimtag">*<a name="t_k3">t_k3</a>*</b> <b class="vimtag">*<a name="'t_k3'">'t_k3'</a>*</b>
+		<code class="special">&lt;xF3&gt;</code>		alternate F3			<b class="vimtag">*<a name="%3CxF3%3E">&lt;xF3&gt;</a>*</b>
+	t_k4	<code class="special">&lt;F4&gt;</code>		function key 4		<b class="vimtag">*<a name="%3CF4%3E">&lt;F4&gt;</a>*</b>	<b class="vimtag">*<a name="t_k4">t_k4</a>*</b> <b class="vimtag">*<a name="'t_k4'">'t_k4'</a>*</b>
+		<code class="special">&lt;xF4&gt;</code>		alternate F4			<b class="vimtag">*<a name="%3CxF4%3E">&lt;xF4&gt;</a>*</b>
+	t_k5	<code class="special">&lt;F5&gt;</code>		function key 5		<b class="vimtag">*<a name="%3CF5%3E">&lt;F5&gt;</a>*</b>	<b class="vimtag">*<a name="t_k5">t_k5</a>*</b> <b class="vimtag">*<a name="'t_k5'">'t_k5'</a>*</b>
+	t_k6	<code class="special">&lt;F6&gt;</code>		function key 6		<b class="vimtag">*<a name="%3CF6%3E">&lt;F6&gt;</a>*</b>	<b class="vimtag">*<a name="t_k6">t_k6</a>*</b> <b class="vimtag">*<a name="'t_k6'">'t_k6'</a>*</b>
+	t_k7	<code class="special">&lt;F7&gt;</code>		function key 7		<b class="vimtag">*<a name="%3CF7%3E">&lt;F7&gt;</a>*</b>	<b class="vimtag">*<a name="t_k7">t_k7</a>*</b> <b class="vimtag">*<a name="'t_k7'">'t_k7'</a>*</b>
+	t_k8	<code class="special">&lt;F8&gt;</code>		function key 8		<b class="vimtag">*<a name="%3CF8%3E">&lt;F8&gt;</a>*</b>	<b class="vimtag">*<a name="t_k8">t_k8</a>*</b> <b class="vimtag">*<a name="'t_k8'">'t_k8'</a>*</b>
+	t_k9	<code class="special">&lt;F9&gt;</code>		function key 9		<b class="vimtag">*<a name="%3CF9%3E">&lt;F9&gt;</a>*</b>	<b class="vimtag">*<a name="t_k9">t_k9</a>*</b> <b class="vimtag">*<a name="'t_k9'">'t_k9'</a>*</b>
+	t_k;	<code class="special">&lt;F10&gt;</code>		function key 10		<b class="vimtag">*<a name="%3CF10%3E">&lt;F10&gt;</a>*</b>	<b class="vimtag">*<a name="t_k;">t_k;</a>*</b> <b class="vimtag">*<a name="'t_k;'">'t_k;'</a>*</b>
+	t_F1	<code class="special">&lt;F11&gt;</code>		function key 11		<b class="vimtag">*<a name="%3CF11%3E">&lt;F11&gt;</a>*</b>	<b class="vimtag">*<a name="t_F1">t_F1</a>*</b> <b class="vimtag">*<a name="'t_F1'">'t_F1'</a>*</b>
+	t_F2	<code class="special">&lt;F12&gt;</code>		function key 12		<b class="vimtag">*<a name="%3CF12%3E">&lt;F12&gt;</a>*</b>	<b class="vimtag">*<a name="t_F2">t_F2</a>*</b> <b class="vimtag">*<a name="'t_F2'">'t_F2'</a>*</b>
+	t_F3	<code class="special">&lt;F13&gt;</code>		function key 13		<b class="vimtag">*<a name="%3CF13%3E">&lt;F13&gt;</a>*</b>	<b class="vimtag">*<a name="t_F3">t_F3</a>*</b> <b class="vimtag">*<a name="'t_F3'">'t_F3'</a>*</b>
+	t_F4	<code class="special">&lt;F14&gt;</code>		function key 14		<b class="vimtag">*<a name="%3CF14%3E">&lt;F14&gt;</a>*</b>	<b class="vimtag">*<a name="t_F4">t_F4</a>*</b> <b class="vimtag">*<a name="'t_F4'">'t_F4'</a>*</b>
+	t_F5	<code class="special">&lt;F15&gt;</code>		function key 15		<b class="vimtag">*<a name="%3CF15%3E">&lt;F15&gt;</a>*</b>	<b class="vimtag">*<a name="t_F5">t_F5</a>*</b> <b class="vimtag">*<a name="'t_F5'">'t_F5'</a>*</b>
+	t_F6	<code class="special">&lt;F16&gt;</code>		function key 16		<b class="vimtag">*<a name="%3CF16%3E">&lt;F16&gt;</a>*</b>	<b class="vimtag">*<a name="t_F6">t_F6</a>*</b> <b class="vimtag">*<a name="'t_F6'">'t_F6'</a>*</b>
+	t_F7	<code class="special">&lt;F17&gt;</code>		function key 17		<b class="vimtag">*<a name="%3CF17%3E">&lt;F17&gt;</a>*</b>	<b class="vimtag">*<a name="t_F7">t_F7</a>*</b> <b class="vimtag">*<a name="'t_F7'">'t_F7'</a>*</b>
+	t_F8	<code class="special">&lt;F18&gt;</code>		function key 18		<b class="vimtag">*<a name="%3CF18%3E">&lt;F18&gt;</a>*</b>	<b class="vimtag">*<a name="t_F8">t_F8</a>*</b> <b class="vimtag">*<a name="'t_F8'">'t_F8'</a>*</b>
+	t_F9	<code class="special">&lt;F19&gt;</code>		function key 19		<b class="vimtag">*<a name="%3CF19%3E">&lt;F19&gt;</a>*</b>	<b class="vimtag">*<a name="t_F9">t_F9</a>*</b> <b class="vimtag">*<a name="'t_F9'">'t_F9'</a>*</b>
+		<code class="special">&lt;S-F1&gt;</code>		shifted function key 1
+		<code class="special">&lt;S-xF1&gt;</code>		alternate <code class="special">&lt;S-F1&gt;</code>		<b class="vimtag">*<a name="%3CS-xF1%3E">&lt;S-xF1&gt;</a>*</b>
+		<code class="special">&lt;S-F2&gt;</code>		shifted function key 2		<b class="vimtag">*<a name="%3CS-F2%3E">&lt;S-F2&gt;</a>*</b>
+		<code class="special">&lt;S-xF2&gt;</code>		alternate <code class="special">&lt;S-F2&gt;</code>		<b class="vimtag">*<a name="%3CS-xF2%3E">&lt;S-xF2&gt;</a>*</b>
+		<code class="special">&lt;S-F3&gt;</code>		shifted function key 3		<b class="vimtag">*<a name="%3CS-F3%3E">&lt;S-F3&gt;</a>*</b>
+		<code class="special">&lt;S-xF3&gt;</code>		alternate <code class="special">&lt;S-F3&gt;</code>		<b class="vimtag">*<a name="%3CS-xF3%3E">&lt;S-xF3&gt;</a>*</b>
+		<code class="special">&lt;S-F4&gt;</code>		shifted function key 4		<b class="vimtag">*<a name="%3CS-F4%3E">&lt;S-F4&gt;</a>*</b>
+		<code class="special">&lt;S-xF4&gt;</code>		alternate <code class="special">&lt;S-F4&gt;</code>		<b class="vimtag">*<a name="%3CS-xF4%3E">&lt;S-xF4&gt;</a>*</b>
+		<code class="special">&lt;S-F5&gt;</code>		shifted function key 5		<b class="vimtag">*<a name="%3CS-F5%3E">&lt;S-F5&gt;</a>*</b>
+		<code class="special">&lt;S-F6&gt;</code>		shifted function key 6		<b class="vimtag">*<a name="%3CS-F6%3E">&lt;S-F6&gt;</a>*</b>
+		<code class="special">&lt;S-F7&gt;</code>		shifted function key 7		<b class="vimtag">*<a name="%3CS-F7%3E">&lt;S-F7&gt;</a>*</b>
+		<code class="special">&lt;S-F8&gt;</code>		shifted function key 8		<b class="vimtag">*<a name="%3CS-F8%3E">&lt;S-F8&gt;</a>*</b>
+		<code class="special">&lt;S-F9&gt;</code>		shifted function key 9		<b class="vimtag">*<a name="%3CS-F9%3E">&lt;S-F9&gt;</a>*</b>
+		<code class="special">&lt;S-F10&gt;</code>		shifted function key 10		<b class="vimtag">*<a name="%3CS-F10%3E">&lt;S-F10&gt;</a>*</b>
+		<code class="special">&lt;S-F11&gt;</code>		shifted function key 11		<b class="vimtag">*<a name="%3CS-F11%3E">&lt;S-F11&gt;</a>*</b>
+		<code class="special">&lt;S-F12&gt;</code>		shifted function key 12		<b class="vimtag">*<a name="%3CS-F12%3E">&lt;S-F12&gt;</a>*</b>
+	t_%1	<code class="special">&lt;Help&gt;</code>		help key			<b class="vimtag">*<a name="t_%1">t_%1</a>*</b> <b class="vimtag">*<a name="'t_%1'">'t_%1'</a>*</b>
+	t_&amp;8	<code class="special">&lt;Undo&gt;</code>		undo key			<b class="vimtag">*<a name="t_&8">t_&amp;8</a>*</b> <b class="vimtag">*<a name="'t_&8'">'t_&amp;8'</a>*</b>
+	t_kI	<code class="special">&lt;Insert&gt;</code>	insert key			<b class="vimtag">*<a name="t_kI">t_kI</a>*</b> <b class="vimtag">*<a name="'t_kI'">'t_kI'</a>*</b>
+	t_kD	<code class="special">&lt;Del&gt;</code>		delete key			<b class="vimtag">*<a name="t_kD">t_kD</a>*</b> <b class="vimtag">*<a name="'t_kD'">'t_kD'</a>*</b>
+	t_kb	<code class="special">&lt;BS&gt;</code>		backspace key			<b class="vimtag">*<a name="t_kb">t_kb</a>*</b> <b class="vimtag">*<a name="'t_kb'">'t_kb'</a>*</b>
+	t_kB	<code class="special">&lt;S-Tab&gt;</code>		back-tab (shift-tab)  <b class="vimtag">*<a name="%3CS-Tab%3E">&lt;S-Tab&gt;</a>*</b>	<b class="vimtag">*<a name="t_kB">t_kB</a>*</b> <b class="vimtag">*<a name="'t_kB'">'t_kB'</a>*</b>
+	t_kh	<code class="special">&lt;Home&gt;</code>		home key			<b class="vimtag">*<a name="t_kh">t_kh</a>*</b> <b class="vimtag">*<a name="'t_kh'">'t_kh'</a>*</b>
+	t_#2	<code class="special">&lt;S-Home&gt;</code>	shifted home key     <b class="vimtag">*<a name="%3CS-Home%3E">&lt;S-Home&gt;</a>*</b>	<b class="vimtag">*<a name="t_%232">t_#2</a>*</b> <b class="vimtag">*<a name="'t_%232'">'t_#2'</a>*</b>
+		<code class="special">&lt;xHome&gt;</code>		alternate home key		<b class="vimtag">*<a name="%3CxHome%3E">&lt;xHome&gt;</a>*</b>
+	t_@7	<code class="special">&lt;End&gt;</code>		end key				<b class="vimtag">*<a name="t_@7">t_@7</a>*</b> <b class="vimtag">*<a name="'t_@7'">'t_@7'</a>*</b>
+	t_<b class="vimtag">*<a name="7	%3CS-End%3E		shifted end key	">7	&lt;S-End&gt;		shifted end key	</a>*</b><code class="special">&lt;S-End&gt;</code><b class="vimtag">*<a name=" "> </a>*</b>t_star7<b class="vimtag">*<a name=" "> </a>*</b>'t_star7'*
+		<code class="special">&lt;xEnd&gt;</code>		alternate end key		<b class="vimtag">*<a name="%3CxEnd%3E">&lt;xEnd&gt;</a>*</b>
+	t_kP	<code class="special">&lt;PageUp&gt;</code>	page-up key			<b class="vimtag">*<a name="t_kP">t_kP</a>*</b> <b class="vimtag">*<a name="'t_kP'">'t_kP'</a>*</b>
+	t_kN	<code class="special">&lt;PageDown&gt;</code>	page-down key			<b class="vimtag">*<a name="t_kN">t_kN</a>*</b> <b class="vimtag">*<a name="'t_kN'">'t_kN'</a>*</b>
+	t_K1	<code class="special">&lt;kHome&gt;</code>		keypad home key			<b class="vimtag">*<a name="t_K1">t_K1</a>*</b> <b class="vimtag">*<a name="'t_K1'">'t_K1'</a>*</b>
+	t_K4	<code class="special">&lt;kEnd&gt;</code>		keypad end key			<b class="vimtag">*<a name="t_K4">t_K4</a>*</b> <b class="vimtag">*<a name="'t_K4'">'t_K4'</a>*</b>
+	t_K3	<code class="special">&lt;kPageUp&gt;</code>	keypad page-up key		<b class="vimtag">*<a name="t_K3">t_K3</a>*</b> <b class="vimtag">*<a name="'t_K3'">'t_K3'</a>*</b>
+	t_K5	<code class="special">&lt;kPageDown&gt;</code>	keypad page-down key		<b class="vimtag">*<a name="t_K5">t_K5</a>*</b> <b class="vimtag">*<a name="'t_K5'">'t_K5'</a>*</b>
+	t_K6	<code class="special">&lt;kPlus&gt;</code>		keypad plus key	      <b class="vimtag">*<a name="%3CkPlus%3E">&lt;kPlus&gt;</a>*</b>	<b class="vimtag">*<a name="t_K6">t_K6</a>*</b> <b class="vimtag">*<a name="'t_K6'">'t_K6'</a>*</b>
+	t_K7	<code class="special">&lt;kMinus&gt;</code>	keypad minus key     <b class="vimtag">*<a name="%3CkMinus%3E">&lt;kMinus&gt;</a>*</b>	<b class="vimtag">*<a name="t_K7">t_K7</a>*</b> <b class="vimtag">*<a name="'t_K7'">'t_K7'</a>*</b>
+	t_K8	<code class="special">&lt;kDivide&gt;</code>	keypad divide	    <b class="vimtag">*<a name="%3CkDivide%3E">&lt;kDivide&gt;</a>*</b>	<b class="vimtag">*<a name="t_K8">t_K8</a>*</b> <b class="vimtag">*<a name="'t_K8'">'t_K8'</a>*</b>
+	t_K9	<code class="special">&lt;kMultiply&gt;</code>	keypad multiply   <b class="vimtag">*<a name="%3CkMultiply%3E">&lt;kMultiply&gt;</a>*</b>	<b class="vimtag">*<a name="t_K9">t_K9</a>*</b> <b class="vimtag">*<a name="'t_K9'">'t_K9'</a>*</b>
+	t_KA	<code class="special">&lt;kEnter&gt;</code>	keypad enter key     <b class="vimtag">*<a name="%3CkEnter%3E">&lt;kEnter&gt;</a>*</b>	<b class="vimtag">*<a name="t_KA">t_KA</a>*</b> <b class="vimtag">*<a name="'t_KA'">'t_KA'</a>*</b>
+	t_KB	<code class="special">&lt;kPoint&gt;</code>	keypad decimal point <b class="vimtag">*<a name="%3CkPoint%3E">&lt;kPoint&gt;</a>*</b>	<b class="vimtag">*<a name="t_KB">t_KB</a>*</b> <b class="vimtag">*<a name="'t_KB'">'t_KB'</a>*</b>
+	t_KC	<code class="special">&lt;k0&gt;</code>		keypad 0		 <b class="vimtag">*<a name="%3Ck0%3E">&lt;k0&gt;</a>*</b>	<b class="vimtag">*<a name="t_KC">t_KC</a>*</b> <b class="vimtag">*<a name="'t_KC'">'t_KC'</a>*</b>
+	t_KD	<code class="special">&lt;k1&gt;</code>		keypad 1		 <b class="vimtag">*<a name="%3Ck1%3E">&lt;k1&gt;</a>*</b>	<b class="vimtag">*<a name="t_KD">t_KD</a>*</b> <b class="vimtag">*<a name="'t_KD'">'t_KD'</a>*</b>
+	t_KE	<code class="special">&lt;k2&gt;</code>		keypad 2		 <b class="vimtag">*<a name="%3Ck2%3E">&lt;k2&gt;</a>*</b>	<b class="vimtag">*<a name="t_KE">t_KE</a>*</b> <b class="vimtag">*<a name="'t_KE'">'t_KE'</a>*</b>
+	t_KF	<code class="special">&lt;k3&gt;</code>		keypad 3		 <b class="vimtag">*<a name="%3Ck3%3E">&lt;k3&gt;</a>*</b>	<b class="vimtag">*<a name="t_KF">t_KF</a>*</b> <b class="vimtag">*<a name="'t_KF'">'t_KF'</a>*</b>
+	t_KG	<code class="special">&lt;k4&gt;</code>		keypad 4		 <b class="vimtag">*<a name="%3Ck4%3E">&lt;k4&gt;</a>*</b>	<b class="vimtag">*<a name="t_KG">t_KG</a>*</b> <b class="vimtag">*<a name="'t_KG'">'t_KG'</a>*</b>
+	t_KH	<code class="special">&lt;k5&gt;</code>		keypad 5		 <b class="vimtag">*<a name="%3Ck5%3E">&lt;k5&gt;</a>*</b>	<b class="vimtag">*<a name="t_KH">t_KH</a>*</b> <b class="vimtag">*<a name="'t_KH'">'t_KH'</a>*</b>
+	t_KI	<code class="special">&lt;k6&gt;</code>		keypad 6		 <b class="vimtag">*<a name="%3Ck6%3E">&lt;k6&gt;</a>*</b>	<b class="vimtag">*<a name="t_KI">t_KI</a>*</b> <b class="vimtag">*<a name="'t_KI'">'t_KI'</a>*</b>
+	t_KJ	<code class="special">&lt;k7&gt;</code>		keypad 7		 <b class="vimtag">*<a name="%3Ck7%3E">&lt;k7&gt;</a>*</b>	<b class="vimtag">*<a name="t_KJ">t_KJ</a>*</b> <b class="vimtag">*<a name="'t_KJ'">'t_KJ'</a>*</b>
+	t_KK	<code class="special">&lt;k8&gt;</code>		keypad 8		 <b class="vimtag">*<a name="%3Ck8%3E">&lt;k8&gt;</a>*</b>	<b class="vimtag">*<a name="t_KK">t_KK</a>*</b> <b class="vimtag">*<a name="'t_KK'">'t_KK'</a>*</b>
+	t_KL	<code class="special">&lt;k9&gt;</code>		keypad 9		 <b class="vimtag">*<a name="%3Ck9%3E">&lt;k9&gt;</a>*</b>	<b class="vimtag">*<a name="t_KL">t_KL</a>*</b> <b class="vimtag">*<a name="'t_KL'">'t_KL'</a>*</b>
+		<code class="special">&lt;Mouse&gt;</code>		leader of mouse code		<b class="vimtag">*<a name="%3CMouse%3E">&lt;Mouse&gt;</a>*</b>
+								<b class="vimtag">*<a name="t_PS">t_PS</a>*</b> <b class="vimtag">*<a name="'t_PS'">'t_PS'</a>*</b>
+	t_PS	start of bracketed paste |<a href="term.html#xterm-bracketed-paste">xterm-bracketed-paste</a>|
+	t_PE	end of bracketed paste |<a href="term.html#xterm-bracketed-paste">xterm-bracketed-paste</a>|  <b class="vimtag">*<a name="t_PE">t_PE</a>*</b> <b class="vimtag">*<a name="'t_PE'">'t_PE'</a>*</b>
+
+<code class="note">Note</code> about t_so and t_mr: When the termcap entry "so" is not present the
+entry for "mr" is used.  And vice versa.  The same is done for "se" and "me".
+If your terminal supports both inversion and standout mode, you can see two
+different modes.  If your terminal supports only one of the modes, both will
+look the same.
+
+							<b class="vimtag">*<a name="keypad-comma">keypad-comma</a>*</b>
+The keypad keys, when they are not mapped, behave like the equivalent normal
+key.  There is one exception: if you have a comma on the keypad instead of a
+decimal point, Vim will use a dot anyway.  Use these mappings to fix that:
+<code class="example">	:noremap <code class="special">&lt;kPoint&gt;</code> ,</code>
+<code class="example">	:noremap! <code class="special">&lt;kPoint&gt;</code> ,</code>
+							<b class="vimtag">*<a name="xterm-codes">xterm-codes</a>*</b>
+There is a special trick to obtain the key codes which currently only works
+for xterm.  When |<a href="term.html#t_RV">t_RV</a>| is defined and a response is received which indicates
+an xterm with patchlevel 141 or higher, Vim uses special escape sequences to
+request the key codes directly from the xterm.  The responses are used to
+adjust the various t_ codes.  This avoids the problem that the xterm can
+produce different codes, depending on the mode it is in (8-bit, VT102,
+VT220, etc.).  The result is that codes like <code class="special">&lt;xF1&gt;</code> are no longer needed.
+<code class="note">Note:</code> This is only done on startup.  If the xterm options are changed after
+Vim has started, the escape sequences may not be recognized anymore.
+
+							<b class="vimtag">*<a name="xterm-true-color">xterm-true-color</a>*</b>
+Vim supports using true colors in the terminal (taken from |<a href="syntax.html#highlight-guifg">highlight-guifg</a>|
+and |<a href="syntax.html#highlight-guibg">highlight-guibg</a>|), given that the terminal supports this. To make this
+work the 'termguicolors' option needs to be set.
+See https://gist.github.com/XVilka/8346728 for a list of terminals that
+support true colors.
+
+Sometimes setting 'termguicolors' is not enough and one has to set the |<a href="term.html#t_8f">t_8f</a>|
+and |<a href="term.html#t_8b">t_8b</a>| options explicitly. Default values of these options are
+"^[[38;2;%lu;%lu;%lum" and "^[[48;2;%lu;%lu;%lum" respectively, but it is only
+set when `$TERM` is `xterm`. Some terminals accept the same sequences, but
+with all semicolons replaced by colons (this is actually more compatible, but
+less widely supported):
+<code class="example">	 let &amp;t_8f = "\<code class="special">&lt;Esc&gt;</code>[38:2:%lu:%lu:%lum"</code>
+<code class="example">	 let &amp;t_8b = "\<code class="special">&lt;Esc&gt;</code>[48:2:%lu:%lu:%lum"</code>
+<code class="example"></code>
+These options contain printf strings, with |<a href="eval.html#printf()">printf()</a>| (actually, its C
+equivalent hence `l` modifier) invoked with the t_ option value and three
+unsigned long integers that may have any value between 0 and 255 (inclusive)
+representing red, green and blue colors respectively.
+
+							<b class="vimtag">*<a name="xterm-resize">xterm-resize</a>*</b>
+Window resizing with xterm only works if the allowWindowOps resource is
+enabled.  On some systems and versions of xterm it's disabled by default
+because someone thought it would be a security issue.  It's not clear if this
+is actually the case.
+
+To overrule the default, put this line in your ~/.Xdefaults or
+~/.Xresources:
+
+<code class="example">	XTerm*allowWindowOps: 		true</code>
+<code class="example"></code>
+And run "xrdb -merge .Xresources" to make it effective.  You can check the
+value with the context menu (right mouse button while CTRL key is pressed),
+there should be a tick at allow-window-ops.
+
+							<b class="vimtag">*<a name="termcap-colors">termcap-colors</a>*</b>
+<code class="note">Note</code> about colors: The 't_Co' option tells Vim the number of colors available.
+When it is non-zero, the 't_AB' and 't_AF' options are used to set the color.
+If one of these is not available, 't_Sb' and 't_Sf' are used.  't_me' is used
+to reset to the default colors.  Also see 'termguicolors'.
+
+				<b class="vimtag">*<a name="termcap-cursor-shape">termcap-cursor-shape</a>*</b> <b class="vimtag">*<a name="termcap-cursor-color">termcap-cursor-color</a>*</b>
+When Vim enters Insert mode the 't_SI' escape sequence is sent.  When Vim
+enters Replace mode the 't_SR' escape sequence is sent if it is set, otherwise
+'t_SI' is sent.  When leaving Insert mode or Replace mode 't_EI' is used. This
+can be used to change the shape or color of the cursor in Insert or Replace
+mode. These are not standard termcap/terminfo entries, you need to set them
+yourself.
+Example for an xterm, this changes the color of the cursor:
+<code class="example">    if &amp;term =~ "xterm"</code>
+<code class="example">	let &amp;t_SI = "\<code class="special">&lt;Esc&gt;</code>]12;purple\x7"</code>
+<code class="example">	let &amp;t_SR = "\<code class="special">&lt;Esc&gt;</code>]12;red\x7"</code>
+<code class="example">	let &amp;t_EI = "\<code class="special">&lt;Esc&gt;</code>]12;blue\x7"</code>
+<code class="example">    endif</code>
+<code class="note">NOTE:</code> When Vim exits the shape for Normal mode will remain.  The shape from
+before Vim started will not be restored.
+{not available when compiled without the |<a href="various.html#+cursorshape">+cursorshape</a>| feature}
+
+							<b class="vimtag">*<a name="termcap-title">termcap-title</a>*</b>
+The 't_ts' and 't_fs' options are used to set the window title if the terminal
+allows title setting via sending strings.  They are sent before and after the
+title string, respectively.  Similar 't_IS' and 't_IE'  are used to set the
+icon text.  These are Vim-internal extensions of the Unix termcap, so they
+cannot be obtained from an external termcap.  However, the builtin termcap
+contains suitable entries for xterm and iris-ansi, so you don't need to set
+them here.
+							<b class="vimtag">*<a name="hpterm">hpterm</a>*</b>
+If inversion or other highlighting does not work correctly, try setting the
+'t_xs' option to a non-empty string.  This makes the 't_ce' code be used to
+remove highlighting from a line.  This is required for "hpterm".  Setting the
+'weirdinvert' option has the same effect as making 't_xs' non-empty, and vice
+versa.
+
+							<b class="vimtag">*<a name="scroll-region">scroll-region</a>*</b>
+Some termcaps do not include an entry for "cs" (scroll region), although the
+terminal does support it.  For example: xterm on a Sun.  You can use the
+builtin_xterm or define t_cs yourself.  For example:
+<code class="example">	:set t_cs=^V^[[%i%d;%dr</code>
+Where ^V is <code class="keystroke">CTRL-V</code> and ^[ is <code class="special">&lt;Esc&gt;</code>.
+
+The vertical scroll region t_CV is not a standard termcap code.  Vim uses it
+internally in the GUI.  But it can also be defined for a terminal, if you can
+find one that supports it.  The two arguments are the left and right column of
+the region which to restrict the scrolling to.  Just like t_cs defines the top
+and bottom lines.  Defining t_CV will make scrolling in vertically split
+windows a lot faster.  Don't set t_CV when t_da or t_db is set (text isn't
+cleared when scrolling).
+
+Unfortunately it is not possible to deduce from the termcap how cursor
+positioning should be done when using a scrolling region: Relative to the
+beginning of the screen or relative to the beginning of the scrolling region.
+Most terminals use the first method.  The 't_CS' option should be set to any
+string when cursor positioning is relative to the start of the scrolling
+region.  It should be set to an empty string otherwise.
+
+<code class="note">Note</code> for xterm users: The shifted cursor keys normally don't work.  You can
+	make them work with the xmodmap command and some mappings in Vim.
+
+	Give these commands in the xterm:
+		xmodmap -e "keysym Up = Up F13"
+		xmodmap -e "keysym Down = Down F16"
+		xmodmap -e "keysym Left = Left F18"
+		xmodmap -e "keysym Right = Right F19"
+
+	And use these mappings in Vim:
+		:map <code class="special">&lt;t_F3&gt;</code> <code class="special">&lt;S-Up&gt;</code>
+		:map! <code class="special">&lt;t_F3&gt;</code> <code class="special">&lt;S-Up&gt;</code>
+		:map <code class="special">&lt;t_F6&gt;</code> <code class="special">&lt;S-Down&gt;</code>
+		:map! <code class="special">&lt;t_F6&gt;</code> <code class="special">&lt;S-Down&gt;</code>
+		:map <code class="special">&lt;t_F8&gt;</code> <code class="special">&lt;S-Left&gt;</code>
+		:map! <code class="special">&lt;t_F8&gt;</code> <code class="special">&lt;S-Left&gt;</code>
+		:map <code class="special">&lt;t_F9&gt;</code> <code class="special">&lt;S-Right&gt;</code>
+		:map! <code class="special">&lt;t_F9&gt;</code> <code class="special">&lt;S-Right&gt;</code>
+
+Instead of, say, <code class="special">&lt;S-Up&gt;</code> you can use any other command that you want to use the
+shift-cursor-up key for.  (<code class="note">Note:</code> To help people that have a Sun keyboard with
+left side keys F14 is not used because it is confused with the undo key; F15
+is not used, because it does a window-to-front; F17 is not used, because it
+closes the window.  On other systems you can probably use them.)
+
+</pre><hr/><pre>3. Window size						<b class="vimtag">*<a name="window-size">window-size</a>*</b>
+
+[This is about the size of the whole window Vim is using, not a window that is
+created with the ":split" command.]
+
+If you are running Vim on an Amiga and the terminal name is "amiga" or
+"builtin_amiga", the amiga-specific window resizing will be enabled.  On Unix
+systems three methods are tried to get the window size:
+
+- an ioctl call (TIOCGSIZE or TIOCGWINSZ, depends on your system)
+- the environment variables "LINES" and "COLUMNS"
+- from the termcap entries "li" and "co"
+
+If everything fails a default size of 24 lines and 80 columns is assumed.  If
+a window-resize signal is received the size will be set again.  If the window
+size is wrong you can use the 'lines' and 'columns' options to set the
+correct values.
+
+One command can be used to set the screen size:
+
+						<b class="vimtag">*<a name=":mod">:mod</a>*</b> <b class="vimtag">*<a name=":mode">:mode</a>*</b> <b class="vimtag">*<a name="E359">E359</a>*</b>
+:mod[e] [mode]
+
+Without argument this only detects the screen size and redraws the screen.
+[mode] was used on MS-DOS, but it doesn't work anymore.
+
+</pre><hr/><pre>4. Slow and fast terminals			<b class="vimtag">*<a name="slow-fast-terminal">slow-fast-terminal</a>*</b>
+						<b class="vimtag">*<a name="slow-terminal">slow-terminal</a>*</b>
+
+If you have a fast terminal you may like to set the 'ruler' option.  The
+cursor position is shown in the status line.  If you are using horizontal
+scrolling ('wrap' option off) consider setting 'sidescroll' to a small
+number.
+
+If you have a slow terminal you may want to reset the 'showcmd' option.
+The command characters will not be shown in the status line.  If the terminal
+scrolls very slowly, set the 'scrolljump' to 5 or so.  If the cursor is moved
+off the screen (e.g., with "j") Vim will scroll 5 lines at a time.  Another
+possibility is to reduce the number of lines that Vim uses with the command
+"z<code class="special">{height}</code><code class="special">&lt;CR&gt;</code>".
+
+If the characters from the terminal are arriving with more than 1 second
+between them you might want to set the 'timeout' and/or 'ttimeout' option.
+See the "Options" chapter |<a href="options.html#options">options</a>|.
+
+If your terminal does not support a scrolling region, but it does support
+insert/delete line commands, scrolling with multiple windows may make the
+lines jump up and down.  If you don't want this set the 'ttyfast' option.
+This will redraw the window instead of scroll it.
+
+If your terminal scrolls very slowly, but redrawing is not slow, set the
+'ttyscroll' option to a small number, e.g., 3.  This will make Vim redraw the
+screen instead of scrolling, when there are more than 3 lines to be scrolled.
+
+If you are using a color terminal that is slow, use this command:
+<code class="example">	hi NonText cterm=NONE ctermfg=NONE</code>
+This avoids that spaces are sent when they have different attributes.  On most
+terminals you can't see this anyway.
+
+If you are using Vim over a slow serial line, you might want to try running
+Vim inside the "screen" program.  Screen will optimize the terminal I/O quite
+a bit.
+
+If you are testing termcap options, but you cannot see what is happening, you
+might want to set the 'writedelay' option.  When non-zero, one character is
+sent to the terminal at a time.  This makes the screen updating a lot slower,
+making it possible to see what is happening.
+
+</pre><hr/><pre>5. Using the mouse					<b class="vimtag">*<a name="mouse-using">mouse-using</a>*</b>
+
+This section is about using the mouse on a terminal or a terminal window.  How
+to use the mouse in a GUI window is explained in |<a href="gui.html#gui-mouse">gui-mouse</a>|.  For scrolling
+with a mouse wheel see |<a href="scroll.html#scroll-mouse-wheel">scroll-mouse-wheel</a>|.
+
+Don't forget to enable the mouse with this command:
+<code class="example">	:set mouse=a</code>
+Otherwise Vim won't recognize the mouse in all modes (See 'mouse').
+
+Currently the mouse is supported for Unix in an xterm window, in a *BSD
+console with |<a href="term.html#sysmouse">sysmouse</a>|, in a Linux console (with GPM |<a href="term.html#gpm-mouse">gpm-mouse</a>|), and
+in a Windows console.
+Mouse clicks can be used to position the cursor, select an area and paste.
+
+These characters in the 'mouse' option tell in which situations the mouse will
+be used by Vim:
+		n	Normal mode
+		v	Visual mode
+		i	Insert mode
+		c	Command-line mode
+		h	all previous modes when in a help file
+		a	all previous modes
+		r	for |<a href="message.html#hit-enter">hit-enter</a>| prompt
+
+The default for 'mouse' is empty, the mouse is not used.  Normally you would
+do:
+<code class="example">	:set mouse=a</code>
+to start using the mouse (this is equivalent to setting 'mouse' to "nvich").
+If you only want to use the mouse in a few modes or also want to use it for
+the two questions you will have to concatenate the letters for those modes.
+For example:
+<code class="example">	:set mouse=nv</code>
+Will make the mouse work in Normal mode and Visual mode.
+<code class="example">	:set mouse=h</code>
+Will make the mouse work in help files only (so you can use "g<code class="special">&lt;LeftMouse&gt;</code>" to
+jump to tags).
+
+Whether the selection that is started with the mouse is in Visual mode or
+Select mode depends on whether "mouse" is included in the 'selectmode'
+option.
+							<b class="vimtag">*<a name="terminal-mouse">terminal-mouse</a>*</b>
+In an xterm, with the currently active mode included in the 'mouse' option,
+normal mouse clicks are used by Vim, mouse clicks with the shift or ctrl key
+pressed go to the xterm.  With the currently active mode not included in
+'mouse' all mouse clicks go to the xterm.
+
+For terminals where it is not possible to have the mouse events be used by the
+terminal itself by using a modifier, a workaround is to not use mouse events
+for Vim in command-line mode:
+<code class="example">	:set mouse=nvi</code>
+Then to select text with the terminal, use ":" to go to command-line mode,
+select and copy the text to the system, then press Esc.
+
+Another way is to temporarily use ":sh" to run a shell, copy the text, then
+exit the shell.  'mouse' can remain set to "a" then.
+							<b class="vimtag">*<a name="xterm-clipboard">xterm-clipboard</a>*</b>
+In the Athena and Motif GUI versions, when running in a terminal and there is
+access to the X-server (DISPLAY is set), the copy and paste will behave like
+in the GUI.  If not, the middle mouse button will insert the unnamed register.
+In that case, here is how you copy and paste a piece of text:
+
+Copy/paste with the mouse and Visual mode ('mouse' option must be set, see
+above):
+1. Press left mouse button on first letter of text, move mouse pointer to last
+   letter of the text and release the button.  This will start Visual mode and
+   highlight the selected area.
+2. Press "y" to yank the Visual text in the unnamed register.
+3. Click the left mouse button at the insert position.
+4. Click the middle mouse button.
+
+Shortcut: If the insert position is on the screen at the same time as the
+Visual text, you can do 2, 3 and 4 all in one: Click the middle mouse button
+at the insert position.
+
+<code class="note">Note:</code> When the |<a href="starting.html#-X">-X</a>| command line argument is used, Vim will not connect to the
+X server and copy/paste to the X clipboard (selection) will not work.  Use the
+shift key with the mouse buttons to let the xterm do the selection.
+
+							<b class="vimtag">*<a name="xterm-command-server">xterm-command-server</a>*</b>
+When the X-server clipboard is available, the command server described in
+|<a href="remote.html#x11-clientserver">x11-clientserver</a>| can be enabled with the --servername command line argument.
+
+							<b class="vimtag">*<a name="xterm-copy-paste">xterm-copy-paste</a>*</b>
+<code class="note">NOTE:</code> In some (older) xterms, it's not possible to move the cursor past column
+95 or 223.  This is an xterm problem, not Vim's.  Get a newer xterm
+|<a href="syntax.html#color-xterm">color-xterm</a>|.  Also see |<a href="options.html#'ttymouse'">'ttymouse'</a>|.
+
+Copy/paste in xterm with (current mode NOT included in 'mouse'):
+1. Press left mouse button on first letter of text, move mouse pointer to last
+   letter of the text and release the button.
+2. Use normal Vim commands to put the cursor at the insert position.
+3. Press "a" to start Insert mode.
+4. Click the middle mouse button.
+5. Press ESC to end Insert mode.
+(The same can be done with anything in 'mouse' if you keep the shift key
+pressed while using the mouse.)
+
+<code class="note">Note:</code> if you lose the 8th bit when pasting (special characters are translated
+into other characters), you may have to do "stty cs8 -istrip -parenb" in your
+shell before starting Vim.
+
+Thus in an xterm the shift and ctrl keys cannot be used with the mouse.  Mouse
+commands requiring the CTRL modifier can be simulated by typing the "g" key
+before using the mouse:
+	"g<code class="special">&lt;LeftMouse&gt;</code>"	is "<code class="special">&lt;C-LeftMouse&gt;</code>	(jump to tag under mouse click)
+	"g<code class="special">&lt;RightMouse&gt;</code>" is "<code class="special">&lt;C-RightMouse&gt;</code>	("<code class="keystroke">CTRL-T</code>")
+
+					<b class="vimtag">*<a name="mouse-mode-table">mouse-mode-table</a>*</b> <b class="vimtag">*<a name="mouse-overview">mouse-overview</a>*</b>
+A short overview of what the mouse buttons do, when 'mousemodel' is "extend":
+
+Normal Mode:
+<code class="section">event	      position	   selection	  change  action	</code>
+<code class="section">	       cursor			  window		</code>
+<code class="special">&lt;LeftMouse&gt;</code>     yes	     end	    yes
+<code class="special">&lt;C-LeftMouse&gt;</code>   yes	     end	    yes	   "CTRL-]" (2)
+<code class="special">&lt;S-LeftMouse&gt;</code>   yes	  no change	    yes	   "<b class="vimtag">*<a name="%22 (2)    ">" (2)    </a>*</b><code class="special">&lt;S-LeftMouse&gt;</code>*
+<code class="special">&lt;LeftDrag&gt;</code>      yes	start or extend (1) no		      <b class="vimtag">*<a name="%3CLeftDrag%3E">&lt;LeftDrag&gt;</a>*</b>
+<code class="special">&lt;LeftRelease&gt;</code>   yes	start or extend (1) no
+<code class="special">&lt;MiddleMouse&gt;</code>   yes	  if not active     no	   put
+<code class="special">&lt;MiddleMouse&gt;</code>   yes	  if active	    no	   yank and put
+<code class="special">&lt;RightMouse&gt;</code>    yes	start or extend     yes
+<code class="special">&lt;A-RightMouse&gt;</code>  yes start or extend blockw. yes		      <b class="vimtag">*<a name="%3CA-RightMouse%3E">&lt;A-RightMouse&gt;</a>*</b>
+<code class="special">&lt;S-RightMouse&gt;</code>  yes	   no change	    yes	   "#" (2)    <b class="vimtag">*<a name="%3CS-RightMouse%3E">&lt;S-RightMouse&gt;</a>*</b>
+<code class="special">&lt;C-RightMouse&gt;</code>  no	   no change	    no	   "<code class="keystroke">CTRL-T</code>"
+<code class="special">&lt;RightDrag&gt;</code>     yes	    extend	    no		      <b class="vimtag">*<a name="%3CRightDrag%3E">&lt;RightDrag&gt;</a>*</b>
+<code class="special">&lt;RightRelease&gt;</code>  yes	    extend	    no		      <b class="vimtag">*<a name="%3CRightRelease%3E">&lt;RightRelease&gt;</a>*</b>
+
+Insert or Replace Mode:
+<code class="section">event	      position	   selection	  change  action	</code>
+<code class="section">	       cursor			  window		</code>
+<code class="special">&lt;LeftMouse&gt;</code>     yes     (cannot be active)  yes
+<code class="special">&lt;C-LeftMouse&gt;</code>   yes     (cannot be active)  yes	   "<code class="keystroke">CTRL-O</code>^]" (2)
+<code class="special">&lt;S-LeftMouse&gt;</code>   yes     (cannot be active)  yes	   "<code class="keystroke">CTRL-O</code>*" (2)
+<code class="special">&lt;LeftDrag&gt;</code>      yes     start or extend (1) no	   like <code class="keystroke">CTRL-O</code> (1)
+<code class="special">&lt;LeftRelease&gt;</code>   yes     start or extend (1) no	   like <code class="keystroke">CTRL-O</code> (1)
+<code class="special">&lt;MiddleMouse&gt;</code>   no      (cannot be active)  no	   put register
+<code class="special">&lt;RightMouse&gt;</code>    yes     start or extend	    yes	   like <code class="keystroke">CTRL-O</code>
+<code class="special">&lt;A-RightMouse&gt;</code>  yes start or extend blockw. yes
+<code class="special">&lt;S-RightMouse&gt;</code>  yes     (cannot be active)  yes	   "<code class="keystroke">CTRL-O</code>#" (2)
+<code class="special">&lt;C-RightMouse&gt;</code>  no	(cannot be active)  no	   "<code class="keystroke">CTRL-O</code> <code class="keystroke">CTRL-T</code>"
+
+In a help window:
+<code class="section">event	      position	   selection	  change  action	</code>
+<code class="section">	       cursor			  window		</code>
+<code class="special">&lt;2-LeftMouse&gt;</code>   yes     (cannot be active)  no	   "^]" (jump to help tag)
+
+When 'mousemodel' is "popup", these are different:
+
+Normal Mode:
+<code class="section">event	      position	   selection	  change  action	</code>
+<code class="section">	       cursor			  window		</code>
+<code class="special">&lt;S-LeftMouse&gt;</code>	yes	start or extend (1) no
+<code class="special">&lt;A-LeftMouse&gt;</code>   yes start or extend blockw. no		      <b class="vimtag">*<a name="%3CA-LeftMouse%3E">&lt;A-LeftMouse&gt;</a>*</b>
+<code class="special">&lt;RightMouse&gt;</code>	no	popup menu	    no
+
+Insert or Replace Mode:
+<code class="section">event	      position	   selection	  change  action	</code>
+<code class="section">	       cursor			  window		</code>
+<code class="special">&lt;S-LeftMouse&gt;</code>   yes     start or extend (1) no	   like <code class="keystroke">CTRL-O</code> (1)
+<code class="special">&lt;A-LeftMouse&gt;</code>   yes start or extend blockw. no
+<code class="special">&lt;RightMouse&gt;</code>    no	popup menu	    no
+
+(1) only if mouse pointer moved since press
+(2) only if click is in same buffer
+
+Clicking the left mouse button causes the cursor to be positioned.  If the
+click is in another window that window is made the active window.  When
+editing the command-line the cursor can only be positioned on the
+command-line.  When in Insert mode Vim remains in Insert mode.  If 'scrolloff'
+is set, and the cursor is positioned within 'scrolloff' lines from the window
+border, the text is scrolled.
+
+A selection can be started by pressing the left mouse button on the first
+character, moving the mouse to the last character, then releasing the mouse
+button.  You will not always see the selection until you release the button,
+only in some versions (GUI, Win32) will the dragging be shown immediately.
+<code class="note">Note</code> that you can make the text scroll by moving the mouse at least one
+character in the first/last line in the window when 'scrolloff' is non-zero.
+
+In Normal, Visual and Select mode clicking the right mouse button causes the
+Visual area to be extended.  When 'mousemodel' is "popup", the left button has
+to be used while keeping the shift key pressed.  When clicking in a window
+which is editing another buffer, the Visual or Select mode is stopped.
+
+In Normal, Visual and Select mode clicking the right mouse button with the alt
+key pressed causes the Visual area to become blockwise.  When 'mousemodel' is
+"popup" the left button has to be used with the alt key.  <code class="note">Note</code> that this won't
+work on systems where the window manager consumes the mouse events when the
+alt key is pressed (it may move the window).
+
+							<b class="vimtag">*<a name="double-click">double-click</a>*</b>
+Double, triple and quadruple clicks are supported when the GUI is active, for
+Win32, and for an xterm (if the gettimeofday() function is available).  For
+selecting text, extra clicks extend the selection:
+<code class="section">	click		select </code>
+	double		word or % match		<b class="vimtag">*<a name="%3C2-LeftMouse%3E">&lt;2-LeftMouse&gt;</a>*</b>
+	triple		line			<b class="vimtag">*<a name="%3C3-LeftMouse%3E">&lt;3-LeftMouse&gt;</a>*</b>
+	quadruple	rectangular block	<b class="vimtag">*<a name="%3C4-LeftMouse%3E">&lt;4-LeftMouse&gt;</a>*</b>
+Exception: In a Help window a double click jumps to help for the word that is
+clicked on.
+A double click on a word selects that word.  'iskeyword' is used to specify
+which characters are included in a word.  A double click on a character
+that has a match selects until that match (like using "v%").  If the match is
+an #if/#else/#endif block, the selection becomes linewise.
+For MS-Windows and xterm the time for double clicking can be set with the
+'mousetime' option.  For the other systems this time is defined outside of Vim.
+An example, for using a double click to jump to the tag under the cursor:
+<code class="example">	:map <code class="special">&lt;2-LeftMouse&gt;</code> :exe "tag ". expand("<code class="special">&lt;cword&gt;</code>")<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+Dragging the mouse with a double click (button-down, button-up, button-down
+and then drag) will result in whole words to be selected.  This continues
+until the button is released, at which point the selection is per character
+again.
+
+							<b class="vimtag">*<a name="gpm-mouse">gpm-mouse</a>*</b>
+The GPM mouse is only supported when the |<a href="various.html#+mouse_gpm">+mouse_gpm</a>| feature was enabled at
+compile time.  The GPM mouse driver (Linux console) does not support quadruple
+clicks.
+
+In Insert mode, when a selection is started, Vim goes into Normal mode
+temporarily.  When Visual or Select mode ends, it returns to Insert mode.
+This is like using <code class="keystroke">CTRL-O</code> in Insert mode.  Select mode is used when the
+'selectmode' option contains "mouse".
+							<b class="vimtag">*<a name="sysmouse">sysmouse</a>*</b>
+The sysmouse is only supported when the |<a href="various.html#+mouse_sysmouse">+mouse_sysmouse</a>| feature was enabled
+at compile time.  The sysmouse driver (*BSD console) does not support keyboard
+modifiers.
+
+							<b class="vimtag">*<a name="drag-status-line">drag-status-line</a>*</b>
+When working with several windows, the size of the windows can be changed by
+dragging the status line with the mouse.  Point the mouse at a status line,
+press the left button, move the mouse to the new position of the status line,
+release the button.  Just clicking the mouse in a status line makes that window
+the current window, without moving the cursor.  If by selecting a window it
+will change position or size, the dragging of the status line will look
+confusing, but it will work (just try it).
+
+					<b class="vimtag">*<a name="%3CMiddleRelease%3E">&lt;MiddleRelease&gt;</a>*</b> <b class="vimtag">*<a name="%3CMiddleDrag%3E">&lt;MiddleDrag&gt;</a>*</b>
+Mouse clicks can be mapped.  The codes for mouse clicks are:
+<code class="section">     code	    mouse button	      normal action	</code>
+ <code class="special">&lt;LeftMouse&gt;</code>	 left pressed		    set cursor position
+ <code class="special">&lt;LeftDrag&gt;</code>	 left moved while pressed   extend selection
+ <code class="special">&lt;LeftRelease&gt;</code>	 left released		    set selection end
+ <code class="special">&lt;MiddleMouse&gt;</code>	 middle pressed		    paste text at cursor position
+ <code class="special">&lt;MiddleDrag&gt;</code>	 middle moved while pressed -
+ <code class="special">&lt;MiddleRelease&gt;</code> middle released	    -
+ <code class="special">&lt;RightMouse&gt;</code>	 right pressed		    extend selection
+ <code class="special">&lt;RightDrag&gt;</code>	 right moved while pressed  extend selection
+ <code class="special">&lt;RightRelease&gt;</code>  right released		    set selection end
+ <code class="special">&lt;X1Mouse&gt;</code>	 X1 button pressed	    -			<b class="vimtag">*<a name="X1Mouse">X1Mouse</a>*</b>
+ <code class="special">&lt;X1Drag&gt;</code>	 X1 moved while pressed	    -			<b class="vimtag">*<a name="X1Drag">X1Drag</a>*</b>
+ <code class="special">&lt;X1Release&gt;</code>	 X1 button release	    -			<b class="vimtag">*<a name="X1Release">X1Release</a>*</b>
+ <code class="special">&lt;X2Mouse&gt;</code>	 X2 button pressed	    -			<b class="vimtag">*<a name="X2Mouse">X2Mouse</a>*</b>
+ <code class="special">&lt;X2Drag&gt;</code>	 X2 moved while pressed     -			<b class="vimtag">*<a name="X2Drag">X2Drag</a>*</b>
+ <code class="special">&lt;X2Release&gt;</code>	 X2 button release	    -			<b class="vimtag">*<a name="X2Release">X2Release</a>*</b>
+
+The X1 and X2 buttons refer to the extra buttons found on some mice.  The
+'Microsoft Explorer' mouse has these buttons available to the right thumb.
+Currently X1 and X2 only work on Win32 and X11 environments.
+
+Examples:
+<code class="example">	:noremap <code class="special">&lt;MiddleMouse&gt;</code> <code class="special">&lt;LeftMouse&gt;</code><code class="special">&lt;MiddleMouse&gt;</code></code>
+Paste at the position of the middle mouse button click (otherwise the paste
+would be done at the cursor position).
+<code class="example"></code>
+<code class="example">	:noremap <code class="special">&lt;LeftRelease&gt;</code> <code class="special">&lt;LeftRelease&gt;</code>y</code>
+Immediately yank the selection, when using Visual mode.
+
+<code class="note">Note</code> the use of ":noremap" instead of "map" to avoid a recursive mapping.
+
+<code class="example">	:map <code class="special">&lt;X1Mouse&gt;</code> <code class="special">&lt;C-O&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;X2Mouse&gt;</code> <code class="special">&lt;C-I&gt;</code></code>
+Map the X1 and X2 buttons to go forwards and backwards in the jump list, see
+|<a href="motion.html#CTRL-O">CTRL-O</a>| and |<a href="motion.html#CTRL-I">CTRL-I</a>|.
+
+						<b class="vimtag">*<a name="mouse-swap-buttons">mouse-swap-buttons</a>*</b>
+To swap the meaning of the left and right mouse buttons:
+<code class="example">	:noremap	<code class="special">&lt;LeftMouse&gt;</code>	<code class="special">&lt;RightMouse&gt;</code></code>
+<code class="example">	:noremap	<code class="special">&lt;LeftDrag&gt;</code>	<code class="special">&lt;RightDrag&gt;</code></code>
+<code class="example">	:noremap	<code class="special">&lt;LeftRelease&gt;</code>	<code class="special">&lt;RightRelease&gt;</code></code>
+<code class="example">	:noremap	<code class="special">&lt;RightMouse&gt;</code>	<code class="special">&lt;LeftMouse&gt;</code></code>
+<code class="example">	:noremap	<code class="special">&lt;RightDrag&gt;</code>	<code class="special">&lt;LeftDrag&gt;</code></code>
+<code class="example">	:noremap	<code class="special">&lt;RightRelease&gt;</code>	<code class="special">&lt;LeftRelease&gt;</code></code>
+<code class="example">	:noremap	g<code class="special">&lt;LeftMouse&gt;</code>	<code class="special">&lt;C-RightMouse&gt;</code></code>
+<code class="example">	:noremap	g<code class="special">&lt;RightMouse&gt;</code>	<code class="special">&lt;C-LeftMouse&gt;</code></code>
+<code class="example">	:noremap!	<code class="special">&lt;LeftMouse&gt;</code>	<code class="special">&lt;RightMouse&gt;</code></code>
+<code class="example">	:noremap!	<code class="special">&lt;LeftDrag&gt;</code>	<code class="special">&lt;RightDrag&gt;</code></code>
+<code class="example">	:noremap!	<code class="special">&lt;LeftRelease&gt;</code>	<code class="special">&lt;RightRelease&gt;</code></code>
+<code class="example">	:noremap!	<code class="special">&lt;RightMouse&gt;</code>	<code class="special">&lt;LeftMouse&gt;</code></code>
+<code class="example">	:noremap!	<code class="special">&lt;RightDrag&gt;</code>	<code class="special">&lt;LeftDrag&gt;</code></code>
+<code class="example">	:noremap!	<code class="special">&lt;RightRelease&gt;</code>	<code class="special">&lt;LeftRelease&gt;</code></code>
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

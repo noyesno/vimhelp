@@ -1,0 +1,1617 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: map</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>MAP</h2>
+<pre>
+<b class="vimtag">*<a name="map.txt">map.txt</a>*</b>       For Vim version 8.2.  Last change: 2019 Dec 19
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Key mapping, abbreviations and user-defined commands.
+
+This subject is introduced in sections |<a href="usr_05.html#05.3">05.3</a>|, |<a href="usr_24.html#24.7">24.7</a>| and |<a href="usr_40.html#40.1">40.1</a>| of the user
+manual.
+
+1. Key mapping			|<a href="map.html#key-mapping">key-mapping</a>|
+   1.1 MAP COMMANDS			|<a href="map.html#:map-commands">:map-commands</a>|
+   1.2 Special arguments		|<a href="map.html#:map-arguments">:map-arguments</a>|
+   1.3 Mapping and modes		|<a href="map.html#:map-modes">:map-modes</a>|
+   1.4 Listing mappings			|<a href="map.html#map-listing">map-listing</a>|
+   1.5 Mapping special keys		|<a href="map.html#:map-special-keys">:map-special-keys</a>|
+   1.6 Special characters		|<a href="map.html#:map-special-chars">:map-special-chars</a>|
+   1.7 What keys to map			|<a href="map.html#map-which-keys">map-which-keys</a>|
+   1.8 Examples				|<a href="map.html#map-examples">map-examples</a>|
+   1.9 Using mappings			|<a href="map.html#map-typing">map-typing</a>|
+   1.10 Mapping alt-keys		|<a href="map.html#:map-alt-keys">:map-alt-keys</a>|
+   1.11 Mapping in modifyOtherKeys mode	|<a href="map.html#modifyOtherKeys">modifyOtherKeys</a>|
+   1.12 Mapping an operator		|<a href="map.html#:map-operator">:map-operator</a>|
+2. Abbreviations		|<a href="map.html#abbreviations">abbreviations</a>|
+3. Local mappings and functions	|<a href="map.html#script-local">script-local</a>|
+4. User-defined commands	|<a href="map.html#user-commands">user-commands</a>|
+
+</pre><hr/><pre>1. Key mapping				<b class="vimtag">*<a name="key-mapping">key-mapping</a>*</b> <b class="vimtag">*<a name="mapping">mapping</a>*</b> <b class="vimtag">*<a name="macro">macro</a>*</b>
+
+Key mapping is used to change the meaning of typed keys.  The most common use
+is to define a sequence of commands for a function key.  Example:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;F2&gt;</code> a<code class="special">&lt;C-R&gt;</code>=strftime("%c")<code class="special">&lt;CR&gt;</code><code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+This appends the current date and time after the cursor (in <code class="special">&lt;&gt;</code> notation |<a href="intro.html#%3C%3E">&lt;&gt;</a>|).
+
+
+1.1 MAP COMMANDS					<b class="vimtag">*<a name=":map-commands">:map-commands</a>*</b>
+
+There are commands to enter new mappings, remove mappings and list mappings.
+See |<a href="map.html#map-overview">map-overview</a>| for the various forms of "map" and their relationships with
+modes.
+
+<code class="special">{lhs}</code>	means left-hand-side	<b class="vimtag">*<a name="{lhs}">{lhs}</a>*</b>
+<code class="special">{rhs}</code>	means right-hand-side	<b class="vimtag">*<a name="{rhs}">{rhs}</a>*</b>
+
+:map	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-nvo">mapmode-nvo</a>|		<b class="vimtag">*<a name=":map">:map</a>*</b>
+:nm[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-n">mapmode-n</a>|		<b class="vimtag">*<a name=":nm">:nm</a>*</b> <b class="vimtag">*<a name=":nmap">:nmap</a>*</b>
+:vm[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-v">mapmode-v</a>|		<b class="vimtag">*<a name=":vm">:vm</a>*</b> <b class="vimtag">*<a name=":vmap">:vmap</a>*</b>
+:xm[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-x">mapmode-x</a>|		<b class="vimtag">*<a name=":xm">:xm</a>*</b> <b class="vimtag">*<a name=":xmap">:xmap</a>*</b>
+:smap	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-s">mapmode-s</a>|		    <b class="vimtag">*<a name=":smap">:smap</a>*</b>
+:om[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-o">mapmode-o</a>|		<b class="vimtag">*<a name=":om">:om</a>*</b> <b class="vimtag">*<a name=":omap">:omap</a>*</b>
+:map!	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-ic">mapmode-ic</a>|		<b class="vimtag">*<a name=":map!">:map!</a>*</b>
+:im[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-i">mapmode-i</a>|		<b class="vimtag">*<a name=":im">:im</a>*</b> <b class="vimtag">*<a name=":imap">:imap</a>*</b>
+:lm[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-l">mapmode-l</a>|		<b class="vimtag">*<a name=":lm">:lm</a>*</b> <b class="vimtag">*<a name=":lma">:lma</a>*</b> <b class="vimtag">*<a name=":lmap">:lmap</a>*</b>
+:cm[ap]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-c">mapmode-c</a>|		<b class="vimtag">*<a name=":cm">:cm</a>*</b> <b class="vimtag">*<a name=":cmap">:cmap</a>*</b>
+:tma[p]	<code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-t">mapmode-t</a>|		<b class="vimtag">*<a name=":tma">:tma</a>*</b> <b class="vimtag">*<a name=":tmap">:tmap</a>*</b>
+			Map the key sequence <code class="special">{lhs}</code> to <code class="special">{rhs}</code> for the modes
+			where the map command applies.  The result, including
+			<code class="special">{rhs}</code>, is then further scanned for mappings.  This
+			allows for nested and recursive use of mappings.
+
+						<b class="vimtag">*<a name=":nore">:nore</a>*</b> <b class="vimtag">*<a name=":norem">:norem</a>*</b>
+:no[remap]  <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-nvo">mapmode-nvo</a>|	<b class="vimtag">*<a name=":no">:no</a>*</b>  <b class="vimtag">*<a name=":noremap">:noremap</a>*</b> <b class="vimtag">*<a name=":nor">:nor</a>*</b>
+:nn[oremap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-n">mapmode-n</a>|	<b class="vimtag">*<a name=":nn">:nn</a>*</b>  <b class="vimtag">*<a name=":nnoremap">:nnoremap</a>*</b>
+:vn[oremap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-v">mapmode-v</a>|	<b class="vimtag">*<a name=":vn">:vn</a>*</b>  <b class="vimtag">*<a name=":vnoremap">:vnoremap</a>*</b>
+:xn[oremap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-x">mapmode-x</a>|	<b class="vimtag">*<a name=":xn">:xn</a>*</b>  <b class="vimtag">*<a name=":xnoremap">:xnoremap</a>*</b>
+:snor[emap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-s">mapmode-s</a>|	<b class="vimtag">*<a name=":snor">:snor</a>*</b> <b class="vimtag">*<a name=":snore">:snore</a>*</b> <b class="vimtag">*<a name=":snoremap">:snoremap</a>*</b>
+:ono[remap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-o">mapmode-o</a>|	<b class="vimtag">*<a name=":ono">:ono</a>*</b> <b class="vimtag">*<a name=":onoremap">:onoremap</a>*</b>
+:no[remap]! <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-ic">mapmode-ic</a>|	<b class="vimtag">*<a name=":no!">:no!</a>*</b> <b class="vimtag">*<a name=":noremap!">:noremap!</a>*</b>
+:ino[remap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-i">mapmode-i</a>|	<b class="vimtag">*<a name=":ino">:ino</a>*</b> <b class="vimtag">*<a name=":inor">:inor</a>*</b> <b class="vimtag">*<a name=":inoremap">:inoremap</a>*</b>
+:ln[oremap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-l">mapmode-l</a>|	<b class="vimtag">*<a name=":ln">:ln</a>*</b>  <b class="vimtag">*<a name=":lnoremap">:lnoremap</a>*</b>
+:cno[remap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-c">mapmode-c</a>|	<b class="vimtag">*<a name=":cno">:cno</a>*</b> <b class="vimtag">*<a name=":cnor">:cnor</a>*</b> <b class="vimtag">*<a name=":cnoremap">:cnoremap</a>*</b>
+:tno[remap] <code class="special">{lhs}</code> <code class="special">{rhs}</code>		|<a href="map.html#mapmode-t">mapmode-t</a>|	<b class="vimtag">*<a name=":tno">:tno</a>*</b> <b class="vimtag">*<a name=":tnoremap">:tnoremap</a>*</b>
+			Map the key sequence <code class="special">{lhs}</code> to <code class="special">{rhs}</code> for the modes
+			where the map command applies.  Disallow mapping of
+			<code class="special">{rhs}</code>, to avoid nested and recursive mappings.  Often
+			used to redefine a command.
+
+
+:unm[ap]  <code class="special">{lhs}</code>			|<a href="map.html#mapmode-nvo">mapmode-nvo</a>|		<b class="vimtag">*<a name=":unm">:unm</a>*</b>  <b class="vimtag">*<a name=":unmap">:unmap</a>*</b>
+:nun[map] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-n">mapmode-n</a>|		<b class="vimtag">*<a name=":nun">:nun</a>*</b>  <b class="vimtag">*<a name=":nunmap">:nunmap</a>*</b>
+:vu[nmap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-v">mapmode-v</a>|		<b class="vimtag">*<a name=":vu">:vu</a>*</b>   <b class="vimtag">*<a name=":vunmap">:vunmap</a>*</b>
+:xu[nmap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-x">mapmode-x</a>|		<b class="vimtag">*<a name=":xu">:xu</a>*</b>   <b class="vimtag">*<a name=":xunmap">:xunmap</a>*</b>
+:sunm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-s">mapmode-s</a>|		<b class="vimtag">*<a name=":sunm">:sunm</a>*</b> <b class="vimtag">*<a name=":sunmap">:sunmap</a>*</b>
+:ou[nmap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-o">mapmode-o</a>|		<b class="vimtag">*<a name=":ou">:ou</a>*</b>   <b class="vimtag">*<a name=":ounmap">:ounmap</a>*</b>
+:unm[ap]! <code class="special">{lhs}</code>			|<a href="map.html#mapmode-ic">mapmode-ic</a>|		<b class="vimtag">*<a name=":unm!">:unm!</a>*</b> <b class="vimtag">*<a name=":unmap!">:unmap!</a>*</b>
+:iu[nmap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-i">mapmode-i</a>|		<b class="vimtag">*<a name=":iu">:iu</a>*</b>   <b class="vimtag">*<a name=":iunmap">:iunmap</a>*</b>
+:lu[nmap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-l">mapmode-l</a>|		<b class="vimtag">*<a name=":lu">:lu</a>*</b>   <b class="vimtag">*<a name=":lunmap">:lunmap</a>*</b>
+:cu[nmap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-c">mapmode-c</a>|		<b class="vimtag">*<a name=":cu">:cu</a>*</b>   <b class="vimtag">*<a name=":cun">:cun</a>*</b> <b class="vimtag">*<a name=":cunmap">:cunmap</a>*</b>
+:tunma[p] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-t">mapmode-t</a>|		<b class="vimtag">*<a name=":tunma">:tunma</a>*</b> <b class="vimtag">*<a name=":tunmap">:tunmap</a>*</b>
+			Remove the mapping of <code class="special">{lhs}</code> for the modes where the
+			map command applies.  The mapping may remain defined
+			for other modes where it applies.
+			<code class="note">Note:</code> Trailing spaces are included in the <code class="special">{lhs}</code>.  This
+			unmap does NOT work:
+<code class="example">				:map @@ foo</code>
+<code class="example">				:unmap @@ | print</code>
+<code class="example"></code>
+:mapc[lear]			|<a href="map.html#mapmode-nvo">mapmode-nvo</a>|		<b class="vimtag">*<a name=":mapc">:mapc</a>*</b>   <b class="vimtag">*<a name=":mapclear">:mapclear</a>*</b>
+:nmapc[lear]			|<a href="map.html#mapmode-n">mapmode-n</a>|		<b class="vimtag">*<a name=":nmapc">:nmapc</a>*</b>  <b class="vimtag">*<a name=":nmapclear">:nmapclear</a>*</b>
+:vmapc[lear]			|<a href="map.html#mapmode-v">mapmode-v</a>|		<b class="vimtag">*<a name=":vmapc">:vmapc</a>*</b>  <b class="vimtag">*<a name=":vmapclear">:vmapclear</a>*</b>
+:xmapc[lear]			|<a href="map.html#mapmode-x">mapmode-x</a>|		<b class="vimtag">*<a name=":xmapc">:xmapc</a>*</b>  <b class="vimtag">*<a name=":xmapclear">:xmapclear</a>*</b>
+:smapc[lear]			|<a href="map.html#mapmode-s">mapmode-s</a>|		<b class="vimtag">*<a name=":smapc">:smapc</a>*</b>  <b class="vimtag">*<a name=":smapclear">:smapclear</a>*</b>
+:omapc[lear]			|<a href="map.html#mapmode-o">mapmode-o</a>|		<b class="vimtag">*<a name=":omapc">:omapc</a>*</b>  <b class="vimtag">*<a name=":omapclear">:omapclear</a>*</b>
+:mapc[lear]!			|<a href="map.html#mapmode-ic">mapmode-ic</a>|		<b class="vimtag">*<a name=":mapc!">:mapc!</a>*</b>  <b class="vimtag">*<a name=":mapclear!">:mapclear!</a>*</b>
+:imapc[lear]			|<a href="map.html#mapmode-i">mapmode-i</a>|		<b class="vimtag">*<a name=":imapc">:imapc</a>*</b>  <b class="vimtag">*<a name=":imapclear">:imapclear</a>*</b>
+:lmapc[lear]			|<a href="map.html#mapmode-l">mapmode-l</a>|		<b class="vimtag">*<a name=":lmapc">:lmapc</a>*</b>  <b class="vimtag">*<a name=":lmapclear">:lmapclear</a>*</b>
+:cmapc[lear]			|<a href="map.html#mapmode-c">mapmode-c</a>|		<b class="vimtag">*<a name=":cmapc">:cmapc</a>*</b>  <b class="vimtag">*<a name=":cmapclear">:cmapclear</a>*</b>
+:tmapc[lear]			|<a href="map.html#mapmode-t">mapmode-t</a>|		<b class="vimtag">*<a name=":tmapc">:tmapc</a>*</b>  <b class="vimtag">*<a name=":tmapclear">:tmapclear</a>*</b>
+			Remove ALL mappings for the modes where the map
+			command applies.
+			Use the <code class="special">&lt;buffer&gt;</code> argument to remove buffer-local
+			mappings |<a href="map.html#:map-%3Cbuffer%3E">:map-&lt;buffer&gt;</a>|
+			Warning: This also removes the default mappings.
+
+:map				|<a href="map.html#mapmode-nvo">mapmode-nvo</a>|
+:nm[ap]				|<a href="map.html#mapmode-n">mapmode-n</a>|
+:vm[ap]				|<a href="map.html#mapmode-v">mapmode-v</a>|
+:xm[ap]				|<a href="map.html#mapmode-x">mapmode-x</a>|
+:sm[ap]				|<a href="map.html#mapmode-s">mapmode-s</a>|
+:om[ap]				|<a href="map.html#mapmode-o">mapmode-o</a>|
+:map!				|<a href="map.html#mapmode-ic">mapmode-ic</a>|
+:im[ap]				|<a href="map.html#mapmode-i">mapmode-i</a>|
+:lm[ap]				|<a href="map.html#mapmode-l">mapmode-l</a>|
+:cm[ap]				|<a href="map.html#mapmode-c">mapmode-c</a>|
+:tma[p]				|<a href="map.html#mapmode-t">mapmode-t</a>|
+			List all key mappings for the modes where the map
+			command applies.  <code class="note">Note</code> that ":map" and ":map!" are
+			used most often, because they include the other modes.
+
+:map    <code class="special">{lhs}</code>			|<a href="map.html#mapmode-nvo">mapmode-nvo</a>|		<b class="vimtag">*<a name=":map_l">:map_l</a>*</b>
+:nm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-n">mapmode-n</a>|		<b class="vimtag">*<a name=":nmap_l">:nmap_l</a>*</b>
+:vm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-v">mapmode-v</a>|		<b class="vimtag">*<a name=":vmap_l">:vmap_l</a>*</b>
+:xm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-x">mapmode-x</a>|		<b class="vimtag">*<a name=":xmap_l">:xmap_l</a>*</b>
+:sm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-s">mapmode-s</a>|		<b class="vimtag">*<a name=":smap_l">:smap_l</a>*</b>
+:om[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-o">mapmode-o</a>|		<b class="vimtag">*<a name=":omap_l">:omap_l</a>*</b>
+:map!   <code class="special">{lhs}</code>			|<a href="map.html#mapmode-ic">mapmode-ic</a>|		<b class="vimtag">*<a name=":map_l!">:map_l!</a>*</b>
+:im[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-i">mapmode-i</a>|		<b class="vimtag">*<a name=":imap_l">:imap_l</a>*</b>
+:lm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-l">mapmode-l</a>|		<b class="vimtag">*<a name=":lmap_l">:lmap_l</a>*</b>
+:cm[ap] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-c">mapmode-c</a>|		<b class="vimtag">*<a name=":cmap_l">:cmap_l</a>*</b>
+:tma[p] <code class="special">{lhs}</code>			|<a href="map.html#mapmode-t">mapmode-t</a>|		<b class="vimtag">*<a name=":tmap_l">:tmap_l</a>*</b>
+			List the key mappings for the key sequences starting
+			with <code class="special">{lhs}</code> in the modes where the map command applies.
+
+These commands are used to map a key or key sequence to a string of
+characters.  You can use this to put command sequences under function keys,
+translate one key into another, etc.  See |<a href="starting.html#:mkexrc">:mkexrc</a>| for how to save and
+restore the current mappings.
+
+							<b class="vimtag">*<a name="map-ambiguous">map-ambiguous</a>*</b>
+When two mappings start with the same sequence of characters, they are
+ambiguous.  Example:
+<code class="example">	:imap aa foo</code>
+<code class="example">	:imap aaa bar</code>
+When Vim has read "aa", it will need to get another character to be able to
+decide if "aa" or "aaa" should be mapped.  This means that after typing "aa"
+that mapping won't get expanded yet, Vim is waiting for another character.
+If you type a space, then "foo" will get inserted, plus the space.  If you
+type "a", then "bar" will get inserted.
+
+
+1.2 SPECIAL ARGUMENTS					<b class="vimtag">*<a name=":map-arguments">:map-arguments</a>*</b>
+
+"<code class="special">&lt;buffer&gt;</code>", "<code class="special">&lt;nowait&gt;</code>", "<code class="special">&lt;silent&gt;</code>", "<code class="special">&lt;special&gt;</code>", "<code class="special">&lt;script&gt;</code>", "<code class="special">&lt;expr&gt;</code>" and
+"<code class="special">&lt;unique&gt;</code>" can be used in any order.  They must appear right after the
+command, before any other arguments.
+
+				<b class="vimtag">*<a name=":map-local">:map-local</a>*</b> <b class="vimtag">*<a name=":map-%3Cbuffer%3E">:map-&lt;buffer&gt;</a>*</b> <b class="vimtag">*<a name="E224">E224</a>*</b> <b class="vimtag">*<a name="E225">E225</a>*</b>
+If the first argument to one of these commands is "<code class="special">&lt;buffer&gt;</code>" the mapping will
+be effective in the current buffer only.  Example:
+<code class="example">	:map <code class="special">&lt;buffer&gt;</code>  ,w  /[.,;]<code class="special">&lt;CR&gt;</code></code>
+Then you can map ",w" to something else in another buffer:
+<code class="example">	:map <code class="special">&lt;buffer&gt;</code>  ,w  /[#&amp;!]<code class="special">&lt;CR&gt;</code></code>
+The local buffer mappings are used before the global ones.  See <code class="special">&lt;nowait&gt;</code> below
+to make a short local mapping not taking effect when a longer global one
+exists.
+The "<code class="special">&lt;buffer&gt;</code>" argument can also be used to clear mappings:
+<code class="example">	:unmap <code class="special">&lt;buffer&gt;</code> ,w</code>
+<code class="example">	:mapclear <code class="special">&lt;buffer&gt;</code></code>
+Local mappings are also cleared when a buffer is deleted, but not when it is
+unloaded.  Just like local option values.
+Also see |<a href="map.html#map-precedence">map-precedence</a>|.
+
+						<b class="vimtag">*<a name=":map-%3Cnowait%3E">:map-&lt;nowait&gt;</a>*</b> <b class="vimtag">*<a name=":map-nowait">:map-nowait</a>*</b>
+When defining a buffer-local mapping for "," there may be a global mapping
+that starts with ",".  Then you need to type another character for Vim to know
+whether to use the "," mapping or the longer one.  To avoid this add the
+<code class="special">&lt;nowait&gt;</code> argument.  Then the mapping will be used when it matches, Vim does
+not wait for more characters to be typed.  However, if the characters were
+already typed they are used.
+
+						<b class="vimtag">*<a name=":map-%3Csilent%3E">:map-&lt;silent&gt;</a>*</b> <b class="vimtag">*<a name=":map-silent">:map-silent</a>*</b>
+To define a mapping which will not be echoed on the command line, add
+"<code class="special">&lt;silent&gt;</code>" as the first argument.  Example:
+<code class="example">	:map <code class="special">&lt;silent&gt;</code> ,h /Header<code class="special">&lt;CR&gt;</code></code>
+The search string will not be echoed when using this mapping.  Messages from
+the executed command are still given though.  To shut them up too, add a
+":silent" in the executed command:
+<code class="example">	:map <code class="special">&lt;silent&gt;</code> ,h :exe ":silent normal /Header\r"<code class="special">&lt;CR&gt;</code></code>
+Prompts will still be given, e.g., for inputdialog().
+Using "<code class="special">&lt;silent&gt;</code>" for an abbreviation is possible, but will cause redrawing of
+the command line to fail.
+
+						<b class="vimtag">*<a name=":map-%3Cspecial%3E">:map-&lt;special&gt;</a>*</b> <b class="vimtag">*<a name=":map-special">:map-special</a>*</b>
+Define a mapping with <code class="special">&lt;&gt;</code> notation for special keys, even though the "&lt;" flag
+may appear in 'cpoptions'.  This is useful if the side effect of setting
+'cpoptions' is not desired.  Example:
+<code class="example">	:map <code class="special">&lt;special&gt;</code> <code class="special">&lt;F12&gt;</code> /Header<code class="special">&lt;CR&gt;</code></code>
+
+						<b class="vimtag">*<a name=":map-%3Cscript%3E">:map-&lt;script&gt;</a>*</b> <b class="vimtag">*<a name=":map-script">:map-script</a>*</b>
+If the first argument to one of these commands is "<code class="special">&lt;script&gt;</code>" and it is used to
+define a new mapping or abbreviation, the mapping will only remap characters
+in the <code class="special">{rhs}</code> using mappings that were defined local to a script, starting with
+"<code class="special">&lt;SID&gt;</code>".  This can be used to avoid that mappings from outside a script
+interfere (e.g., when <code class="keystroke">CTRL-V</code> is remapped in mswin.vim), but do use other
+mappings defined in the script.
+<code class="note">Note:</code> ":map <code class="special">&lt;script&gt;</code>" and ":noremap <code class="special">&lt;script&gt;</code>" do the same thing.  The
+"<code class="special">&lt;script&gt;</code>" overrules the command name.  Using ":noremap <code class="special">&lt;script&gt;</code>" is
+preferred, because it's clearer that remapping is (mostly) disabled.
+
+						<b class="vimtag">*<a name=":map-%3Cunique%3E">:map-&lt;unique&gt;</a>*</b> <b class="vimtag">*<a name="E226">E226</a>*</b> <b class="vimtag">*<a name="E227">E227</a>*</b>
+If the first argument to one of these commands is "<code class="special">&lt;unique&gt;</code>" and it is used to
+define a new mapping or abbreviation, the command will fail if the mapping or
+abbreviation already exists.  Example:
+<code class="example">	:map <code class="special">&lt;unique&gt;</code> ,w  /[#&amp;!]<code class="special">&lt;CR&gt;</code></code>
+When defining a local mapping, there will also be a check if a global map
+already exists which is equal.
+Example of what will fail:
+<code class="example">	:map ,w  /[#&amp;!]<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;unique&gt;</code> ,w  /[.,;]<code class="special">&lt;CR&gt;</code></code>
+If you want to map a key and then have it do what it was originally mapped to,
+have a look at |<a href="eval.html#maparg()">maparg()</a>|.
+
+						<b class="vimtag">*<a name=":map-%3Cexpr%3E">:map-&lt;expr&gt;</a>*</b> <b class="vimtag">*<a name=":map-expression">:map-expression</a>*</b>
+If the first argument to one of these commands is "<code class="special">&lt;expr&gt;</code>" and it is used to
+define a new mapping or abbreviation, the argument is an expression.  The
+expression is evaluated to obtain the <code class="special">{rhs}</code> that is used.  Example:
+<code class="example">	:inoremap <code class="special">&lt;expr&gt;</code> . InsertDot()</code>
+The result of the InsertDot() function will be inserted.  It could check the
+text before the cursor and start omni completion when some condition is met.
+
+For abbreviations |<a href="eval.html#v:char">v:char</a>| is set to the character that was typed to trigger
+the abbreviation.  You can use this to decide how to expand the <code class="special">{lhs}</code>.  You
+should not either insert or change the v:char.
+
+Be very careful about side effects!  The expression is evaluated while
+obtaining characters, you may very well make the command dysfunctional.
+For this reason the following is blocked:
+- Changing the buffer text |<a href="eval.html#textlock">textlock</a>|.
+- Editing another buffer.
+- The |<a href="various.html#:normal">:normal</a>| command.
+- Moving the cursor is allowed, but it is restored afterwards.
+If you want the mapping to do any of these let the returned characters do
+that.
+
+You can use getchar(), it consumes typeahead if there is any. E.g., if you
+have these mappings:
+<code class="example">  inoremap <code class="special">&lt;expr&gt;</code> <code class="special">&lt;C-L&gt;</code> nr2char(getchar())</code>
+<code class="example">  inoremap <code class="special">&lt;expr&gt;</code> <code class="special">&lt;C-L&gt;</code>x "foo"</code>
+If you now type <code class="keystroke">CTRL-L</code> nothing happens yet, Vim needs the next character to
+decide what mapping to use.  If you type 'x' the second mapping is used and
+"foo" is inserted.  If you type any other key the first mapping is used,
+getchar() gets the typed key and returns it.
+
+Here is an example that inserts a list number that increases:
+<code class="example">	let counter = 0</code>
+<code class="example">	inoremap <code class="special">&lt;expr&gt;</code> <code class="special">&lt;C-L&gt;</code> ListItem()</code>
+<code class="example">	inoremap <code class="special">&lt;expr&gt;</code> <code class="special">&lt;C-R&gt;</code> ListReset()</code>
+<code class="example"></code>
+<code class="example">	func ListItem()</code>
+<code class="example">	  let g:counter += 1</code>
+<code class="example">	  return g:counter . '. '</code>
+<code class="example">	endfunc</code>
+<code class="example"></code>
+<code class="example">	func ListReset()</code>
+<code class="example">	  let g:counter = 0</code>
+<code class="example">	  return ''</code>
+<code class="example">	endfunc</code>
+<code class="example"></code>
+<code class="keystroke">CTRL-L</code> inserts the next number, <code class="keystroke">CTRL-R</code> resets the count.  <code class="keystroke">CTRL-R</code> returns an
+empty string, so that nothing is inserted.
+
+<code class="note">Note</code> that there are some tricks to make special keys work and escape CSI bytes
+in the text.  The |<a href="map.html#:map">:map</a>| command also does this, thus you must avoid that it
+is done twice.  This does not work:
+<code class="example">	:imap <code class="special">&lt;expr&gt;</code> <code class="special">&lt;F3&gt;</code> "<code class="special">&lt;Char-0x611B&gt;</code>"</code>
+Because the &lt;Char- sequence is escaped for being a |<a href="map.html#:imap">:imap</a>| argument and then
+again for using <code class="special">&lt;expr&gt;</code>.  This does work:
+<code class="example">	:imap <code class="special">&lt;expr&gt;</code> <code class="special">&lt;F3&gt;</code> "\u611B"</code>
+Using 0x80 as a single byte before other text does not work, it will be seen
+as a special key.
+
+
+1.3 MAPPING AND MODES					<b class="vimtag">*<a name=":map-modes">:map-modes</a>*</b>
+			<b class="vimtag">*<a name="mapmode-nvo">mapmode-nvo</a>*</b> <b class="vimtag">*<a name="mapmode-n">mapmode-n</a>*</b> <b class="vimtag">*<a name="mapmode-v">mapmode-v</a>*</b> <b class="vimtag">*<a name="mapmode-o">mapmode-o</a>*</b>
+
+There are six sets of mappings
+- For Normal mode: When typing commands.
+- For Visual mode: When typing commands while the Visual area is highlighted.
+- For Select mode: like Visual mode but typing text replaces the selection.
+- For Operator-pending mode: When an operator is pending (after "d", "y", "c",
+  etc.).  See below: |<a href="map.html#omap-info">omap-info</a>|.
+- For Insert mode.  These are also used in Replace mode.
+- For Command-line mode: When entering a ":" or "/" command.
+
+Special case: While typing a count for a command in Normal mode, mapping zero
+is disabled.  This makes it possible to map zero without making it impossible
+to type a count with a zero.
+
+						<b class="vimtag">*<a name="map-overview">map-overview</a>*</b> <b class="vimtag">*<a name="map-modes">map-modes</a>*</b>
+Overview of which map command works in which mode.  More details below.
+<code class="section">     COMMANDS                    MODES </code>
+:map   :noremap  :unmap     Normal, Visual, Select, Operator-pending
+:nmap  :nnoremap :nunmap    Normal
+:vmap  :vnoremap :vunmap    Visual and Select
+:smap  :snoremap :sunmap    Select
+:xmap  :xnoremap :xunmap    Visual
+:omap  :onoremap :ounmap    Operator-pending
+:map!  :noremap! :unmap!    Insert and Command-line
+:imap  :inoremap :iunmap    Insert
+:lmap  :lnoremap :lunmap    Insert, Command-line, Lang-Arg
+:cmap  :cnoremap :cunmap    Command-line
+:tmap  :tnoremap :tunmap    Terminal-Job
+
+
+<code class="section">    COMMANDS				      MODES </code>
+<code class="section">				       Normal  Visual+Select  Operator-pending </code>
+:map   :noremap   :unmap   :mapclear	 yes	    yes		   yes
+:nmap  :nnoremap  :nunmap  :nmapclear	 yes	     -		    -
+:vmap  :vnoremap  :vunmap  :vmapclear	  -	    yes		    -
+:omap  :onoremap  :ounmap  :omapclear	  -	     -		   yes
+
+:nunmap can also be used outside of a monastery.
+						<b class="vimtag">*<a name="mapmode-x">mapmode-x</a>*</b> <b class="vimtag">*<a name="mapmode-s">mapmode-s</a>*</b>
+Some commands work both in Visual and Select mode, some in only one.  <code class="note">Note</code>
+that quite often "Visual" is mentioned where both Visual and Select mode
+apply. |<a href="visual.html#Select-mode-mapping">Select-mode-mapping</a>|
+<code class="note">NOTE:</code> Mapping a printable character in Select mode may confuse the user.  It's
+better to explicitly use :xmap and :smap for printable characters.  Or use
+:sunmap after defining the mapping.
+
+<code class="section">    COMMANDS				      MODES </code>
+<code class="section">					  Visual    Select </code>
+:vmap  :vnoremap  :vunmap  :vmapclear	    yes      yes
+:xmap  :xnoremap  :xunmap  :xmapclear	    yes       -
+:smap  :snoremap  :sunmap  :smapclear	    -	     yes
+
+			<b class="vimtag">*<a name="mapmode-ic">mapmode-ic</a>*</b> <b class="vimtag">*<a name="mapmode-i">mapmode-i</a>*</b> <b class="vimtag">*<a name="mapmode-c">mapmode-c</a>*</b> <b class="vimtag">*<a name="mapmode-l">mapmode-l</a>*</b>
+Some commands work both in Insert mode and Command-line mode, some not:
+
+<code class="section">    COMMANDS				      MODES </code>
+<code class="section">					  Insert  Command-line	Lang-Arg </code>
+:map!  :noremap!  :unmap!  :mapclear!	    yes	       yes	   -
+:imap  :inoremap  :iunmap  :imapclear	    yes		-	   -
+:cmap  :cnoremap  :cunmap  :cmapclear	     -	       yes	   -
+:lmap  :lnoremap  :lunmap  :lmapclear	    yes<b class="vimtag">*<a name="       yes">       yes</a>*</b>	  yes*
+
+* If 'iminsert' is 1, see |<a href="map.html#language-mapping">language-mapping</a>| below.
+
+The original Vi did not have separate mappings for
+Normal/Visual/Operator-pending mode and for Insert/Command-line mode.
+Therefore the ":map" and ":map!" commands enter and display mappings for
+several modes.  In Vim you can use the ":nmap", ":vmap", ":omap", ":cmap" and
+":imap" commands to enter mappings for each mode separately.
+
+							<b class="vimtag">*<a name="mapmode-t">mapmode-t</a>*</b>
+The terminal mappings are used in a terminal window, when typing keys for the
+job running in the terminal.  See |<a href="terminal.html#terminal-typing">terminal-typing</a>|.
+
+							<b class="vimtag">*<a name="omap-info">omap-info</a>*</b>
+Operator-pending mappings can be used to define a movement command that can be
+used with any operator.  Simple example:
+<code class="example">	:omap { w</code>
+makes "y{" work like "yw" and "d{" like "dw".
+
+To ignore the starting cursor position and select different text, you can have
+the omap start Visual mode to select the text to be operated upon.  Example
+that operates on a function name in the current line:
+<code class="example">	onoremap <code class="special">&lt;silent&gt;</code> F :<code class="special">&lt;C-U&gt;</code>normal! 0f(hviw<code class="special">&lt;CR&gt;</code></code>
+The <code class="keystroke">CTRL-U</code> (<code class="special">&lt;C-U&gt;</code>) is used to remove the range that Vim may insert.  The
+Normal mode commands find the first '(' character and select the first word
+before it.  That usually is the function name.
+
+To enter a mapping for Normal and Visual mode, but not Operator-pending mode,
+first define it for all three modes, then unmap it for
+Operator-pending mode:
+<code class="example">	:map    xx something-difficult</code>
+<code class="example">	:ounmap xx</code>
+<code class="example"></code>
+Likewise for a mapping for Visual and Operator-pending mode or Normal and
+Operator-pending mode.
+
+						<b class="vimtag">*<a name="language-mapping">language-mapping</a>*</b>
+":lmap" defines a mapping that applies to:
+- Insert mode
+- Command-line mode
+- when entering a search pattern
+- the argument of the commands that accept a text character, such as "r" and
+  "f"
+- for the input() line
+Generally: Whenever a character is to be typed that is part of the text in the
+buffer, not a Vim command character.  "Lang-Arg" isn't really another mode,
+it's just used here for this situation.
+   The simplest way to load a set of related language mappings is by using the
+'keymap' option.  See |<a href="usr_45.html#45.5">45.5</a>|.
+   In Insert mode and in Command-line mode the mappings can be disabled with
+the CTRL-^ command |<a href="insert.html#i_CTRL-^">i_CTRL-^</a>| |<a href="cmdline.html#c_CTRL-^">c_CTRL-^</a>|. These commands change the value of
+the 'iminsert' option.  When starting to enter a normal command line (not a
+search pattern) the mappings are disabled until a CTRL-^ is typed.  The state
+last used is remembered for Insert mode and Search patterns separately.  The
+state for Insert mode is also used when typing a character as an argument to
+command like "f" or "t".
+   Language mappings will never be applied to already mapped characters.  They
+are only used for typed characters.  This assumes that the language mapping
+was already done when typing the mapping.
+
+
+1.4 LISTING MAPPINGS					<b class="vimtag">*<a name="map-listing">map-listing</a>*</b>
+
+When listing mappings the characters in the first two columns are:
+
+<code class="section">      CHAR	MODE	</code>
+     <code class="special">&lt;Space&gt;</code>	Normal, Visual, Select and Operator-pending
+	n	Normal
+	v	Visual and Select
+	s	Select
+	x	Visual
+	o	Operator-pending
+	!	Insert and Command-line
+	i	Insert
+	l	":lmap" mappings for Insert, Command-line and Lang-Arg
+	c	Command-line
+	t	Terminal-Job
+
+Just before the <code class="special">{rhs}</code> a special character can appear:
+	*	indicates that it is not remappable
+	&amp;	indicates that only script-local mappings are remappable
+	@	indicates a buffer-local mapping
+
+Everything from the first non-blank after <code class="special">{lhs}</code> up to the end of the line
+(or '|') is considered to be part of <code class="special">{rhs}</code>.  This allows the <code class="special">{rhs}</code> to end
+with a space.
+
+<code class="note">Note:</code> When using mappings for Visual mode, you can use the "'&lt;" mark, which
+is the start of the last selected Visual area in the current buffer |<a href="motion.html#'%3C">'&lt;</a>|.
+
+The |<a href="various.html#:filter">:filter</a>| command can be used to select what mappings to list.  The
+pattern is matched against the <code class="special">{lhs}</code> and <code class="special">{rhs}</code> in the raw form.
+
+							<b class="vimtag">*<a name=":map-verbose">:map-verbose</a>*</b>
+When 'verbose' is non-zero, listing a key map will also display where it was
+last defined.  Example:
+<code class="example"></code>
+<code class="example">	:verbose map <code class="special">&lt;C-W&gt;</code>*</code>
+<code class="example">	n  <code class="special">&lt;C-W&gt;</code><b class="vimtag">*<a name="      ">      </a>*</b> <code class="special">&lt;C-W&gt;</code><code class="special">&lt;C-S&gt;</code>*</code>
+<code class="example">		Last set from /home/abcd/.vimrc</code>
+<code class="example"></code>
+See |<a href="various.html#:verbose-cmd">:verbose-cmd</a>| for more information.
+
+
+1.5 MAPPING SPECIAL KEYS				<b class="vimtag">*<a name=":map-special-keys">:map-special-keys</a>*</b>
+
+There are three ways to map a special key:
+1. The Vi-compatible method: Map the key code.  Often this is a sequence that
+   starts with <code class="special">&lt;Esc&gt;</code>.  To enter a mapping like this you type ":map " and then
+   you have to type <code class="keystroke">CTRL-V</code> before hitting the function key.  <code class="note">Note</code> that when
+   the key code for the key is in the termcap (the t_ options), it will
+   automatically be translated into the internal code and become the second
+   way of mapping (unless the 'k' flag is included in 'cpoptions').
+2. The second method is to use the internal code for the function key.  To
+   enter such a mapping type <code class="keystroke">CTRL-K</code> and then hit the function key, or use
+   the form "#1", "#2", .. "#9", "#0", "<code class="special">&lt;Up&gt;</code>", "<code class="special">&lt;S-Down&gt;</code>", "<code class="special">&lt;S-F7&gt;</code>", etc.
+   (see table of keys |<a href="intro.html#key-notation">key-notation</a>|, all keys from <code class="special">&lt;Up&gt;</code> can be used).  The
+   first ten function keys can be defined in two ways: Just the number, like
+   "#2", and with "<code class="special">&lt;F&gt;</code>", like "<code class="special">&lt;F2&gt;</code>".  Both stand for function key 2.  "#0"
+   refers to function key 10, defined with option 't_f10', which may be
+   function key zero on some keyboards.  The <code class="special">&lt;&gt;</code> form cannot be used when
+   'cpoptions' includes the '&lt;' flag.
+3. Use the termcap entry, with the form <code class="special">&lt;t_xx&gt;</code>, where "xx" is the name of the
+   termcap entry.  Any string entry can be used.  For example:
+<code class="example">     :map <code class="special">&lt;t_F3&gt;</code> G</code>
+  Maps function key 13 to "G".  This does not work if 'cpoptions' includes
+   the '&lt;' flag.
+
+The advantage of the second and third method is that the mapping will work on
+different terminals without modification (the function key will be
+translated into the same internal code or the actual key code, no matter what
+terminal you are using.  The termcap must be correct for this to work, and you
+must use the same mappings).
+
+DETAIL: Vim first checks if a sequence from the keyboard is mapped.  If it
+isn't the terminal key codes are tried (see |<a href="term.html#terminal-options">terminal-options</a>|).  If a
+terminal code is found it is replaced with the internal code.  Then the check
+for a mapping is done again (so you can map an internal code to something
+else).  What is written into the script file depends on what is recognized.
+If the terminal key code was recognized as a mapping the key code itself is
+written to the script file.  If it was recognized as a terminal code the
+internal code is written to the script file.
+
+
+1.6 SPECIAL CHARACTERS					<b class="vimtag">*<a name=":map-special-chars">:map-special-chars</a>*</b>
+						<b class="vimtag">*<a name="map_backslash">map_backslash</a>*</b> <b class="vimtag">*<a name="map-backslash">map-backslash</a>*</b>
+<code class="note">Note</code> that only <code class="keystroke">CTRL-V</code> is mentioned here as a special character for mappings
+and abbreviations.  When 'cpoptions' does not contain 'B', a backslash can
+also be used like <code class="keystroke">CTRL-V</code>.  The <code class="special">&lt;&gt;</code> notation can be fully used then |<a href="intro.html#%3C%3E">&lt;&gt;</a>|.  But
+you cannot use "<code class="special">&lt;C-V&gt;</code>" like <code class="keystroke">CTRL-V</code> to escape the special meaning of what
+follows.
+
+To map a backslash, or use a backslash literally in the <code class="special">{rhs}</code>, the special
+sequence "<code class="special">&lt;Bslash&gt;</code>" can be used.  This avoids the need to double backslashes
+when using nested mappings.
+
+						<b class="vimtag">*<a name="map_CTRL-C">map_CTRL-C</a>*</b> <b class="vimtag">*<a name="map-CTRL-C">map-CTRL-C</a>*</b>
+Using <code class="keystroke">CTRL-C</code> in the <code class="special">{lhs}</code> is possible, but it will only work when Vim is
+waiting for a key, not when Vim is busy with something.  When Vim is busy
+<code class="keystroke">CTRL-C</code> interrupts/breaks the command.
+When using the GUI version on MS-Windows <code class="keystroke">CTRL-C</code> can be mapped to allow a Copy
+command to the clipboard.  Use <code class="keystroke">CTRL-Break</code> to interrupt Vim.
+
+					<b class="vimtag">*<a name="map_space_in_lhs">map_space_in_lhs</a>*</b> <b class="vimtag">*<a name="map-space_in_lhs">map-space_in_lhs</a>*</b>
+To include a space in <code class="special">{lhs}</code> precede it with a <code class="keystroke">CTRL-V</code> (type two <code class="keystroke">CTRL-Vs</code> for
+each space).
+					<b class="vimtag">*<a name="map_space_in_rhs">map_space_in_rhs</a>*</b> <b class="vimtag">*<a name="map-space_in_rhs">map-space_in_rhs</a>*</b>
+If you want a <code class="special">{rhs}</code> that starts with a space, use "<code class="special">&lt;Space&gt;</code>".  To be fully Vi
+compatible (but unreadable) don't use the |<a href="intro.html#%3C%3E">&lt;&gt;</a>| notation, precede <code class="special">{rhs}</code> with a
+single <code class="keystroke">CTRL-V</code> (you have to type <code class="keystroke">CTRL-V</code> two times).
+						<b class="vimtag">*<a name="map_empty_rhs">map_empty_rhs</a>*</b> <b class="vimtag">*<a name="map-empty-rhs">map-empty-rhs</a>*</b>
+You can create an empty <code class="special">{rhs}</code> by typing nothing after a single <code class="keystroke">CTRL-V</code> (you
+have to type <code class="keystroke">CTRL-V</code> two times).  Unfortunately, you cannot do this in a vimrc
+file.
+							<b class="vimtag">*<a name="%3CNop%3E">&lt;Nop&gt;</a>*</b>
+An easier way to get a mapping that doesn't produce anything, is to use
+"<code class="special">&lt;Nop&gt;</code>" for the <code class="special">{rhs}</code>.  This only works when the |<a href="intro.html#%3C%3E">&lt;&gt;</a>| notation is enabled.
+For example, to make sure that function key 8 does nothing at all:
+<code class="example">	:map  <code class="special">&lt;F8&gt;</code>  <code class="special">&lt;Nop&gt;</code></code>
+<code class="example">	:map! <code class="special">&lt;F8&gt;</code>  <code class="special">&lt;Nop&gt;</code></code>
+
+							<b class="vimtag">*<a name="map-multibyte">map-multibyte</a>*</b>
+It is possible to map multibyte characters, but only the whole character.  You
+cannot map the first byte only.  This was done to prevent problems in this
+scenario:
+<code class="example">	:set encoding=latin1</code>
+<code class="example">	:imap <code class="special">&lt;M-C&gt;</code> foo</code>
+<code class="example">	:set encoding=utf-8</code>
+The mapping for <code class="special">&lt;M-C&gt;</code> is defined with the latin1 encoding, resulting in a 0xc3
+byte.  If you type the character á (0xe1 <code class="special">&lt;M-a&gt;</code>) in UTF-8 encoding this is the
+two bytes 0xc3 0xa1.  You don't want the 0xc3 byte to be mapped then or
+otherwise it would be impossible to type the á character.
+
+					<b class="vimtag">*<a name="%3CLeader%3E">&lt;Leader&gt;</a>*</b> <b class="vimtag">*<a name="mapleader">mapleader</a>*</b>
+To define a mapping which uses the "mapleader" variable, the special string
+"<code class="special">&lt;Leader&gt;</code>" can be used.  It is replaced with the string value of "mapleader".
+If "mapleader" is not set or empty, a backslash is used instead.  Example:
+<code class="example">	:map <code class="special">&lt;Leader&gt;</code>A  oanother line<code class="special">&lt;Esc&gt;</code></code>
+Works like:
+<code class="example">	:map \A  oanother line<code class="special">&lt;Esc&gt;</code></code>
+But after:
+<code class="example">	:let mapleader = ","</code>
+It works like:
+<code class="example">	:map ,A  oanother line<code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+<code class="note">Note</code> that the value of "mapleader" is used at the moment the mapping is
+defined.  Changing "mapleader" after that has no effect for already defined
+mappings.
+
+					<b class="vimtag">*<a name="%3CLocalLeader%3E">&lt;LocalLeader&gt;</a>*</b> <b class="vimtag">*<a name="maplocalleader">maplocalleader</a>*</b>
+<code class="special">&lt;LocalLeader&gt;</code> is just like <code class="special">&lt;Leader&gt;</code>, except that it uses "maplocalleader"
+instead of "mapleader".  <code class="special">&lt;LocalLeader&gt;</code> is to be used for mappings which are
+local to a buffer.  Example:
+<code class="example">      :map <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;LocalLeader&gt;</code>A  oanother line<code class="special">&lt;Esc&gt;</code></code>
+
+In a global plugin <code class="special">&lt;Leader&gt;</code> should be used and in a filetype plugin
+<code class="special">&lt;LocalLeader&gt;</code>.  "mapleader" and "maplocalleader" can be equal.  Although, if
+you make them different, there is a smaller chance of mappings from global
+plugins to clash with mappings for filetype plugins.  For example, you could
+keep "mapleader" at the default backslash, and set "maplocalleader" to an
+underscore.
+
+							<b class="vimtag">*<a name="map-%3CSID%3E">map-&lt;SID&gt;</a>*</b>
+In a script the special key name "<code class="special">&lt;SID&gt;</code>" can be used to define a mapping
+that's local to the script.  See |<a href="map.html#%3CSID%3E">&lt;SID&gt;</a>| for details.
+
+							<b class="vimtag">*<a name="%3CPlug%3E">&lt;Plug&gt;</a>*</b>
+The special key name "<code class="special">&lt;Plug&gt;</code>" can be used for an internal mapping, which is
+not to be matched with any key sequence.  This is useful in plugins
+|<a href="usr_41.html#using-%3CPlug%3E">using-&lt;Plug&gt;</a>|.
+
+							<b class="vimtag">*<a name="%3CChar%3E">&lt;Char&gt;</a>*</b> <b class="vimtag">*<a name="%3CChar-%3E">&lt;Char-&gt;</a>*</b>
+To map a character by its decimal, octal or hexadecimal number the <code class="special">&lt;Char&gt;</code>
+construct can be used:
+	<code class="special">&lt;Char-123&gt;</code>	character 123
+	<code class="special">&lt;Char-033&gt;</code>	character 27
+	<code class="special">&lt;Char-0x7f&gt;</code>	character 127
+	<code class="special">&lt;S-Char-114&gt;</code>    character 114 ('r') shifted ('R')
+This is useful to specify a (multi-byte) character in a 'keymap' file.
+Upper and lowercase differences are ignored.
+
+							<b class="vimtag">*<a name="map-comments">map-comments</a>*</b>
+It is not possible to put a comment after these commands, because the '"'
+character is considered to be part of the <code class="special">{lhs}</code> or <code class="special">{rhs}</code>. However, one can
+use |", since this starts a new, empty command with a comment.
+
+							<b class="vimtag">*<a name="map_bar">map_bar</a>*</b> <b class="vimtag">*<a name="map-bar">map-bar</a>*</b>
+Since the '|' character is used to separate a map command from the next
+command, you will have to do something special to include  a '|' in <code class="special">{rhs}</code>.
+There are three methods:
+<code class="section">   use	     works when			   example	</code>
+   <code class="special">&lt;Bar&gt;</code>     '<code class="special">&lt;' is not in 'cpoptions'	   :map _l :!ls &lt;Bar&gt;</code> more^M
+   \|<code class="badlink">	     'b' is not in 'cpoptions'	   :map _l :!ls \</code>| more^M
+   ^V|<code class="badlink">	     always, in Vim and Vi	   :map _l :!ls ^V</code>| more^M
+
+(here ^V stands for <code class="keystroke">CTRL-V</code>; to get one <code class="keystroke">CTRL-V</code> you have to type it twice; you
+cannot use the <code class="special">&lt;&gt;</code> notation "<code class="special">&lt;C-V&gt;</code>" here).
+
+All three work when you use the default setting for 'cpoptions'.
+
+When 'b' is present in 'cpoptions', "\|" will be recognized as a mapping
+ending in a '\' and then another command.  This is Vi compatible, but
+illogical when compared to other commands.
+
+						<b class="vimtag">*<a name="map_return">map_return</a>*</b> <b class="vimtag">*<a name="map-return">map-return</a>*</b>
+When you have a mapping that contains an Ex command, you need to put a line
+terminator after it to have it executed.  The use of <code class="special">&lt;CR&gt;</code> is recommended for
+this (see |<a href="intro.html#%3C%3E">&lt;&gt;</a>|).  Example:
+<code class="example">   :map  _ls  :!ls -l %:S<code class="special">&lt;CR&gt;</code>:echo "the end"<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+To avoid mapping of the characters you type in insert or Command-line mode,
+type a <code class="keystroke">CTRL-V</code> first.  The mapping in Insert mode is disabled if the 'paste'
+option is on.
+							<b class="vimtag">*<a name="map-error">map-error</a>*</b>
+<code class="note">Note</code> that when an error is encountered (that causes an error message or beep)
+the rest of the mapping is not executed.  This is Vi-compatible.
+
+<code class="note">Note</code> that the second character (argument) of the commands @zZtTfF[]rm'`"v
+and <code class="keystroke">CTRL-X</code> is not mapped.  This was done to be able to use all the named
+registers and marks, even when the command with the same name has been
+mapped.
+
+
+1.7 WHAT KEYS TO MAP					<b class="vimtag">*<a name="map-which-keys">map-which-keys</a>*</b>
+
+If you are going to map something, you will need to choose which key(s) to use
+for the <code class="special">{lhs}</code>.  You will have to avoid keys that are used for Vim commands,
+otherwise you would not be able to use those commands anymore.  Here are a few
+suggestions:
+- Function keys <code class="special">&lt;F2&gt;</code>, <code class="special">&lt;F3&gt;</code>, etc..  Also the shifted function keys <code class="special">&lt;S-F1&gt;</code>,
+  <code class="special">&lt;S-F2&gt;</code>, etc.  <code class="note">Note</code> that <code class="special">&lt;F1&gt;</code> is already used for the help command.
+- Meta-keys (with the ALT key pressed).  Depending on your keyboard accented
+  characters may be used as well. |<a href="map.html#:map-alt-keys">:map-alt-keys</a>|
+- Use the '_' or ',' character and then any other character.  The "_" and ","
+  commands do exist in Vim (see |<a href="motion.html#_">_</a>| and |<a href="motion.html#,">,</a>|), but you probably never use them.
+- Use a key that is a synonym for another command.  For example: <code class="keystroke">CTRL-P</code> and
+  <code class="keystroke">CTRL-N</code>.  Use an extra character to allow more mappings.
+- The key defined by <code class="special">&lt;Leader&gt;</code> and one or more other keys.  This is especially
+  useful in scripts. |<a href="map.html#mapleader">mapleader</a>|
+
+See the file "index" for keys that are not used and thus can be mapped without
+losing any builtin function.  You can also use ":help <code class="special">{key}</code>^D" to find out if
+a key is used for some command.  (<code class="special">{key}</code> is the specific key you want to find
+out about, ^D is <code class="keystroke">CTRL-D</code>).
+
+
+1.8 EXAMPLES						<b class="vimtag">*<a name="map-examples">map-examples</a>*</b>
+
+A few examples (given as you type them, for "<code class="special">&lt;CR&gt;</code>" you type four characters;
+the '&lt;' flag must not be present in 'cpoptions' for this to work).
+<code class="example"></code>
+<code class="example">   :map <code class="special">&lt;F3&gt;</code>  o#include</code>
+<code class="example">   :map <code class="special">&lt;M-g&gt;</code> /foo<code class="special">&lt;CR&gt;</code>cwbar<code class="special">&lt;Esc&gt;</code></code>
+<code class="example">   :map _x    d/END/e<code class="special">&lt;CR&gt;</code></code>
+<code class="example">   :map! qq   quadrillion questions</code>
+<code class="example"></code>
+<code class="example"></code>
+Multiplying a count
+
+When you type a count before triggering a mapping, it's like the count was
+typed before the <code class="special">{lhs}</code>.  For example, with this mapping:
+<code class="example">   :map <code class="special">&lt;F4&gt;</code>  3w</code>
+Typing 2<code class="special">&lt;F4&gt;</code> will result in "23w". Thus not moving 2 * 3 words but 23 words.
+If you want to multiply counts use the expression register:
+<code class="example">   :map <code class="special">&lt;F4&gt;</code>  @='3w'<code class="special">&lt;CR&gt;</code></code>
+The part between quotes is the expression being executed. |<a href="change.html#@%20">@=</a>|
+
+
+1.9 USING MAPPINGS					<b class="vimtag">*<a name="map-typing">map-typing</a>*</b>
+
+Vim will compare what you type with the start of a mapped sequence.  If there
+is an incomplete match, it will get more characters until there either is a
+complete match or until there is no match at all.  Example: If you map! "qq",
+the first 'q' will not appear on the screen until you type another
+character.  This is because Vim cannot know if the next character will be a
+'q' or not.  If the 'timeout' option is on (which is the default) Vim will
+only wait for one second (or as long as specified with the 'timeoutlen'
+option).  After that it assumes that the 'q' is to be interpreted as such.  If
+you type slowly, or your system is slow, reset the 'timeout' option.  Then you
+might want to set the 'ttimeout' option.
+
+			      				<b class="vimtag">*<a name="map-precedence">map-precedence</a>*</b>
+Buffer-local mappings (defined using |<a href="map.html#:map-%3Cbuffer%3E">:map-&lt;buffer&gt;</a>|) take precedence over
+global mappings.  When a buffer-local mapping is the same as a global mapping,
+Vim will use the buffer-local mapping.  In addition, Vim will use a complete
+mapping immediately if it was defined with <code class="special">&lt;nowait&gt;</code>, even if a longer mapping
+has the same prefix.  For example, given the following two mappings:
+<code class="example">    :map <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;nowait&gt;</code> \a   :echo "Local \a"<code class="special">&lt;CR&gt;</code></code>
+<code class="example">    :map                   \abc :echo "Global \abc"<code class="special">&lt;CR&gt;</code></code>
+When typing \a the buffer-local mapping will be used immediately.  Vim will
+not wait for more characters to see if the user might be typing \abc.
+
+							<b class="vimtag">*<a name="map-keys-fails">map-keys-fails</a>*</b>
+There are situations where key codes might not be recognized:
+- Vim can only read part of the key code.  Mostly this is only the first
+  character.  This happens on some Unix versions in an xterm.
+- The key code is after character(s) that are mapped.  E.g., "<code class="special">&lt;F1&gt;</code><code class="special">&lt;F1&gt;</code>" or
+  "g<code class="special">&lt;F1&gt;</code>".
+
+The result is that the key code is not recognized in this situation, and the
+mapping fails.  There are two actions needed to avoid this problem:
+
+- Remove the 'K' flag from 'cpoptions'.  This will make Vim wait for the rest
+  of the characters of the function key.
+- When using <code class="special">&lt;F1&gt;</code> to <code class="special">&lt;F4&gt;</code> the actual key code generated may correspond to
+  <code class="special">&lt;xF1&gt;</code> to <code class="special">&lt;xF4&gt;</code>.  There are mappings from <code class="special">&lt;xF1&gt;</code> to <code class="special">&lt;F1&gt;</code>, <code class="special">&lt;xF2&gt;</code> to <code class="special">&lt;F2&gt;</code>, etc.,
+  but these are not recognized after another half a mapping.  Make sure the
+  key codes for <code class="special">&lt;F1&gt;</code> to <code class="special">&lt;F4&gt;</code> are correct:
+<code class="example">	:set <code class="special">&lt;F1&gt;</code>=<code class="special">&lt;type <code class="keystroke">CTRL-V</code>&gt;</code><code class="special">&lt;type F1&gt;</code></code>
+ Type the <code class="special">&lt;F1&gt;</code> as four characters.  The part after the "=" must be done with
+  the actual keys, not the literal text.
+Another solution is to use the actual key code in the mapping for the second
+special key:
+<code class="example">	:map <code class="special">&lt;F1&gt;</code><code class="special">&lt;Esc&gt;</code>OP :echo "yes"<code class="special">&lt;CR&gt;</code></code>
+Don't type a real <code class="special">&lt;Esc&gt;</code>, Vim will recognize the key code and replace it with
+<code class="special">&lt;F1&gt;</code> anyway.
+
+Another problem may be that when keeping ALT or Meta pressed the terminal
+prepends ESC instead of setting the 8th bit.  See |<a href="map.html#:map-alt-keys">:map-alt-keys</a>|.
+
+						<b class="vimtag">*<a name="recursive_mapping">recursive_mapping</a>*</b>
+If you include the <code class="special">{lhs}</code> in the <code class="special">{rhs}</code> you have a recursive mapping.  When
+<code class="special">{lhs}</code> is typed, it will be replaced with <code class="special">{rhs}</code>.  When the <code class="special">{lhs}</code> which is
+included in <code class="special">{rhs}</code> is encountered it will be replaced with <code class="special">{rhs}</code>, and so on.
+This makes it possible to repeat a command an infinite number of times.  The
+only problem is that the only way to stop this is by causing an error.  The
+macros to solve a maze uses this, look there for an example.  There is one
+exception: If the <code class="special">{rhs}</code> starts with <code class="special">{lhs}</code>, the first character is not mapped
+again (this is Vi compatible).
+For example:
+<code class="example">   :map ab abcd</code>
+will execute the "a" command and insert "bcd" in the text.  The "ab" in the
+<code class="special">{rhs}</code> will not be mapped again.
+
+If you want to exchange the meaning of two keys you should use the :noremap
+command.  For example:
+<code class="example">   :noremap k j</code>
+<code class="example">   :noremap j k</code>
+This will exchange the cursor up and down commands.
+
+With the normal :map command, when the 'remap' option is on, mapping takes
+place until the text is found not to be a part of a <code class="special">{lhs}</code>.  For example, if
+you use:
+<code class="example">   :map x y</code>
+<code class="example">   :map y x</code>
+Vim will replace x with y, and then y with x, etc.  When this has happened
+'maxmapdepth' times (default 1000), Vim will give the error message
+"recursive mapping".
+
+							<b class="vimtag">*<a name=":map-undo">:map-undo</a>*</b>
+If you include an undo command inside a mapped sequence, this will bring the
+text back in the state before executing the macro.  This is compatible with
+the original Vi, as long as there is only one undo command in the mapped
+sequence (having two undo commands in a mapped sequence did not make sense
+in the original Vi, you would get back the text before the first undo).
+
+
+1.10 MAPPING ALT-KEYS					<b class="vimtag">*<a name=":map-alt-keys">:map-alt-keys</a>*</b>
+
+In the GUI Vim handles the Alt key itself, thus mapping keys with ALT should
+always work.  But in a terminal Vim gets a sequence of bytes and has to figure
+out whether ALT was pressed or not.
+
+If the terminal supports the modifyOtherKeys mode and it has been enabled,
+then Vim can recognize more key combinations, see |<a href="map.html#modifyOtherKeys">modifyOtherKeys</a>| below.
+
+By default Vim assumes that pressing the ALT key sets the 8th bit of a typed
+character.  Most decent terminals can work that way, such as xterm, aterm and
+rxvt.  If your <code class="special">&lt;A-k&gt;</code> mappings don't work it might be that the terminal is
+prefixing the character with an ESC character.  But you can just as well type
+ESC before a character, thus Vim doesn't know what happened (except for
+checking the delay between characters, which is not reliable).
+
+As of this writing, some mainstream terminals like gnome-terminal and konsole
+use the ESC prefix.  There doesn't appear a way to have them use the 8th bit
+instead.  Xterm should work well by default.  Aterm and rxvt should work well
+when started with the "--meta8" argument.  You can also tweak resources like
+"metaSendsEscape", "eightBitInput" and "eightBitOutput".
+
+On the Linux console, this behavior can be toggled with the "setmetamode"
+command.  Bear in mind that not using an ESC prefix could get you in trouble
+with other programs.  You should make sure that bash has the "convert-meta"
+option set to "on" in order for your Meta keybindings to still work on it
+(it's the default readline behavior, unless changed by specific system
+configuration).  For that, you can add the line:
+<code class="example"></code>
+<code class="example">	set convert-meta on</code>
+<code class="example"></code>
+to your ~/.inputrc file. If you're creating the file, you might want to use:
+<code class="example"></code>
+<code class="example">	$include /etc/inputrc</code>
+<code class="example"></code>
+as the first line, if that file exists on your system, to keep global options.
+This may cause a problem for entering special characters, such as the umlaut.
+Then you should use <code class="keystroke">CTRL-V</code> before that character.
+
+Bear in mind that convert-meta has been reported to have troubles when used in
+UTF-8 locales.  On terminals like xterm, the "metaSendsEscape" resource can be
+toggled on the fly through the "Main Options" menu, by pressing Ctrl-LeftClick
+on the terminal; that's a good last resource in case you want to send ESC when
+using other applications but not when inside Vim.
+
+
+1.11 MAPPING IN modifyOtherKeys mode			<b class="vimtag">*<a name="modifyOtherKeys">modifyOtherKeys</a>*</b>
+
+Xterm and a few other terminals can be put in a mode where keys with modifiers
+are sent with a special escape code.  Vim recognizes these codes and can then
+make a difference between <code class="keystroke">CTRL-H</code> and Backspace, even when Backspace sends the
+character 8.  And many more special keys.
+
+For xterm modifyOtherKeys is enabled in the builtin termcap entry.  If this is
+not used you can enable modifyOtherKeys with these lines in your vimrc:
+<code class="example">      let &amp;t_TI = "\<code class="special">&lt;Esc&gt;</code>[&gt;4;2m"</code>
+<code class="example">      let &amp;t_TE = "\<code class="special">&lt;Esc&gt;</code>[&gt;4;m"</code>
+<code class="example"></code>
+In case the modifyOtherKeys mode causes problems you can disable it:
+<code class="example">      let &amp;t_TI = ""</code>
+<code class="example">      let &amp;t_TE = ""</code>
+It does not take effect immediately.  To have this work without restarting Vim
+execute a shell command, e.g.: `!ls`  Or put the lines in your |<a href="starting.html#vimrc">vimrc</a>|.
+
+When modifyOtherKeys is enabled you can map <code class="special">&lt;C-[&gt;</code> and <code class="special">&lt;C-S-{&gt;</code>:
+<code class="example">	imap <code class="special">&lt;C-[&gt;</code> [[[</code>
+<code class="example">	imap <code class="special">&lt;C-S-{&gt;</code> {{{</code>
+Without modifyOtherKeys <code class="special">&lt;C-[&gt;</code> and <code class="special">&lt;C-S-{&gt;</code> are indistinguishable from Esc.
+
+A known side effect effect is that in Insert mode the raw escape sequence is
+inserted after the <code class="keystroke">CTRL-V</code> key.  This can be used to check whether
+modifyOtherKeys is enabled: In Insert mode type <code class="keystroke">CTRL-SHIFT</code>-V <code class="keystroke">CTRL-V</code>, if you
+get one byte then modifyOtherKeys is off, if you get <code class="special">&lt;1b&gt;</code>27;5;118~ then it is
+on.
+
+When the 'esckeys' option is off, then modifyOtherKeys will be disabled in
+Insert mode to avoid every key with a modifier causing Insert mode to end.
+
+
+1.12 MAPPING AN OPERATOR				<b class="vimtag">*<a name=":map-operator">:map-operator</a>*</b>
+
+An operator is used before a <code class="special">{motion}</code> command.  To define your own operator
+you must create mapping that first sets the 'operatorfunc' option and then
+invoke the |<a href="map.html#g@">g@</a>| operator.  After the user types the <code class="special">{motion}</code> command the
+specified function will be called.
+
+							<b class="vimtag">*<a name="g@">g@</a>*</b> <b class="vimtag">*<a name="E774">E774</a>*</b> <b class="vimtag">*<a name="E775">E775</a>*</b>
+g@<code class="special">{motion}</code>		Call the function set by the 'operatorfunc' option.
+			The '[ mark is positioned at the start of the text
+			moved over by <code class="special">{motion}</code>, the '] mark on the last
+			character of the text.
+			The function is called with one String argument:
+			    "line"	<code class="special">{motion}</code> was |<a href="motion.html#linewise">linewise</a>|
+			    "char"	<code class="special">{motion}</code> was |<a href="motion.html#characterwise">characterwise</a>|
+			    "block"	<code class="special">{motion}</code> was |<a href="visual.html#blockwise-visual">blockwise-visual</a>|
+			Although "block" would rarely appear, since it can
+			only result from Visual mode where "g@" is not useful.
+			{not available when compiled without the |<a href="various.html#+eval">+eval</a>|
+			feature}
+
+Here is an example that counts the number of spaces with <code class="special">&lt;F4&gt;</code>:
+<code class="example"></code>
+<code class="example">	nmap <code class="special">&lt;silent&gt;</code> <code class="special">&lt;F4&gt;</code> :set opfunc=CountSpaces<code class="special">&lt;CR&gt;</code>g@</code>
+<code class="example">	vmap <code class="special">&lt;silent&gt;</code> <code class="special">&lt;F4&gt;</code> :<code class="special">&lt;C-U&gt;</code>call CountSpaces(visualmode(), 1)<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+<code class="example">	function! CountSpaces(type, ...)</code>
+<code class="example">	  let sel_save = &amp;selection</code>
+<code class="example">	  let &amp;selection = "inclusive"</code>
+<code class="example">	  let reg_save = @@</code>
+<code class="example"></code>
+<code class="example">	  if a:0  " Invoked from Visual mode, use gv command.</code>
+<code class="example">	    silent exe "normal! gvy"</code>
+<code class="example">	  elseif a:type == 'line'</code>
+<code class="example">	    silent exe "normal! '[V']y"</code>
+<code class="example">	  else</code>
+<code class="example">	    silent exe "normal! `[v`]y"</code>
+<code class="example">	  endif</code>
+<code class="example"></code>
+<code class="example">	  echomsg strlen(substitute(@@, '[^ ]', '', 'g'))</code>
+<code class="example"></code>
+<code class="example">	  let &amp;selection = sel_save</code>
+<code class="example">	  let @@ = reg_save</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+<code class="note">Note</code> that the 'selection' option is temporarily set to "inclusive" to be able
+to yank exactly the right text by using Visual mode from the '[ to the ']
+mark.
+
+Also <code class="note">note</code> that there is a separate mapping for Visual mode.  It removes the
+"'<code class="special">&lt;,'&gt;</code>" range that ":" inserts in Visual mode and invokes the function with
+visualmode() and an extra argument.
+
+</pre><hr/><pre>2. Abbreviations			<b class="vimtag">*<a name="abbreviations">abbreviations</a>*</b> <b class="vimtag">*<a name="Abbreviations">Abbreviations</a>*</b>
+
+Abbreviations are used in Insert mode, Replace mode and Command-line mode.
+If you enter a word that is an abbreviation, it is replaced with the word it
+stands for.  This can be used to save typing for often used long words.  And
+you can use it to automatically correct obvious spelling errors.
+Examples:
+
+	:iab ms Microsoft
+	:iab tihs this
+
+There are three types of abbreviations:
+
+full-id	  The "full-id" type consists entirely of keyword characters (letters
+	  and characters from 'iskeyword' option).  This is the most common
+	  abbreviation.
+
+	  Examples: "foo", "g3", "-1"
+
+end-id	  The "end-id" type ends in a keyword character, but all the other
+	  characters are not keyword characters.
+
+	  Examples: "#i", "..f", "$/7"
+
+non-id	  The "non-id" type ends in a non-keyword character, the other
+	  characters may be of any type, excluding space and tab.  {this type
+	  is not supported by Vi}
+
+	  Examples: "def#", "4/7$"
+
+Examples of strings that cannot be abbreviations: "a.b", "#def", "a b", "_$r"
+
+An abbreviation is only recognized when you type a non-keyword character.
+This can also be the <code class="special">&lt;Esc&gt;</code> that ends insert mode or the <code class="special">&lt;CR&gt;</code> that ends a
+command.  The non-keyword character which ends the abbreviation is inserted
+after the expanded abbreviation.  An exception to this is the character <code class="special">&lt;C-]&gt;</code>,
+which is used to expand an abbreviation without inserting any extra
+characters.
+
+Example:
+<code class="example">   :ab hh	hello</code>
+	    "hh<code class="special">&lt;Space&gt;</code>" is expanded to "hello<code class="special">&lt;Space&gt;</code>"
+	    "hh<code class="special">&lt;C-]&gt;</code>" is expanded to "hello"
+
+The characters before the cursor must match the abbreviation.  Each type has
+an additional rule:
+
+full-id	  In front of the match is a non-keyword character, or this is where
+	  the line or insertion starts.  Exception: When the abbreviation is
+	  only one character, it is not recognized if there is a non-keyword
+	  character in front of it, other than a space or a tab. However, for
+	  the command line "'<code class="special">&lt;,'&gt;</code>" (or any other marks) is ignored, as if the
+	  command line starts after it.
+
+end-id	  In front of the match is a keyword character, or a space or a tab,
+	  or this is where the line or insertion starts.
+
+non-id	  In front of the match is a space, tab or the start of the line or
+	  the insertion.
+
+Examples: (<code class="special">{CURSOR}</code> is where you type a non-keyword character)
+<code class="example">   :ab foo   four old otters</code>
+		" foo<code class="special">{CURSOR}</code>"	  is expanded to " four old otters"
+		" foobar<code class="special">{CURSOR}</code>" is not expanded
+		"barfoo<code class="special">{CURSOR}</code>"  is not expanded
+
+<code class="example">   :ab #i #include</code>
+		"#i<code class="special">{CURSOR}</code>"	  is expanded to "#include"
+		"&gt;#i<code class="special">{CURSOR}</code>"	  is not expanded
+
+<code class="example">   :ab ;; <code class="special">&lt;endofline&gt;</code></code>
+		"test;;"	  is not expanded
+		"test ;;"	  is expanded to "test <code class="special">&lt;endofline&gt;</code>"
+
+To avoid the abbreviation in Insert mode: Type <code class="keystroke">CTRL-V</code> before the character
+that would trigger the abbreviation.  E.g. <code class="keystroke">CTRL-V</code> <code class="special">&lt;Space&gt;</code>.  Or type part of
+the abbreviation, exit insert mode with <code class="special">&lt;Esc&gt;</code>, re-enter insert mode with "a"
+and type the rest.
+
+To avoid the abbreviation in Command-line mode: Type <code class="keystroke">CTRL-V</code> twice somewhere in
+the abbreviation to avoid it to be replaced.  A <code class="keystroke">CTRL-V</code> in front of a normal
+character is mostly ignored otherwise.
+
+It is possible to move the cursor after an abbreviation:
+<code class="example">   :iab if if ()<code class="special">&lt;Left&gt;</code></code>
+This does not work if 'cpoptions' includes the '&lt;' flag. |<a href="intro.html#%3C%3E">&lt;&gt;</a>|
+
+You can even do more complicated things.  For example, to consume the space
+typed after an abbreviation:
+<code class="example">   func Eatchar(pat)</code>
+<code class="example">      let c = nr2char(getchar(0))</code>
+<code class="example">      return (c =~ a:pat) ? '' : c</code>
+<code class="example">   endfunc</code>
+<code class="example">   iabbr <code class="special">&lt;silent&gt;</code> if if ()<code class="special">&lt;Left&gt;</code><code class="special">&lt;C-R&gt;</code>=Eatchar('\s')<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+There are no default abbreviations.
+
+Abbreviations are never recursive.  You can use ":ab f f-o-o" without any
+problem.  But abbreviations can be mapped.  {some versions of Vi support
+recursive abbreviations, for no apparent reason}
+
+Abbreviations are disabled if the 'paste' option is on.
+
+				<b class="vimtag">*<a name=":abbreviate-local">:abbreviate-local</a>*</b> <b class="vimtag">*<a name=":abbreviate-%3Cbuffer%3E">:abbreviate-&lt;buffer&gt;</a>*</b>
+Just like mappings, abbreviations can be local to a buffer.  This is mostly
+used in a |<a href="usr_43.html#filetype-plugin">filetype-plugin</a>| file.  Example for a C plugin file:
+<code class="example">	:abb <code class="special">&lt;buffer&gt;</code> FF  for (i = 0; i &lt; ; ++i)</code>
+
+						<b class="vimtag">*<a name=":ab">:ab</a>*</b> <b class="vimtag">*<a name=":abbreviate">:abbreviate</a>*</b>
+:ab[breviate]		list all abbreviations.  The character in the first
+			column indicates the mode where the abbreviation is
+			used: 'i' for insert mode, 'c' for Command-line
+			mode, '!' for both.  These are the same as for
+			mappings, see |<a href="map.html#map-listing">map-listing</a>|.
+
+						<b class="vimtag">*<a name=":abbreviate-verbose">:abbreviate-verbose</a>*</b>
+When 'verbose' is non-zero, listing an abbreviation will also display where it
+was last defined.  Example:
+<code class="example"></code>
+<code class="example">	:verbose abbreviate</code>
+<code class="example">	!  teh		 the</code>
+<code class="example">		Last set from /home/abcd/vim/abbr.vim</code>
+<code class="example"></code>
+See |<a href="various.html#:verbose-cmd">:verbose-cmd</a>| for more information.
+
+:ab[breviate] <code class="special">{lhs}</code>	list the abbreviations that start with <code class="special">{lhs}</code>
+			You may need to insert a <code class="keystroke">CTRL-V</code> (type it twice) to
+			avoid that a typed <code class="special">{lhs}</code> is expanded, since
+			command-line abbreviations apply here.
+
+:ab[breviate] [<code class="special">&lt;expr&gt;</code>] [<code class="special">&lt;buffer&gt;</code>] <code class="special">{lhs}</code> <code class="special">{rhs}</code>
+			add abbreviation for <code class="special">{lhs}</code> to <code class="special">{rhs}</code>.  If <code class="special">{lhs}</code> already
+			existed it is replaced with the new <code class="special">{rhs}</code>.  <code class="special">{rhs}</code> may
+			contain spaces.
+			See |<a href="map.html#:map-%3Cexpr%3E">:map-&lt;expr&gt;</a>| for the optional <code class="special">&lt;expr&gt;</code> argument.
+			See |<a href="map.html#:map-%3Cbuffer%3E">:map-&lt;buffer&gt;</a>| for the optional <code class="special">&lt;buffer&gt;</code> argument.
+
+						<b class="vimtag">*<a name=":una">:una</a>*</b> <b class="vimtag">*<a name=":unabbreviate">:unabbreviate</a>*</b>
+:una[bbreviate] [<code class="special">&lt;buffer&gt;</code>] <code class="special">{lhs}</code>
+			Remove abbreviation for <code class="special">{lhs}</code> from the list.  If none
+			is found, remove abbreviations in which <code class="special">{lhs}</code> matches
+			with the <code class="special">{rhs}</code>.  This is done so that you can even
+			remove abbreviations after expansion.  To avoid
+			expansion insert a <code class="keystroke">CTRL-V</code> (type it twice).
+
+						<b class="vimtag">*<a name=":norea">:norea</a>*</b> <b class="vimtag">*<a name=":noreabbrev">:noreabbrev</a>*</b>
+:norea[bbrev] [<code class="special">&lt;expr&gt;</code>] [<code class="special">&lt;buffer&gt;</code>] [lhs] [rhs]
+			Same as ":ab", but no remapping for this <code class="special">{rhs}</code>.
+
+						<b class="vimtag">*<a name=":ca">:ca</a>*</b> <b class="vimtag">*<a name=":cab">:cab</a>*</b> <b class="vimtag">*<a name=":cabbrev">:cabbrev</a>*</b>
+:ca[bbrev] [<code class="special">&lt;expr&gt;</code>] [<code class="special">&lt;buffer&gt;</code>] [lhs] [rhs]
+			Same as ":ab", but for Command-line mode only.
+
+						<b class="vimtag">*<a name=":cuna">:cuna</a>*</b> <b class="vimtag">*<a name=":cunabbrev">:cunabbrev</a>*</b>
+:cuna[bbrev] [<code class="special">&lt;buffer&gt;</code>] <code class="special">{lhs}</code>
+			Same as ":una", but for Command-line mode only.
+
+						<b class="vimtag">*<a name=":cnorea">:cnorea</a>*</b> <b class="vimtag">*<a name=":cnoreabbrev">:cnoreabbrev</a>*</b>
+:cnorea[bbrev] [<code class="special">&lt;expr&gt;</code>] [<code class="special">&lt;buffer&gt;</code>] [lhs] [rhs]
+			same as ":ab", but for Command-line mode only and no
+			remapping for this <code class="special">{rhs}</code>
+
+						<b class="vimtag">*<a name=":ia">:ia</a>*</b> <b class="vimtag">*<a name=":iabbrev">:iabbrev</a>*</b>
+:ia[bbrev] [<code class="special">&lt;expr&gt;</code>] [<code class="special">&lt;buffer&gt;</code>] [lhs] [rhs]
+			Same as ":ab", but for Insert mode only.
+
+						<b class="vimtag">*<a name=":iuna">:iuna</a>*</b> <b class="vimtag">*<a name=":iunabbrev">:iunabbrev</a>*</b>
+:iuna[bbrev] [<code class="special">&lt;buffer&gt;</code>] <code class="special">{lhs}</code>
+			Same as ":una", but for insert mode only.
+
+						<b class="vimtag">*<a name=":inorea">:inorea</a>*</b> <b class="vimtag">*<a name=":inoreabbrev">:inoreabbrev</a>*</b>
+:inorea[bbrev] [<code class="special">&lt;expr&gt;</code>] [<code class="special">&lt;buffer&gt;</code>] [lhs] [rhs]
+			Same as ":ab", but for Insert mode only and no
+			remapping for this <code class="special">{rhs}</code>.
+
+							<b class="vimtag">*<a name=":abc">:abc</a>*</b> <b class="vimtag">*<a name=":abclear">:abclear</a>*</b>
+:abc[lear] [<code class="special">&lt;buffer&gt;</code>]	Remove all abbreviations.
+
+							<b class="vimtag">*<a name=":iabc">:iabc</a>*</b> <b class="vimtag">*<a name=":iabclear">:iabclear</a>*</b>
+:iabc[lear] [<code class="special">&lt;buffer&gt;</code>]	Remove all abbreviations for Insert mode.
+
+							<b class="vimtag">*<a name=":cabc">:cabc</a>*</b> <b class="vimtag">*<a name=":cabclear">:cabclear</a>*</b>
+:cabc[lear] [<code class="special">&lt;buffer&gt;</code>]	Remove all abbreviations for Command-line mode.
+
+							<b class="vimtag">*<a name="using_CTRL-V">using_CTRL-V</a>*</b>
+It is possible to use special characters in the rhs of an abbreviation.
+<code class="keystroke">CTRL-V</code> has to be used to avoid the special meaning of most non printable
+characters.  How many <code class="keystroke">CTRL-Vs</code> need to be typed depends on how you enter the
+abbreviation.  This also applies to mappings.  Let's use an example here.
+
+Suppose you want to abbreviate "esc" to enter an <code class="special">&lt;Esc&gt;</code> character.  When you
+type the ":ab" command in Vim, you have to enter this: (here ^V is a <code class="keystroke">CTRL-V</code>
+and ^[ is <code class="special">&lt;Esc&gt;</code>)
+
+You type:   ab esc ^V^V^V^V^V^[
+
+	All keyboard input is subjected to ^V quote interpretation, so
+	the first, third, and fifth ^V  characters simply allow the second,
+	and fourth ^Vs, and the ^[, to be entered into the command-line.
+
+You see:    ab esc ^V^V^[
+
+	The command-line contains two actual ^Vs before the ^[.  This is
+	how it should appear in your .exrc file, if you choose to go that
+	route.  The first ^V is there to quote the second ^V; the :ab
+	command uses ^V as its own quote character, so you can include quoted
+	whitespace or the | character in the abbreviation.  The :ab command
+	doesn't do anything special with the ^[ character, so it doesn't need
+	to be quoted.  (Although quoting isn't harmful; that's why typing 7
+	[but not 8!] ^Vs works.)
+
+Stored as:  esc     ^V^[
+
+	After parsing, the abbreviation's short form ("esc") and long form
+	(the two characters "^V^[") are stored in the abbreviation table.
+	If you give the :ab command with no arguments, this is how the
+	abbreviation will be displayed.
+
+	Later, when the abbreviation is expanded because the user typed in
+	the word "esc", the long form is subjected to the same type of
+	^V interpretation as keyboard input.  So the ^V protects the ^[
+	character from being interpreted as the "exit Insert mode" character.
+	Instead, the ^[ is inserted into the text.
+
+Expands to: ^[
+
+[example given by Steve Kirkendall]
+
+</pre><hr/><pre>3. Local mappings and functions				<b class="vimtag">*<a name="script-local">script-local</a>*</b>
+
+When using several Vim script files, there is the danger that mappings and
+functions used in one script use the same name as in other scripts.  To avoid
+this, they can be made local to the script.
+
+						<b class="vimtag">*<a name="%3CSID%3E">&lt;SID&gt;</a>*</b> <b class="vimtag">*<a name="%3CSNR%3E">&lt;SNR&gt;</a>*</b> <b class="vimtag">*<a name="E81">E81</a>*</b>
+The string "<code class="special">&lt;SID&gt;</code>" can be used in a mapping or menu.  This requires that the
+'&lt;' flag is not present in 'cpoptions'.
+   When executing the map command, Vim will replace "<code class="special">&lt;SID&gt;</code>" with the special
+key code <code class="special">&lt;SNR&gt;</code>, followed by a number that's unique for the script, and an
+underscore.  Example:
+<code class="example">	:map <code class="special">&lt;SID&gt;</code>Add</code>
+could define a mapping "<code class="special">&lt;SNR&gt;</code>23_Add".
+
+When defining a function in a script, "s:" can be prepended to the name to
+make it local to the script.  But when a mapping is executed from outside of
+the script, it doesn't know in which script the function was defined.  To
+avoid this problem, use "<code class="special">&lt;SID&gt;</code>" instead of "s:".  The same translation is done
+as for mappings.  This makes it possible to define a call to the function in
+a mapping.
+
+When a local function is executed, it runs in the context of the script it was
+defined in.  This means that new functions and mappings it defines can also
+use "s:" or "<code class="special">&lt;SID&gt;</code>" and it will use the same unique number as when the
+function itself was defined.  Also, the "s:var" local script variables can be
+used.
+
+When executing an autocommand or a user command, it will run in the context of
+the script it was defined in.  This makes it possible that the command calls a
+local function or uses a local mapping.
+
+Otherwise, using "<code class="special">&lt;SID&gt;</code>" outside of a script context is an error.
+
+If you need to get the script number to use in a complicated script, you can
+use this function:
+<code class="example">	function s:SID()</code>
+<code class="example">	  return matchstr(expand('<code class="special">&lt;sfile&gt;</code>'), '<code class="special">&lt;SNR&gt;</code>\zs\d\+\ze_SID$')</code>
+<code class="example">	endfun</code>
+<code class="example"></code>
+The "<code class="special">&lt;SNR&gt;</code>" will be shown when listing functions and mappings.  This is useful
+to find out what they are defined to.
+
+The |<a href="repeat.html#:scriptnames">:scriptnames</a>| command can be used to see which scripts have been sourced
+and what their <code class="special">&lt;SNR&gt;</code> number is.
+
+This is all {not available when compiled without the |<a href="various.html#+eval">+eval</a>| feature}.
+
+</pre><hr/><pre>4. User-defined commands				<b class="vimtag">*<a name="user-commands">user-commands</a>*</b>
+
+It is possible to define your own Ex commands.  A user-defined command can act
+just like a built-in command (it can have a range or arguments, arguments can
+be completed as filenames or buffer names, etc), except that when the command
+is executed, it is transformed into a normal Ex command and then executed.
+
+For starters: See section |<a href="usr_40.html#40.2">40.2</a>| in the user manual.
+
+					<b class="vimtag">*<a name="E183">E183</a>*</b> <b class="vimtag">*<a name="E841">E841</a>*</b> <b class="vimtag">*<a name="user-cmd-ambiguous">user-cmd-ambiguous</a>*</b>
+All user defined commands must start with an uppercase letter, to avoid
+confusion with builtin commands.  Exceptions are these builtin commands:
+	:Next
+	:X
+They cannot be used for a user defined command.  ":Print" is also an existing
+command, but it is deprecated and can be overruled.
+
+The other characters of the user command can be uppercase letters, lowercase
+letters or digits.  When using digits, <code class="note">note</code> that other commands that take a
+numeric argument may become ambiguous.  For example, the command ":Cc2" could
+be the user command ":Cc2" without an argument, or the command ":Cc" with
+argument "2".  It is advised to put a space between the command name and the
+argument to avoid these problems.
+
+When using a user-defined command, the command can be abbreviated.  However, if
+an abbreviation is not unique, an error will be issued.  Furthermore, a
+built-in command will always take precedence.
+
+Example:
+<code class="example">	:command Rename ...</code>
+<code class="example">	:command Renumber ...</code>
+<code class="example">	:Rena				" Means "Rename"</code>
+<code class="example">	:Renu				" Means "Renumber"</code>
+<code class="example">	:Ren				" Error - ambiguous</code>
+<code class="example">	:command Paste ...</code>
+<code class="example">	:P				" The built-in :Print</code>
+<code class="example"></code>
+It is recommended that full names for user-defined commands are used in
+scripts.
+
+:com[mand]						<b class="vimtag">*<a name=":com">:com</a>*</b> <b class="vimtag">*<a name=":command">:command</a>*</b>
+			List all user-defined commands.  When listing commands,
+			the characters in the first columns are:
+			    !	Command has the -bang attribute
+			    "	Command has the -register attribute
+			    |   Command has the -bar attribute
+			    b	Command is local to current buffer
+			(see below for details on attributes)
+			The list can be filtered on command name with
+			|<a href="various.html#:filter">:filter</a>|, e.g., to list all commands with "Pyth" in
+			the name:
+<code class="example">				filter Pyth command</code>
+<code class="example"></code>
+:com[mand] <code class="special">{cmd}</code>	List the user-defined commands that start with <code class="special">{cmd}</code>
+
+							<b class="vimtag">*<a name=":command-verbose">:command-verbose</a>*</b>
+When 'verbose' is non-zero, listing a command will also display where it was
+last defined. Example:
+<code class="example"></code>
+<code class="example">    :verbose command TOhtml</code>
+<code class="section">	Name	    Args Range Complete  Definition </code>
+<code class="section">	TOhtml	    0	 %		 :call Convert2HTML(<code class="special">&lt;line1&gt;</code>, <code class="special">&lt;line2&gt;</code>) </code>
+<code class="section">	    Last set from /usr/share/vim/vim-7.0/plugin/tohtml.vim </code>
+
+See |<a href="various.html#:verbose-cmd">:verbose-cmd</a>| for more information.
+
+							<b class="vimtag">*<a name="E174">E174</a>*</b> <b class="vimtag">*<a name="E182">E182</a>*</b>
+:com[mand][!] [<code class="special">{attr}</code>...] <code class="special">{cmd}</code> <code class="special">{rep}</code>
+			Define a user command.  The name of the command is
+			<code class="special">{cmd}</code> and its replacement text is <code class="special">{rep}</code>.  The command's
+			attributes (see below) are <code class="special">{attr}</code>.  If the command
+			already exists, an error is reported, unless a ! is
+			specified, in which case the command is redefined.
+			There is one exception: When sourcing a script again,
+			a command that was previously defined in that script
+			will be silently replaced.
+
+
+:delc[ommand] <code class="special">{cmd}</code>				<b class="vimtag">*<a name=":delc">:delc</a>*</b> <b class="vimtag">*<a name=":delcommand">:delcommand</a>*</b> <b class="vimtag">*<a name="E184">E184</a>*</b>
+			Delete the user-defined command <code class="special">{cmd}</code>.
+
+:comc[lear]						<b class="vimtag">*<a name=":comc">:comc</a>*</b> <b class="vimtag">*<a name=":comclear">:comclear</a>*</b>
+			Delete all user-defined commands.
+
+
+<code class="section">Command attributes </code>
+
+User-defined commands are treated by Vim just like any other Ex commands.  They
+can have arguments, or have a range specified.  Arguments are subject to
+completion as filenames, buffers, etc.  Exactly how this works depends upon the
+command's attributes, which are specified when the command is defined.
+
+There are a number of attributes, split into four categories: argument
+handling, completion behavior, range handling, and special cases.  The
+attributes are described below, by category.
+
+
+<code class="section">Argument handling </code>
+						<b class="vimtag">*<a name="E175">E175</a>*</b> <b class="vimtag">*<a name="E176">E176</a>*</b> <b class="vimtag">*<a name=":command-nargs">:command-nargs</a>*</b>
+By default, a user defined command will take no arguments (and an error is
+reported if any are supplied).  However, it is possible to specify that the
+command can take arguments, using the -nargs attribute.  Valid cases are:
+
+	-nargs=0    No arguments are allowed (the default)
+	-nargs=1    Exactly one argument is required, it includes spaces
+	-nargs=*    Any number of arguments are allowed (0, 1, or many),
+		    separated by white space
+	-nargs=?    0 or 1 arguments are allowed
+	-nargs=+    Arguments must be supplied, but any number are allowed
+
+Arguments are considered to be separated by (unescaped) spaces or tabs in this
+context, except when there is one argument, then the white space is part of
+the argument.
+
+<code class="note">Note</code> that arguments are used as text, not as expressions.  Specifically,
+"s:var" will use the script-local variable in the script where the command was
+defined, not where it is invoked!  Example:
+    script1.vim:
+<code class="example">	:let s:error = "None"</code>
+<code class="example">	:command -nargs=1 Error echoerr <code class="special">&lt;args&gt;</code></code>
+&lt;   script2.vim:
+<code class="example">	:source script1.vim</code>
+<code class="example">	:let s:error = "Wrong!"</code>
+<code class="example">	:Error s:error</code>
+Executing script2.vim will result in "None" being echoed.  Not what you
+intended!  Calling a function may be an alternative.
+
+
+<code class="section">Completion behavior </code>
+				<b class="vimtag">*<a name=":command-completion">:command-completion</a>*</b> <b class="vimtag">*<a name="E179">E179</a>*</b> <b class="vimtag">*<a name="E180">E180</a>*</b> <b class="vimtag">*<a name="E181">E181</a>*</b>
+				<b class="vimtag">*<a name=":command-complete">:command-complete</a>*</b>
+By default, the arguments of user defined commands do not undergo completion.
+However, by specifying one or the other of the following attributes, argument
+completion can be enabled:
+
+	-complete=arglist	file names in argument list
+	-complete=augroup	autocmd groups
+	-complete=buffer	buffer names
+	-complete=behave	:behave suboptions
+	-complete=color		color schemes
+	-complete=command	Ex command (and arguments)
+	-complete=compiler	compilers
+	-complete=cscope	|<a href="if_cscop.html#:cscope">:cscope</a>| suboptions
+	-complete=dir		directory names
+	-complete=environment	environment variable names
+	-complete=event		autocommand events
+	-complete=expression	Vim expression
+	-complete=file		file and directory names
+	-complete=file_in_path	file and directory names in |<a href="options.html#'path'">'path'</a>|
+	-complete=filetype	filetype names |<a href="options.html#'filetype'">'filetype'</a>|
+	-complete=function	function name
+	-complete=help		help subjects
+	-complete=highlight	highlight groups
+	-complete=history	:history suboptions
+	-complete=locale	locale names (as output of locale -a)
+	-complete=mapclear	buffer argument
+	-complete=mapping	mapping name
+	-complete=menu		menus
+	-complete=messages	|<a href="message.html#:messages">:messages</a>| suboptions
+	-complete=option	options
+	-complete=packadd	optional package |<a href="repeat.html#pack-add">pack-add</a>| names
+	-complete=shellcmd	Shell command
+	-complete=sign		|<a href="sign.html#:sign">:sign</a>| suboptions
+	-complete=syntax	syntax file names |<a href="options.html#'syntax'">'syntax'</a>|
+	-complete=syntime	|<a href="syntax.html#:syntime">:syntime</a>| suboptions
+	-complete=tag		tags
+	-complete=tag_listfiles	tags, file names are shown when <code class="keystroke">CTRL-D</code> is hit
+	-complete=user		user names
+	-complete=var		user variables
+	-complete=custom,<code class="special">{func}</code> custom completion, defined via <code class="special">{func}</code>
+	-complete=customlist,<code class="special">{func}</code> custom completion, defined via <code class="special">{func}</code>
+
+<code class="note">Note:</code> That some completion methods might expand environment variables.
+
+
+<code class="section">Custom completion </code>
+				<b class="vimtag">*<a name=":command-completion-custom">:command-completion-custom</a>*</b>
+				<b class="vimtag">*<a name=":command-completion-customlist">:command-completion-customlist</a>*</b> <b class="vimtag">*<a name="E467">E467</a>*</b> <b class="vimtag">*<a name="E468">E468</a>*</b>
+It is possible to define customized completion schemes via the "custom,<code class="special">{func}</code>"
+or the "customlist,<code class="special">{func}</code>" completion argument.  The <code class="special">{func}</code> part should be a
+function with the following signature:
+<code class="example"></code>
+<code class="example">	:function <code class="special">{func}</code>(ArgLead, CmdLine, CursorPos)</code>
+<code class="example"></code>
+The function need not use all these arguments. The function should provide the
+completion candidates as the return value.
+
+For the "custom" argument, the function should return the completion
+candidates one per line in a newline separated string.
+
+For the "customlist" argument, the function should return the completion
+candidates as a Vim List.  Non-string items in the list are ignored.
+
+The function arguments are:
+	ArgLead		the leading portion of the argument currently being
+			completed on
+	CmdLine		the entire command line
+	CursorPos	the cursor position in it (byte index)
+The function may use these for determining context.  For the "custom"
+argument, it is not necessary to filter candidates against the (implicit
+pattern in) ArgLead.  Vim will filter the candidates with its regexp engine
+after function return, and this is probably more efficient in most cases. For
+the "customlist" argument, Vim will not filter the returned completion
+candidates and the user supplied function should filter the candidates.
+
+The following example lists user names to a Finger command
+<code class="example">    :com -complete=custom,ListUsers -nargs=1 Finger !finger <code class="special">&lt;args&gt;</code></code>
+<code class="example">    :fun ListUsers(A,L,P)</code>
+<code class="example">    :    return system("cut -d: -f1 /etc/passwd")</code>
+<code class="example">    :endfun</code>
+<code class="example"></code>
+The following example completes filenames from the directories specified in
+the 'path' option:
+<code class="example">    :com -nargs=1 -bang -complete=customlist,EditFileComplete</code>
+<code class="example">			\ EditFile edit<code class="special">&lt;bang&gt;</code> <code class="special">&lt;args&gt;</code></code>
+<code class="example">    :fun EditFileComplete(A,L,P)</code>
+<code class="example">    :    return split(globpath(&amp;path, a:A), "\n")</code>
+<code class="example">    :endfun</code>
+
+This example does not work for file names with spaces!
+
+
+<code class="section">Range handling </code>
+				<b class="vimtag">*<a name="E177">E177</a>*</b> <b class="vimtag">*<a name="E178">E178</a>*</b> <b class="vimtag">*<a name=":command-range">:command-range</a>*</b> <b class="vimtag">*<a name=":command-count">:command-count</a>*</b>
+By default, user-defined commands do not accept a line number range.  However,
+it is possible to specify that the command does take a range (the -range
+attribute), or that it takes an arbitrary count value, either in the line
+number position (-range=N, like the |<a href="windows.html#:split">:split</a>| command) or as a "count"
+argument (-count=N, like the |<a href="editing.html#:Next">:Next</a>| command).  The count will then be
+available in the argument with |<a href="map.html#%3Ccount%3E">&lt;count&gt;</a>|.
+
+Possible attributes are:
+
+	-range	    Range allowed, default is current line
+	-range=%    Range allowed, default is whole file (1,$)
+	-range=N    A count (default N) which is specified in the line
+		    number position (like |<a href="windows.html#:split">:split</a>|); allows for zero line
+		    number.
+	-count=N    A count (default N) which is specified either in the line
+		    number position, or as an initial argument (like |<a href="editing.html#:Next">:Next</a>|).
+	-count	    acts like -count=0
+
+<code class="note">Note</code> that -range=N and -count=N are mutually exclusive - only one should be
+specified.
+
+					<b class="vimtag">*<a name=":command-addr">:command-addr</a>*</b>
+It is possible that the special characters in the range like ., $ or % which
+by default correspond to the current line, last line and the whole buffer,
+relate to arguments, (loaded) buffers, windows or tab pages.
+
+Possible values are (second column is the short name used in listing):
+    -addr=lines		  	Range of lines (this is the default for -range)
+    -addr=arguments	  arg	Range for arguments
+    -addr=buffers	  buf	Range for buffers (also not loaded buffers)
+    -addr=loaded_buffers  load	Range for loaded buffers
+    -addr=windows	  win	Range for windows
+    -addr=tabs		  tab	Range for tab pages
+    -addr=quickfix	  qf	Range for quickfix entries
+    -addr=other		  ?	other kind of range; can use ".", "$" and "%"
+				as with "lines" (this is the default for
+				-count)
+
+
+<code class="section">Special cases </code>
+					<b class="vimtag">*<a name=":command-bang">:command-bang</a>*</b> <b class="vimtag">*<a name=":command-bar">:command-bar</a>*</b>
+					<b class="vimtag">*<a name=":command-register">:command-register</a>*</b> <b class="vimtag">*<a name=":command-buffer">:command-buffer</a>*</b>
+There are some special cases as well:
+
+	-bang	    The command can take a ! modifier (like :q or :w)
+	-bar	    The command can be followed by a "|" and another command.
+		    A "|" inside the command argument is not allowed then.
+		    Also checks for a " to start a comment.
+	-register   The first argument to the command can be an optional
+		    register name (like :del, :put, :yank).
+	-buffer	    The command will only be available in the current buffer.
+
+In the cases of the -count and -register attributes, if the optional argument
+is supplied, it is removed from the argument list and is available to the
+replacement text separately.
+<code class="note">Note</code> that these arguments can be abbreviated, but that is a deprecated
+feature.  Use the full name for new scripts.
+
+
+<code class="section">Replacement text </code>
+
+The replacement text for a user defined command is scanned for special escape
+sequences, using <code class="special">&lt;...&gt;</code> notation.  Escape sequences are replaced with values
+from the entered command line, and all other text is copied unchanged.  The
+resulting string is executed as an Ex command.  To avoid the replacement use
+<code class="special">&lt;lt&gt;</code> in place of the initial <code class="special">&lt;.  Thus to include "&lt;bang&gt;</code>" literally use
+"<code class="special">&lt;lt&gt;</code>bang&gt;".
+
+The valid escape sequences are
+
+						<b class="vimtag">*<a name="%3Cline1%3E">&lt;line1&gt;</a>*</b>
+	<code class="special">&lt;line1&gt;</code>	The starting line of the command range.
+						<b class="vimtag">*<a name="%3Cline2%3E">&lt;line2&gt;</a>*</b>
+	<code class="special">&lt;line2&gt;</code>	The final line of the command range.
+						<b class="vimtag">*<a name="%3Crange%3E">&lt;range&gt;</a>*</b>
+	<code class="special">&lt;range&gt;</code> The number of items in the command range: 0, 1 or 2
+						<b class="vimtag">*<a name="%3Ccount%3E">&lt;count&gt;</a>*</b>
+	<code class="special">&lt;count&gt;</code>	Any count supplied (as described for the '-range'
+		and '-count' attributes).
+						<b class="vimtag">*<a name="%3Cbang%3E">&lt;bang&gt;</a>*</b>
+	<code class="special">&lt;bang&gt;</code>	(See the '-bang' attribute) Expands to a ! if the
+		command was executed with a ! modifier, otherwise
+		expands to nothing.
+						<b class="vimtag">*<a name="%3Cmods%3E">&lt;mods&gt;</a>*</b>
+	<code class="special">&lt;mods&gt;</code>  The command modifiers, if specified. Otherwise, expands to
+		nothing. Supported modifiers are |<a href="windows.html#:aboveleft">:aboveleft</a>|, |<a href="windows.html#:belowright">:belowright</a>|,
+		|<a href="windows.html#:botright">:botright</a>|, |<a href="editing.html#:browse">:browse</a>|, |<a href="editing.html#:confirm">:confirm</a>|, |<a href="windows.html#:hide">:hide</a>|, |<a href="editing.html#:keepalt">:keepalt</a>|,
+		|<a href="motion.html#:keepjumps">:keepjumps</a>|, |<a href="motion.html#:keepmarks">:keepmarks</a>|, |<a href="cmdline.html#:keeppatterns">:keeppatterns</a>|, |<a href="windows.html#:leftabove">:leftabove</a>|,
+		|<a href="motion.html#:lockmarks">:lockmarks</a>|, |<a href="recover.html#:noswapfile">:noswapfile</a>| |<a href="windows.html#:rightbelow">:rightbelow</a>|, |<a href="various.html#:silent">:silent</a>|, |<a href="tabpage.html#:tab">:tab</a>|,
+		|<a href="windows.html#:topleft">:topleft</a>|, |<a href="various.html#:verbose">:verbose</a>|, and |<a href="windows.html#:vertical">:vertical</a>|.
+		<code class="note">Note</code> that these are not yet supported: |<a href="autocmd.html#:noautocmd">:noautocmd</a>|,
+		|<a href="eval.html#:sandbox">:sandbox</a>| and |<a href="various.html#:unsilent">:unsilent</a>|.
+		Examples:
+<code class="example">		    command! -nargs=+ -complete=file MyEdit</code>
+<code class="example">				\ for f in expand(<code class="special">&lt;q-args&gt;</code>, 0, 1) |</code>
+<code class="example">				\ exe '<code class="special">&lt;mods&gt;</code> split ' . f |</code>
+<code class="example">				\ endfor</code>
+<code class="example"></code>
+<code class="example">		    function! SpecialEdit(files, mods)</code>
+<code class="example">			for f in expand(a:files, 0, 1)</code>
+<code class="example">			    exe a:mods . ' split ' . f</code>
+<code class="example">			endfor</code>
+<code class="example">		    endfunction</code>
+<code class="example">		    command! -nargs=+ -complete=file Sedit</code>
+<code class="example">				\ call SpecialEdit(<code class="special">&lt;q-args&gt;</code>, <code class="special">&lt;q-mods&gt;</code>)</code>
+
+						<b class="vimtag">*<a name="%3Creg%3E">&lt;reg&gt;</a>*</b> <b class="vimtag">*<a name="%3Cregister%3E">&lt;register&gt;</a>*</b>
+	<code class="special">&lt;reg&gt;</code>	(See the '-register' attribute) The optional register,
+		if specified.  Otherwise, expands to nothing.  <code class="special">&lt;register&gt;</code>
+		is a synonym for this.
+						<b class="vimtag">*<a name="%3Cargs%3E">&lt;args&gt;</a>*</b>
+	<code class="special">&lt;args&gt;</code>	The command arguments, exactly as supplied (but as
+		<code class="note">note</code>d above, any count or register can consume some
+		of the arguments, which are then not part of <code class="special">&lt;args&gt;</code>).
+	<code class="special">&lt;lt&gt;</code>	A single '&lt;' (Less-Than) character.  This is needed if you
+		want to get a literal copy of one of these escape sequences
+		into the expansion - for example, to get <code class="special">&lt;bang&gt;</code>, use
+		<code class="special">&lt;lt&gt;</code>bang&gt;.
+
+							<b class="vimtag">*<a name="%3Cq-args%3E">&lt;q-args&gt;</a>*</b>
+If the first two characters of an escape sequence are "q-" (for example,
+<code class="special">&lt;q-args&gt;</code>) then the value is quoted in such a way as to make it a valid value
+for use in an expression.  This uses the argument as one single value.
+When there is no argument <code class="special">&lt;q-args&gt;</code> is an empty string.
+							<b class="vimtag">*<a name="%3Cf-args%3E">&lt;f-args&gt;</a>*</b>
+To allow commands to pass their arguments on to a user-defined function, there
+is a special form <code class="special">&lt;f-args&gt;</code> ("function args").  This splits the command
+arguments at spaces and tabs, quotes each argument individually, and the
+<code class="special">&lt;f-args&gt;</code> sequence is replaced by the comma-separated list of quoted arguments.
+See the Mycmd example below.  If no arguments are given <code class="special">&lt;f-args&gt;</code> is removed.
+   To embed whitespace into an argument of <code class="special">&lt;f-args&gt;</code>, prepend a backslash.
+<code class="special">&lt;f-args&gt;</code> replaces every pair of backslashes (\\) with one backslash.  A
+backslash followed by a character other than white space or a backslash
+remains unmodified.  Overview:
+
+<code class="section">	command		   <code class="special">&lt;f-args&gt;</code> </code>
+	XX ab		   'ab'
+	XX a\b		   'a\b'
+	XX a\ b		   'a b'
+	XX a\  b	   'a ', 'b'
+	XX a\\b		   'a\b'
+	XX a\\ b	   'a\', 'b'
+	XX a\\\b	   'a\\b'
+	XX a\\\ b	   'a\ b'
+	XX a\\\\b	   'a\\b'
+	XX a\\\\ b	   'a\\', 'b'
+
+Examples
+<code class="example"></code>
+<code class="example">   " Delete everything after here to the end</code>
+<code class="example">   :com Ddel +,$d</code>
+<code class="example"></code>
+<code class="example">   " Rename the current buffer</code>
+<code class="example">   :com -nargs=1 -bang -complete=file Ren f <code class="special">&lt;args&gt;</code>|w<code class="special">&lt;bang&gt;</code></code>
+<code class="example"></code>
+<code class="example">   " Replace a range with the contents of a file</code>
+<code class="example">   " (Enter this all as one line)</code>
+<code class="example">   :com -range -nargs=1 -complete=file</code>
+<code class="example">	 Replace <code class="special">&lt;line1&gt;</code>-pu_|<code class="badlink">&lt;line1&gt;,&lt;line2&gt;d</code>|r <code class="special">&lt;args&gt;</code>|<code class="special">&lt;line1&gt;</code>d</code>
+<code class="example"></code>
+<code class="example">   " Count the number of lines in the range</code>
+<code class="example">   :com! -range -nargs=0 Lines  echo <code class="special">&lt;line2&gt;</code> - <code class="special">&lt;line1&gt;</code> + 1 "lines"</code>
+<code class="example"></code>
+<code class="example">   " Call a user function (example of <code class="special">&lt;f-args&gt;</code>)</code>
+<code class="example">   :com -nargs=* Mycmd call Myfunc(<code class="special">&lt;f-args&gt;</code>)</code>
+<code class="example"></code>
+When executed as:
+<code class="example">	:Mycmd arg1 arg2</code>
+This will invoke:
+<code class="example">	:call Myfunc("arg1","arg2")</code>
+<code class="example"></code>
+<code class="example">   :" A more substantial example</code>
+<code class="example">   :function Allargs(command)</code>
+<code class="example">   :   let i = 0</code>
+<code class="example">   :   while i &lt; argc()</code>
+<code class="example">   :	  if filereadable(argv(i))</code>
+<code class="example">   :	     execute "e " . argv(i)</code>
+<code class="example">   :	     execute a:command</code>
+<code class="example">   :      endif</code>
+<code class="example">   :      let i = i + 1</code>
+<code class="example">   :   endwhile</code>
+<code class="example">   :endfunction</code>
+<code class="example">   :command -nargs=+ -complete=command Allargs call Allargs(<code class="special">&lt;q-args&gt;</code>)</code>
+<code class="example"></code>
+The command Allargs takes any Vim command(s) as argument and executes it on all
+files in the argument list.  Usage example (<code class="note">note</code> use of the "e" flag to ignore
+errors and the "update" command to write modified buffers):
+<code class="example">	:Allargs %s/foo/bar/ge|update</code>
+This will invoke:
+<code class="example">	:call Allargs("%s/foo/bar/ge|update")</code>
+
+When defining a user command in a script, it will be able to call functions
+local to the script and use mappings local to the script.  When the user
+invokes the user command, it will run in the context of the script it was
+defined in.  This matters if |<a href="map.html#%3CSID%3E">&lt;SID&gt;</a>| is used in a command.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

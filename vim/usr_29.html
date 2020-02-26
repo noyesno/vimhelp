@@ -1,0 +1,618 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_29</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_29</h2>
+<pre>
+<b class="vimtag">*<a name="usr_29.txt">usr_29.txt</a>*</b>	For Vim version 8.2.  Last change: 2016 Feb 27
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			    Moving through programs
+
+
+The creator of Vim is a computer programmer.  It's no surprise that Vim
+contains many features to aid in writing programs.  Jump around to find where
+identifiers are defined and used.  Preview declarations in a separate window.
+There is more in the next chapter.
+
+|<a href="usr_29.html#29.1">29.1</a>|	Using tags
+|<a href="usr_29.html#29.2">29.2</a>|	The preview window
+|<a href="usr_29.html#29.3">29.3</a>|	Moving through a program
+|<a href="usr_29.html#29.4">29.4</a>|	Finding global identifiers
+|<a href="usr_29.html#29.5">29.5</a>|	Finding local identifiers
+
+     Next chapter: |<a href="usr_30.html#usr_30.txt">usr_30</a>|  Editing programs
+ Previous chapter: |<a href="usr_28.html#usr_28.txt">usr_28</a>|  Folding
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="29.1">29.1</a>*</b>	Using tags
+
+What is a tag?  It is a location where an identifier is defined.  An example
+is a function definition in a C or C++ program.  A list of tags is kept in a
+tags file.  This can be used by Vim to directly jump from any place to the
+tag, the place where an identifier is defined.
+   To generate the tags file for all C files in the current directory, use the
+following command:
+<code class="example"></code>
+<code class="example">	ctags *.c</code>
+<code class="example"></code>
+"ctags" is a separate program.  Most Unix systems already have it installed.
+If you do not have it yet, you can find Exuberant ctags here:
+
+<code class="section">	http://ctags.sf.net </code>
+
+Now when you are in Vim and you want to go to a function definition, you can
+jump to it by using the following command:
+<code class="example"></code>
+<code class="example">	:tag startlist</code>
+<code class="example"></code>
+This command will find the function "startlist" even if it is in another file.
+   The CTRL-] command jumps to the tag of the word that is under the cursor.
+This makes it easy to explore a tangle of C code.  Suppose, for example, that
+you are in the function "write_block".  You can see that it calls
+"write_line".  But what does "write_line" do?  By placing the cursor on the
+call to "write_line" and pressing CTRL-], you jump to the definition of this
+function.
+   The "write_line" function calls "write_char".  You need to figure out what
+it does.  So you position the cursor over the call to "write_char" and press
+CTRL-].  Now you are at the definition of "write_char".
+
+	+-------------------------------------+
+	|<code class="badlink">void write_block(char **s; int cnt)  </code>|
+	|<code class="badlink">{				      </code>|
+	|<code class="badlink">   int i;			      </code>|
+	|<code class="badlink">   for (i = 0; i &lt; cnt; ++i)	      </code>|
+	|<code class="badlink">      write_line(s[i]);	      </code>|
+	|<code class="badlink">}	    </code>|			      |
+	+-----------|-------------------------+
+		    |
+	     CTRL-] |
+		    |	 +----------------------------+
+		    +--&gt; |<code class="badlink">void write_line(char *s)    </code>|
+			 |<code class="badlink">{			      </code>|
+			 |<code class="badlink">   while (*s != 0)	      </code>|
+			 |<code class="badlink">	write_char(*s++);     </code>|
+			 |<code class="badlink">}	  </code>|		      |
+			 +--------|-------------------+
+				  |
+			   CTRL-] |
+				  |    +------------------------------------+
+				  +--&gt; |<code class="badlink">void write_char(char c)		    </code>|
+				       |<code class="badlink">{				    </code>|
+				       |<code class="badlink">    putchar((int)(unsigned char)c); </code>|
+				       |<code class="badlink">}				    </code>|
+				       +------------------------------------+
+
+The ":tags" command shows the list of tags that you traversed through:
+
+	:tags
+<code class="section">	  # TO tag	   FROM line  in file/text </code>
+<code class="section">	  1  1 write_line	   8  write_block.c </code>
+<code class="section">	  2  1 write_char	   7  write_line.c </code>
+<code class="section">	&gt; </code>
+
+Now to go back.  The <code class="keystroke">CTRL-T</code> command goes to the preceding tag.  In the example
+above you get back to the "write_line" function, in the call to "write_char".
+   This command takes a count argument that indicates how many tags to jump
+back.  You have gone forward, and now back.  Let's go forward again.  The
+following command goes to the tag on top of the list:
+<code class="example"></code>
+<code class="example">	:tag</code>
+<code class="example"></code>
+You can prefix it with a count and jump forward that many tags.  For example:
+":3tag".  <code class="keystroke">CTRL-T</code> also can be preceded with a count.
+   These commands thus allow you to go down a call tree with CTRL-] and back
+up again with <code class="keystroke">CTRL-T</code>.  Use ":tags" to find out where you are.
+
+
+SPLIT WINDOWS
+
+The ":tag" command replaces the file in the current window with the one
+containing the new function.  But suppose you want to see not only the old
+function but also the new one?  You can split the window using the ":split"
+command followed by the ":tag" command.  Vim has a shorthand command that does
+both:
+<code class="example">	:stag tagname</code>
+<code class="example"></code>
+To split the current window and jump to the tag under the cursor use this
+command:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-W</code> ]</code>
+<code class="example"></code>
+If a count is specified, the new window will be that many lines high.
+
+
+MORE TAGS FILES
+
+When you have files in many directories, you can create a tags file in each of
+them.  Vim will then only be able to jump to tags within that directory.
+   To find more tags files, set the 'tags' option to include all the relevant
+tags files.  Example:
+<code class="example"></code>
+<code class="example">	:set tags=./tags,./../tags,./*/tags</code>
+<code class="example"></code>
+This finds a tags file in the same directory as the current file, one
+directory level higher and in all subdirectories.
+   This is quite a number of tags files, but it may still not be enough.  For
+example, when editing a file in "~/proj/src", you will not find the tags file
+"~/proj/sub/tags".  For this situation Vim offers to search a whole directory
+tree for tags files.  Example:
+<code class="example"></code>
+<code class="example">	:set tags=~/proj/**/tags</code>
+<code class="example"></code>
+<code class="example"></code>
+ONE TAGS FILE
+
+When Vim has to search many places for tags files, you can hear the disk
+rattling.  It may get a bit slow.  In that case it's better to spend this
+time while generating one big tags file.  You might do this overnight.
+   This requires the Exuberant ctags program, mentioned above.  It offers an
+argument to search a whole directory tree:
+<code class="example"></code>
+<code class="example">	cd ~/proj</code>
+<code class="example">	ctags -R .</code>
+<code class="example"></code>
+The nice thing about this is that Exuberant ctags recognizes various file
+types.  Thus this doesn't work just for C and C++ programs, also for Eiffel
+and even Vim scripts.  See the ctags documentation to tune this.
+   Now you only need to tell Vim where your big tags file is:
+<code class="example"></code>
+<code class="example">	:set tags=~/proj/tags</code>
+<code class="example"></code>
+<code class="example"></code>
+MULTIPLE MATCHES
+
+When a function is defined multiple times (or a method in several classes),
+the ":tag" command will jump to the first one.  If there is a match in the
+current file, that one is used first.
+   You can now jump to other matches for the same tag with:
+<code class="example"></code>
+<code class="example">	:tnext</code>
+<code class="example"></code>
+Repeat this to find further matches.  If there are many, you can select which
+one to jump to:
+<code class="example"></code>
+<code class="example">	:tselect tagname</code>
+<code class="example"></code>
+Vim will present you with a list of choices:
+
+<code class="section">	  # pri kind tag	       file </code>
+<code class="section">	  1 F	f    mch_init	       os_amiga.c </code>
+<code class="section">		       mch_init() </code>
+<code class="section">	  2 F	f    mch_init	       os_mac.c </code>
+<code class="section">		       mch_init() </code>
+<code class="section">	  3 F	f    mch_init	       os_msdos.c </code>
+<code class="section">		       mch_init(void) </code>
+<code class="section">	  4 F	f    mch_init	       os_riscos.c </code>
+<code class="section">		       mch_init() </code>
+<code class="section">	Enter nr of choice (<code class="special">&lt;CR&gt;</code> to abort):  </code>
+
+You can now enter the number (in the first column) of the match that you would
+like to jump to.  The information in the other columns give you a good idea of
+where the match is defined.
+
+To move between the matching tags, these commands can be used:
+
+	:tfirst			go to first match
+	:<code class="special">[count]</code>tprevious	go to <code class="special">[count]</code> previous match
+	:<code class="special">[count]</code>tnext		go to <code class="special">[count]</code> next match
+	:tlast			go to last match
+
+If <code class="special">[count]</code> is omitted then one is used.
+
+
+GUESSING TAG NAMES
+
+Command line completion is a good way to avoid typing a long tag name.  Just
+type the first bit and press <code class="special">&lt;Tab&gt;</code>:
+<code class="example"></code>
+<code class="example">	:tag write_<code class="special">&lt;Tab&gt;</code></code>
+<code class="example"></code>
+You will get the first match.  If it's not the one you want, press <code class="special">&lt;Tab&gt;</code> until
+you find the right one.
+   Sometimes you only know part of the name of a function.  Or you have many
+tags that start with the same string, but end differently.  Then you can tell
+Vim to use a pattern to find the tag.
+   Suppose you want to jump to a tag that contains "block".  First type
+this:
+<code class="example"></code>
+<code class="example">	:tag /block</code>
+<code class="example"></code>
+Now use command line completion: press <code class="special">&lt;Tab&gt;</code>.  Vim will find all tags that
+contain "block" and use the first match.
+   The "/" before a tag name tells Vim that what follows is not a literal tag
+name, but a pattern.  You can use all the items for search patterns here.  For
+example, suppose you want to select a tag that starts with "write_":
+<code class="example"></code>
+<code class="example">	:tselect /^write_</code>
+<code class="example"></code>
+The "^" specifies that the tag starts with "write_".  Otherwise it would also
+be found halfway a tag name.  Similarly "$" at the end makes sure the pattern
+matches until the end of a tag.
+
+
+A TAGS BROWSER
+
+Since CTRL-] takes you to the definition of the identifier under the cursor,
+you can use a list of identifier names as a table of contents.  Here is an
+example.
+   First create a list of identifiers (this requires Exuberant ctags):
+<code class="example"></code>
+<code class="example">	ctags --c-types=f -f functions *.c</code>
+<code class="example"></code>
+Now start Vim without a file, and edit this file in Vim, in a vertically split
+window:
+<code class="example"></code>
+<code class="example">	vim</code>
+<code class="example">	:vsplit functions</code>
+<code class="example"></code>
+The window contains a list of all the functions.  There is some more stuff,
+but you can ignore that.  Do ":setlocal ts=99" to clean it up a bit.
+   In this window, define a mapping:
+<code class="example"></code>
+<code class="example">	:nnoremap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;CR&gt;</code> 0ye<code class="special">&lt;C-W&gt;</code>w:tag <code class="special">&lt;C-R&gt;</code>"<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+Move the cursor to the line that contains the function you want to go to.
+Now press <code class="special">&lt;Enter&gt;</code>.  Vim will go to the other window and jump to the selected
+function.
+
+
+RELATED ITEMS
+
+To make case in tag names be ignored, you can set 'ignorecase' while leaving
+'tagcase' as "followic", or set 'tagcase' to "ignore".
+
+The 'tagbsearch' option tells if the tags file is sorted or not.  The default
+is to assume a sorted tags file, which makes a tags search a lot faster, but
+doesn't work if the tags file isn't sorted.
+
+The 'taglength' option can be used to tell Vim the number of significant
+characters in a tag.
+
+Cscope is a free program.  It does not only find places where an identifier is
+declared, but also where it is used.  See |<a href="if_cscop.html#cscope">cscope</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="29.2">29.2</a>*</b>	The preview window
+
+When you edit code that contains a function call, you need to use the correct
+arguments.  To know what values to pass you can look at how the function is
+defined.  The tags mechanism works very well for this.  Preferably the
+definition is displayed in another window.  For this the preview window can be
+used.
+   To open a preview window to display the function "write_char":
+<code class="example"></code>
+<code class="example">	:ptag write_char</code>
+<code class="example"></code>
+Vim will open a window, and jumps to the tag "write_char".  Then it takes you
+back to the original position.  Thus you can continue typing without the need
+to use a <code class="keystroke">CTRL-W</code> command.
+   If the name of a function appears in the text, you can get its definition
+in the preview window with:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-W</code> }</code>
+<code class="example"></code>
+There is a script that automatically displays the text where the word under
+the cursor was defined.  See |<a href="windows.html#CursorHold-example">CursorHold-example</a>|.
+
+To close the preview window use this command:
+<code class="example"></code>
+<code class="example">	:pclose</code>
+<code class="example"></code>
+To edit a specific file in the preview window, use ":pedit".  This can be
+useful to edit a header file, for example:
+<code class="example"></code>
+<code class="example">	:pedit defs.h</code>
+<code class="example"></code>
+Finally, ":psearch" can be used to find a word in the current file and any
+included files and display the match in the preview window.  This is
+especially useful when using library functions, for which you do not have a
+tags file.  Example:
+<code class="example"></code>
+<code class="example">	:psearch popen</code>
+<code class="example"></code>
+This will show the "stdio.h" file in the preview window, with the function
+prototype for popen():
+
+	FILE	<b class="vimtag">*<a name="popen __P((const char ">popen __P((const char </a>*</b><code class="section">, const char *)); </code>
+
+You can specify the height of the preview window, when it is opened, with the
+'previewheight' option.
+
+</pre><hr/><pre><b class="vimtag">*<a name="29.3">29.3</a>*</b>	Moving through a program
+
+Since a program is structured, Vim can recognize items in it.  Specific
+commands can be used to move around.
+   C programs often contain constructs like this:
+
+<code class="section">	#ifdef USE_POPEN </code>
+<code class="section">	    fd = popen("ls", "r") </code>
+<code class="section">	#else </code>
+<code class="section">	    fd = fopen("tmp", "w") </code>
+<code class="section">	#endif </code>
+
+But then much longer, and possibly nested.  Position the cursor on the
+"#ifdef" and press %.  Vim will jump to the "#else".  Pressing % again takes
+you to the "#endif".  Another % takes you to the "#ifdef" again.
+   When the construct is nested, Vim will find the matching items.  This is a
+good way to check if you didn't forget an "#endif".
+   When you are somewhere inside a "#if" - "#endif", you can jump to the start
+of it with:
+<code class="example"></code>
+<code class="example">	[#</code>
+<code class="example"></code>
+If you are not after a "#if" or "#ifdef" Vim will beep.  To jump forward to
+the next "#else" or "#endif" use:
+<code class="example"></code>
+<code class="example">	]#</code>
+<code class="example"></code>
+These two commands skip any "#if" - "#endif" blocks that they encounter.
+Example:
+
+<code class="section">	#if defined(HAS_INC_H) </code>
+<code class="section">	    a = a + inc(); </code>
+<code class="section">	# ifdef USE_THEME </code>
+<code class="section">	    a += 3; </code>
+<code class="section">	# endif </code>
+<code class="section">	    set_width(a); </code>
+
+With the cursor in the last line, "[#" moves to the first line.  The "#ifdef"
+- "#endif" block in the middle is skipped.
+
+
+MOVING IN CODE BLOCKS
+
+In C code blocks are enclosed in <code class="special">{}</code>.  These can get pretty long.  To move to
+the start of the outer block use the "[[" command.  Use "][" to find the end.
+This assumes that the "<code class="special">{" and "}</code>" are in the first column.
+   The "[{" command moves to the start of the current block.  It skips over
+pairs of <code class="special">{}</code> at the same level.  "]}" jumps to the end.
+   An overview:
+
+			function(int a)
+	   +-&gt;		{
+	   |		    if (a)
+	   |	   +-&gt;	    {
+	[[ |<code class="badlink">	   </code>|		for (;;)	       --+
+	   |<code class="badlink">	   </code>|	  +-&gt;	{			 |
+	   |<code class="badlink">	[{ </code>|	  |<code class="badlink">	    foo(32);		 </code>|     --+
+	   |<code class="badlink">	   </code>|   [{ |<code class="badlink">	    if (bar(a))  --+	 </code>| ]}	 |
+	   +--	   |<code class="badlink">	  +--		break;	   </code>| ]}  |<code class="badlink">	 </code>|
+		   |<code class="badlink">		}		 &lt;-+	 </code>|	 | ][
+		   +--		foobar(a)		 |<code class="badlink">	 </code>|
+			    }			       &lt;-+	 |
+			}				       &lt;-+
+
+When writing C++ or Java, the outer <code class="special">{}</code> block is for the class.  The next level
+of <code class="special">{}</code> is for a method.  When somewhere inside a class use "[m" to find the
+previous start of a method.  "]m" finds the next start of a method.
+
+Additionally, "[]" moves backward to the end of a function and "]]" moves
+forward to the start of the next function.  The end of a function is defined
+by a "}" in the first column.
+
+				int func1(void)
+				{
+					return 1;
+		  +----------&gt;  }
+		  |
+	      []  |		int func2(void)
+		  |	   +-&gt;	{
+		  |<code class="badlink">    [[  </code>|		if (flag)
+	start	  +--	   +--			return flag;
+		  |<code class="badlink">    ][  </code>|		return 2;
+		  |	   +-&gt;	}
+	      ]]  |
+		  |		int func3(void)
+		  +----------&gt;	{
+					return 3;
+				}
+
+Don't forget you can also use "%" to move between matching (), <code class="special">{}</code> and [].
+That also works when they are many lines apart.
+
+
+MOVING IN BRACES
+
+The "[(" and "])" commands work similar to "[<code class="special">{" and "]}</code>", except that they
+work on () pairs instead of <code class="special">{}</code> pairs.
+
+<code class="example">				  [(</code>
+		    &lt;--------------------------------
+			      &lt;-------
+<code class="section">		if (a == b &amp;&amp; (c == d || (e &gt; f)) &amp;&amp; x &gt; y) </code>
+				  --------------&gt;
+			  --------------------------------&gt;
+<code class="example">				       ])</code>
+<code class="example"></code>
+MOVING IN COMMENTS
+
+To move back to the start of a comment use "[/".  Move forward to the end of a
+comment with "]/".  This only works for /<b class="vimtag">*<a name=" - "> - </a>*</b>/ comments.
+
+	  +-&gt;	  +-&gt; /*
+	  |<code class="badlink">    [/ </code>|    * A comment about      --+
+       [/ |<code class="badlink">	  +--  * wonderful life.	</code>| ]/
+	  |	       */		      &lt;-+
+	  |
+	  +--	       foo = bar * 3;	      --+
+						| ]/
+		       /<b class="vimtag">*<a name=" a short comment "> a short comment </a>*</b>/  &lt;-+
+
+</pre><hr/><pre><b class="vimtag">*<a name="29.4">29.4</a>*</b>	Finding global identifiers
+
+You are editing a C program and wonder if a variable is declared as "int" or
+"unsigned".  A quick way to find this is with the "[I" command.
+   Suppose the cursor is on the word "column".  Type:
+<code class="example"></code>
+<code class="example">	[I</code>
+<code class="example"></code>
+Vim will list the matching lines it can find.  Not only in the current file,
+but also in all included files (and files included in them, etc.).  The result
+looks like this:
+
+<code class="section">	structs.h </code>
+	 1:   29     unsigned     column;    /<b class="vimtag">*<a name=" column number "> column number </a>*</b><code class="section">/ </code>
+
+The advantage over using tags or the preview window is that included files are
+searched.  In most cases this results in the right declaration to be found.
+Also when the tags file is out of date.  Also when you don't have tags for the
+included files.
+   However, a few things must be right for "[I" to do its work.  First of all,
+the 'include' option must specify how a file is included.  The default value
+works for C and C++.  For other languages you will have to change it.
+
+
+LOCATING INCLUDED FILES
+
+   Vim will find included files in the places specified with the 'path'
+option.  If a directory is missing, some include files will not be found.  You
+can discover this with this command:
+<code class="example"></code>
+<code class="example">	:checkpath</code>
+<code class="example"></code>
+It will list the include files that could not be found.  Also files included
+by the files that could be found.  An example of the output:
+
+<code class="section">	--- Included files not found in path --- </code>
+<code class="section">	<code class="special">&lt;io.h&gt;</code> </code>
+<code class="section">	vim.h --&gt; </code>
+<code class="section">	  <code class="special">&lt;functions.h&gt;</code> </code>
+<code class="section">	  <code class="special">&lt;clib/exec_protos.h&gt;</code> </code>
+
+The "io.h" file is included by the current file and can't be found.  "vim.h"
+can be found, thus ":checkpath" goes into this file and checks what it
+includes.  The "functions.h" and "clib/exec_protos.h" files, included by
+"vim.h" are not found.
+
+	<code class="note">Note:</code>
+	Vim is not a compiler.  It does not recognize "#ifdef" statements.
+	This means every "#include" statement is used, also when it comes
+	after "#if NEVER".
+
+To fix the files that could not be found, add a directory to the 'path'
+option.  A good place to find out about this is the Makefile.  Look out for
+lines that contain "-I" items, like "-I/usr/local/X11".  To add this directory
+use:
+<code class="example"></code>
+<code class="example">	:set path+=/usr/local/X11</code>
+<code class="example"></code>
+When there are many subdirectories, you can use the "*" wildcard.  Example:
+<code class="example"></code>
+<code class="example">	:set path+=/usr/*/include</code>
+<code class="example"></code>
+This would find files in "/usr/local/include" as well as "/usr/X11/include".
+
+When working on a project with a whole nested tree of included files, the "**"
+items is useful.  This will search down in all subdirectories.  Example:
+<code class="example"></code>
+<code class="example">	:set path+=/projects/invent/**/include</code>
+<code class="example"></code>
+This will find files in the directories:
+
+<code class="section">	/projects/invent/include </code>
+<code class="section">	/projects/invent/main/include </code>
+<code class="section">	/projects/invent/main/os/include </code>
+	etc.
+
+There are even more possibilities.  Check out the 'path' option for info.
+   If you want to see which included files are actually found, use this
+command:
+<code class="example"></code>
+<code class="example">	:checkpath!</code>
+<code class="example"></code>
+You will get a (very long) list of included files, the files they include, and
+so on.  To shorten the list a bit, Vim shows "(Already listed)" for files that
+were found before and doesn't list the included files in there again.
+
+
+JUMPING TO A MATCH
+
+"[I" produces a list with only one line of text.  When you want to have a
+closer look at the first item, you can jump to that line with the command:
+<code class="example"></code>
+<code class="example">	[<code class="special">&lt;Tab&gt;</code></code>
+<code class="example"></code>
+You can also use "[ <code class="keystroke">CTRL-I</code>", since <code class="keystroke">CTRL-I</code> is the same as pressing <code class="special">&lt;Tab&gt;</code>.
+
+The list that "[I" produces has a number at the start of each line.  When you
+want to jump to another item than the first one, type the number first:
+<code class="example"></code>
+<code class="example">	3[<code class="special">&lt;Tab&gt;</code></code>
+<code class="example"></code>
+Will jump to the third item in the list.  Remember that you can use <code class="keystroke">CTRL-O</code> to
+jump back to where you started from.
+
+
+RELATED COMMANDS
+
+	[i		only lists the first match
+	]I		only lists items below the cursor
+	]i		only lists the first item below the cursor
+
+
+FINDING DEFINED IDENTIFIERS
+
+The "[I" command finds any identifier.  To find only macros, defined with
+"#define" use:
+<code class="example"></code>
+<code class="example">	[D</code>
+<code class="example"></code>
+Again, this searches in included files.  The 'define' option specifies what a
+line looks like that defines the items for "[D".  You could change it to make
+it work with other languages than C or C++.
+   The commands related to "[D" are:
+
+	[d		only lists the first match
+	]D		only lists items below the cursor
+	]d		only lists the first item below the cursor
+
+</pre><hr/><pre><b class="vimtag">*<a name="29.5">29.5</a>*</b>	Finding local identifiers
+
+The "[I" command searches included files.  To search in the current file only,
+and jump to the first place where the word under the cursor is used:
+<code class="example"></code>
+<code class="example">	gD</code>
+<code class="example"></code>
+Hint: Goto Definition.  This command is very useful to find a variable or
+function that was declared locally ("static", in C terms).  Example (cursor on
+"counter"):
+
+	   +-&gt;   static int counter = 0;
+	   |
+	   |     int get_counter(void)
+	gD |     {
+	   |	     ++counter;
+	   +--	     return counter;
+		 }
+
+To restrict the search even further, and look only in the current function,
+use this command:
+<code class="example"></code>
+<code class="example">	gd</code>
+<code class="example"></code>
+This will go back to the start of the current function and find the first
+occurrence of the word under the cursor.  Actually, it searches backwards to
+an empty line above a "{" in the first column.  From there it searches forward
+for the identifier.  Example (cursor on "idx"):
+
+		int find_entry(char *name)
+		{
+	   +-&gt;	    int idx;
+	   |
+	gd |	    for (idx = 0; idx &lt; table_len; ++idx)
+	   |		if (strcmp(table[idx].name, name) == 0)
+	   +--		    return idx;
+		}
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_30.html#usr_30.txt">usr_30</a>|  Editing programs
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

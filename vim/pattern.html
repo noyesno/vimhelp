@@ -1,0 +1,1429 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: pattern</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>PATTERN</h2>
+<pre>
+<b class="vimtag">*<a name="pattern.txt">pattern.txt</a>*</b>   For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Patterns and search commands				<b class="vimtag">*<a name="pattern-searches">pattern-searches</a>*</b>
+
+The very basics can be found in section |<a href="usr_03.html#03.9">03.9</a>| of the user manual.  A few more
+explanations are in chapter 27 |<a href="usr_27.html#usr_27.txt">usr_27</a>|.
+
+1. Search commands		|<a href="pattern.html#search-commands">search-commands</a>|
+2. The definition of a pattern	|<a href="pattern.html#search-pattern">search-pattern</a>|
+3. Magic			|<a href="pattern.html#%2Fmagic">/magic</a>|
+4. Overview of pattern items	|<a href="pattern.html#pattern-overview">pattern-overview</a>|
+5. Multi items			|<a href="pattern.html#pattern-multi-items">pattern-multi-items</a>|
+6. Ordinary atoms		|<a href="pattern.html#pattern-atoms">pattern-atoms</a>|
+7. Ignoring case in a pattern	|<a href="pattern.html#%2Fignorecase">/ignorecase</a>|
+8. Composing characters		|<a href="pattern.html#patterns-composing">patterns-composing</a>|
+9. Compare with Perl patterns	|<a href="pattern.html#perl-patterns">perl-patterns</a>|
+10. Highlighting matches	|<a href="pattern.html#match-highlight">match-highlight</a>|
+
+</pre><hr/><pre>1. Search commands				<b class="vimtag">*<a name="search-commands">search-commands</a>*</b>
+
+							<b class="vimtag">*<a name="%2F">/</a>*</b>
+/<code class="special">{pattern}</code>[/]<code class="special">&lt;CR&gt;</code>	Search forward for the <code class="special">[count]</code>'th occurrence of
+			<code class="special">{pattern}</code> |<a href="motion.html#exclusive">exclusive</a>|.
+
+/<code class="special">{pattern}</code>/<code class="special">{offset}</code><code class="special">&lt;CR&gt;</code>	Search forward for the <code class="special">[count]</code>'th occurrence of
+			<code class="special">{pattern}</code> and go |<a href="pattern.html#{offset}">{offset}</a>| lines up or down.
+			|<a href="motion.html#linewise">linewise</a>|.
+
+							<b class="vimtag">*<a name="%2F%3CCR%3E">/&lt;CR&gt;</a>*</b>
+/<code class="special">&lt;CR&gt;</code>			Search forward for the <code class="special">[count]</code>'th occurrence of the
+			latest used pattern |<a href="pattern.html#last-pattern">last-pattern</a>| with latest used
+			|<a href="pattern.html#{offset}">{offset}</a>|.
+
+//<code class="special">{offset}</code><code class="special">&lt;CR&gt;</code>		Search forward for the <code class="special">[count]</code>'th occurrence of the
+			latest used pattern |<a href="pattern.html#last-pattern">last-pattern</a>| with new
+			|<a href="pattern.html#{offset}">{offset}</a>|.  If <code class="special">{offset}</code> is empty no offset is used.
+
+							<b class="vimtag">*<a name="?">?</a>*</b>
+?<code class="special">{pattern}</code>[?]<code class="special">&lt;CR&gt;</code>	Search backward for the <code class="special">[count]</code>'th previous
+			occurrence of <code class="special">{pattern}</code> |<a href="motion.html#exclusive">exclusive</a>|.
+
+?<code class="special">{pattern}</code>?<code class="special">{offset}</code><code class="special">&lt;CR&gt;</code>	Search backward for the <code class="special">[count]</code>'th previous
+			occurrence of <code class="special">{pattern}</code> and go |<a href="pattern.html#{offset}">{offset}</a>| lines up or
+			down |<a href="motion.html#linewise">linewise</a>|.
+
+							<b class="vimtag">*<a name="?%3CCR%3E">?&lt;CR&gt;</a>*</b>
+?<code class="special">&lt;CR&gt;</code>			Search backward for the <code class="special">[count]</code>'th occurrence of the
+			latest used pattern |<a href="pattern.html#last-pattern">last-pattern</a>| with latest used
+			|<a href="pattern.html#{offset}">{offset}</a>|.
+
+??<code class="special">{offset}</code><code class="special">&lt;CR&gt;</code>		Search backward for the <code class="special">[count]</code>'th occurrence of the
+			latest used pattern |<a href="pattern.html#last-pattern">last-pattern</a>| with new
+			|<a href="pattern.html#{offset}">{offset}</a>|.  If <code class="special">{offset}</code> is empty no offset is used.
+
+							<b class="vimtag">*<a name="n">n</a>*</b>
+n			Repeat the latest "/" or "?" <code class="special">[count]</code> times.
+			If the cursor doesn't move the search is repeated with
+			count + 1.
+			|<a href="pattern.html#last-pattern">last-pattern</a>|
+
+							<b class="vimtag">*<a name="N">N</a>*</b>
+N			Repeat the latest "/" or "?" <code class="special">[count]</code> times in
+			opposite direction. |<a href="pattern.html#last-pattern">last-pattern</a>|
+
+							<b class="vimtag">*<a name="star">star</a>*</b> <b class="vimtag">*<a name="E348">E348</a>*</b> <b class="vimtag">*<a name="E349">E349</a>*</b>
+*			Search forward for the <code class="special">[count]</code>'th occurrence of the
+			word nearest to the cursor.  The word used for the
+			search is the first of:
+				1. the keyword under the cursor |<a href="options.html#'iskeyword'">'iskeyword'</a>|
+				2. the first keyword after the cursor, in the
+				   current line
+				3. the non-blank word under the cursor
+				4. the first non-blank word after the cursor,
+				   in the current line
+			Only whole keywords are searched for, like with the
+			command "/\<code class="special">&lt;keyword\&gt;</code>".  |<a href="motion.html#exclusive">exclusive</a>|
+			'ignorecase' is used, 'smartcase' is not.
+
+							<b class="vimtag">*<a name="%23">#</a>*</b>
+#			Same as "*", but search backward.  The pound sign
+			(character 163) also works.  If the "#" key works as
+			backspace, try using "stty erase <code class="special">&lt;BS&gt;</code>" before starting
+			Vim (<code class="special">&lt;BS&gt;</code> is <code class="keystroke">CTRL-H</code> or a real backspace).
+
+							<b class="vimtag">*<a name="gstar">gstar</a>*</b>
+g<b class="vimtag">*<a name="			Like %22">			Like "</a>*</b>", but don't put "\<code class="special">&lt;" and "\&gt;</code>" around the word.
+			This makes the search also find matches that are not a
+			whole word.
+
+							<b class="vimtag">*<a name="g%23">g#</a>*</b>
+g#			Like "#", but don't put "\<code class="special">&lt;" and "\&gt;</code>" around the word.
+			This makes the search also find matches that are not a
+			whole word.
+
+							<b class="vimtag">*<a name="gd">gd</a>*</b>
+gd			Goto local Declaration.  When the cursor is on a local
+			variable, this command will jump to its declaration.
+			First Vim searches for the start of the current
+			function, just like "[[".  If it is not found the
+			search stops in line 1.  If it is found, Vim goes back
+			until a blank line is found.  From this position Vim
+			searches for the keyword under the cursor, like with
+			"*", but lines that look like a comment are ignored
+			(see 'comments' option).
+			<code class="note">Note</code> that this is not guaranteed to work, Vim does not
+			really check the syntax, it only searches for a match
+			with the keyword.  If included files also need to be
+			searched use the commands listed in |<a href="tagsrch.html#include-search">include-search</a>|.
+			After this command |<a href="pattern.html#n">n</a>| searches forward for the next
+			match (not backward).
+
+							<b class="vimtag">*<a name="gD">gD</a>*</b>
+gD			Goto global Declaration.  When the cursor is on a
+			global variable that is defined in the file, this
+			command will jump to its declaration.  This works just
+			like "gd", except that the search for the keyword
+			always starts in line 1.
+
+							<b class="vimtag">*<a name="1gd">1gd</a>*</b>
+1gd			Like "gd", but ignore matches inside a <code class="special">{}</code> block that
+			ends before the cursor position.
+
+							<b class="vimtag">*<a name="1gD">1gD</a>*</b>
+1gD			Like "gD", but ignore matches inside a <code class="special">{}</code> block that
+			ends before the cursor position.
+
+							<b class="vimtag">*<a name="CTRL-C">CTRL-C</a>*</b>
+<code class="keystroke">CTRL-C</code>			Interrupt current (search) command.  Use <code class="keystroke">CTRL-Break</code> on
+			MS-Windows |<a href="os_dos.html#dos-CTRL-Break">dos-CTRL-Break</a>|.
+			In Normal mode, any pending command is aborted.
+
+							<b class="vimtag">*<a name=":noh">:noh</a>*</b> <b class="vimtag">*<a name=":nohlsearch">:nohlsearch</a>*</b>
+:noh[lsearch]		Stop the highlighting for the 'hlsearch' option.  It
+			is automatically turned back on when using a search
+			command, or setting the 'hlsearch' option.
+			This command doesn't work in an autocommand, because
+			the highlighting state is saved and restored when
+			executing autocommands |<a href="autocmd.html#autocmd-searchpat">autocmd-searchpat</a>|.
+			Same thing for when invoking a user function.
+
+While typing the search pattern the current match will be shown if the
+'incsearch' option is on.  Remember that you still have to finish the search
+command with <code class="special">&lt;CR&gt;</code> to actually position the cursor at the displayed match.  Or
+use <code class="special">&lt;Esc&gt;</code> to abandon the search.
+
+All matches for the last used search pattern will be highlighted if you set
+the 'hlsearch' option.  This can be suspended with the |<a href="pattern.html#:nohlsearch">:nohlsearch</a>| command.
+
+When 'shortmess' does not include the "S" flag, Vim will automatically show an
+index, on which the cursor is. This can look like this:
+<code class="example"></code>
+<code class="example">  [1/5]		Cursor is on first of 5 matches.</code>
+<code class="example">  [1/&gt;99]	Cursor is on first of more than 99 matches.</code>
+<code class="example">  [&gt;99/&gt;99]	Cursor is after 99 match of more than 99 matches.</code>
+<code class="example">  [?/??]	Unknown how many matches exists, generating the</code>
+<code class="example">		statistics was aborted because of search timeout.</code>
+<code class="example"></code>
+<code class="note">Note:</code> the count does not take offset into account.
+
+When no match is found you get the error: <b class="vimtag">*<a name="E486">E486</a>*</b> Pattern not found
+<code class="note">Note</code> that for the |<a href="repeat.html#:global">:global</a>| command this behaves like a normal message, for Vi
+compatibility.  For the |<a href="change.html#:s">:s</a>| command the "e" flag can be used to avoid the
+error message |<a href="change.html#:s_flags">:s_flags</a>|.
+
+					<b class="vimtag">*<a name="search-offset">search-offset</a>*</b> <b class="vimtag">*<a name="{offset}">{offset}</a>*</b>
+These commands search for the specified pattern.  With "/" and "?" an
+additional offset may be given.  There are two types of offsets: line offsets
+and character offsets.
+
+The offset gives the cursor position relative to the found match:
+    <code class="special">[num]</code>	<code class="special">[num]</code> lines downwards, in column 1
+    +<code class="special">[num]</code>	<code class="special">[num]</code> lines downwards, in column 1
+    -<code class="special">[num]</code>	<code class="special">[num]</code> lines upwards, in column 1
+    e<code class="special">[+num]</code>	<code class="special">[num]</code> characters to the right of the end of the match
+    e<code class="special">[-num]</code>	<code class="special">[num]</code> characters to the left of the end of the match
+    s<code class="special">[+num]</code>	<code class="special">[num]</code> characters to the right of the start of the match
+    s<code class="special">[-num]</code>	<code class="special">[num]</code> characters to the left of the start of the match
+    b<code class="special">[+num]</code>	<code class="special">[num]</code> identical to s<code class="special">[+num]</code> above (mnemonic: begin)
+    b<code class="special">[-num]</code>	<code class="special">[num]</code> identical to s<code class="special">[-num]</code> above (mnemonic: begin)
+    ;<code class="special">{pattern}</code>  perform another search, see |<a href="pattern.html#%2F%2F;">//;</a>|
+
+If a '-' or '+' is given but <code class="special">[num]</code> is omitted, a count of one will be used.
+When including an offset with 'e', the search becomes inclusive (the
+character the cursor lands on is included in operations).
+
+Examples:
+
+<code class="section">pattern			cursor position	</code>
+/test/+1		one line below "test", in column 1
+/test/e			on the last t of "test"
+/test/s+2		on the 's' of "test"
+/test/b-3		three characters before "test"
+
+If one of these commands is used after an operator, the characters between
+the cursor position before and after the search is affected.  However, if a
+line offset is given, the whole lines between the two cursor positions are
+affected.
+
+An example of how to search for matches with a pattern and change the match
+with another word:
+<code class="example">	/foo<code class="special">&lt;CR&gt;</code>	find "foo"</code>
+<code class="example">	c//e<code class="special">&lt;CR&gt;</code>	change until end of match</code>
+<code class="example">	bar<code class="special">&lt;Esc&gt;</code>	type replacement</code>
+<code class="example">	//<code class="special">&lt;CR&gt;</code>		go to start of next match</code>
+<code class="example">	c//e<code class="special">&lt;CR&gt;</code>	change until end of match</code>
+<code class="example">	beep<code class="special">&lt;Esc&gt;</code>	type another replacement</code>
+<code class="example">			etc.</code>
+
+							<b class="vimtag">*<a name="%2F%2F;">//;</a>*</b> <b class="vimtag">*<a name="E386">E386</a>*</b>
+A very special offset is ';' followed by another search command.  For example:
+<code class="example"></code>
+<code class="example">   /test 1/;/test</code>
+<code class="example">   /test.*/+1;?ing?</code>
+<code class="example"></code>
+The first one first finds the next occurrence of "test 1", and then the first
+occurrence of "test" after that.
+
+This is like executing two search commands after each other, except that:
+- It can be used as a single motion command after an operator.
+- The direction for a following "n" or "N" command comes from the first
+  search command.
+- When an error occurs the cursor is not moved at all.
+
+							<b class="vimtag">*<a name="last-pattern">last-pattern</a>*</b>
+The last used pattern and offset are remembered.  They can be used to repeat
+the search, possibly in another direction or with another count.  <code class="note">Note</code> that
+two patterns are remembered: One for 'normal' search commands and one for the
+substitute command ":s".  Each time an empty pattern is given, the previously
+used pattern is used.  However, if there is no previous search command, a
+previous substitute pattern is used, if possible.
+
+The 'magic' option sticks with the last used pattern.  If you change 'magic',
+this will not change how the last used pattern will be interpreted.
+The 'ignorecase' option does not do this.  When 'ignorecase' is changed, it
+will result in the pattern to match other text.
+
+All matches for the last used search pattern will be highlighted if you set
+the 'hlsearch' option.
+
+To clear the last used search pattern:
+<code class="example">	:let @/ = ""</code>
+This will not set the pattern to an empty string, because that would match
+everywhere.  The pattern is really cleared, like when starting Vim.
+
+The search usually skips matches that don't move the cursor.  Whether the next
+match is found at the next character or after the skipped match depends on the
+'c' flag in 'cpoptions'.  See |<a href="options.html#cpo-c">cpo-c</a>|.
+	   with 'c' flag:   "/..." advances 1 to 3 characters
+	without 'c' flag:   "/..." advances 1 character
+The unpredictability with the 'c' flag is caused by starting the search in the
+first column, skipping matches until one is found past the cursor position.
+
+When searching backwards, searching starts at the start of the line, using the
+'c' flag in 'cpoptions' as described above.  Then the last match before the
+cursor position is used.
+
+In Vi the ":tag" command sets the last search pattern when the tag is searched
+for.  In Vim this is not done, the previous search pattern is still remembered,
+unless the 't' flag is present in 'cpoptions'.  The search pattern is always
+put in the search history.
+
+If the 'wrapscan' option is on (which is the default), searches wrap around
+the end of the buffer.  If 'wrapscan' is not set, the backward search stops
+at the beginning and the forward search stops at the end of the buffer.  If
+'wrapscan' is set and the pattern was not found the error message "pattern
+not found" is given, and the cursor will not be moved.  If 'wrapscan' is not
+set the message becomes "search hit BOTTOM without match" when searching
+forward, or "search hit TOP without match" when searching backward.  If
+wrapscan is set and the search wraps around the end of the file the message
+"search hit TOP, continuing at BOTTOM" or "search hit BOTTOM, continuing at
+TOP" is given when searching backwards or forwards respectively.  This can be
+switched off by setting the 's' flag in the 'shortmess' option.  The highlight
+method 'w' is used for this message (default: standout).
+
+							<b class="vimtag">*<a name="search-range">search-range</a>*</b>
+You can limit the search command "/" to a certain range of lines by including
+\%&gt;l items.  For example, to match the word "limit" below line 199 and above
+line 300:
+<code class="example">	/\%&gt;199l\%&lt;300llimit</code>
+Also see |<a href="pattern.html#%2F\%%3El">/\%&gt;l</a>|.
+
+Another way is to use the ":substitute" command with the 'c' flag.  Example:
+<code class="example">   :.,300s/Pattern//gc</code>
+This command will search from the cursor position until line 300 for
+"Pattern".  At the match, you will be asked to type a character.  Type 'q' to
+stop at this match, type 'n' to find the next match.
+
+The "<b class="vimtag">*<a name="%22, %22%23%22, %22g">", "#", "g</a>*</b>" and "g#" commands look for a word near the cursor in this
+order, the first one that is found is used:
+- The keyword currently under the cursor.
+- The first keyword to the right of the cursor, in the same line.
+- The WORD currently under the cursor.
+- The first WORD to the right of the cursor, in the same line.
+The keyword may only contain letters and characters in 'iskeyword'.
+The WORD may contain any non-blanks (<code class="special">&lt;Tab&gt;</code>s and/or <code class="special">&lt;Space&gt;</code>s).
+<code class="note">Note</code> that if you type with ten fingers, the characters are easy to remember:
+the "#" is under your left hand middle finger (search to the left and up) and
+the "*" is under your right hand middle finger (search to the right and down).
+(this depends on your keyboard layout though).
+
+								<b class="vimtag">*<a name="E956">E956</a>*</b>
+In very rare cases a regular expression is used recursively.  This can happen
+when executing a pattern takes a long time and when checking for messages on
+channels a callback is invoked that also uses a pattern or an autocommand is
+triggered.  In most cases this should be fine, but if a pattern is in use when
+it's used again it fails.  Usually this means there is something wrong with
+the pattern.
+
+</pre><hr/><pre>2. The definition of a pattern		<b class="vimtag">*<a name="search-pattern">search-pattern</a>*</b> <b class="vimtag">*<a name="pattern">pattern</a>*</b> <b class="vimtag">*<a name="[pattern]">[pattern]</a>*</b>
+					<b class="vimtag">*<a name="regular-expression">regular-expression</a>*</b> <b class="vimtag">*<a name="regexp">regexp</a>*</b> <b class="vimtag">*<a name="Pattern">Pattern</a>*</b>
+					<b class="vimtag">*<a name="E76">E76</a>*</b> <b class="vimtag">*<a name="E383">E383</a>*</b> <b class="vimtag">*<a name="E476">E476</a>*</b>
+
+For starters, read chapter 27 of the user manual |<a href="usr_27.html#usr_27.txt">usr_27</a>|.
+
+						<b class="vimtag">*<a name="%2Fbar">/bar</a>*</b> <b class="vimtag">*<a name="%2F\bar">/\bar</a>*</b> <b class="vimtag">*<a name="%2Fpattern">/pattern</a>*</b>
+1. A pattern is one or more branches, separated by "\|".  It matches anything
+   that matches one of the branches.  Example: "foo\|beep" matches "foo" and
+   matches "beep".  If more than one branch matches, the first one is used.
+
+   pattern ::=	    branch
+		or  branch \| branch
+		or  branch \|<code class="badlink"> branch \</code>| branch
+		etc.
+
+						<b class="vimtag">*<a name="%2Fbranch">/branch</a>*</b> <b class="vimtag">*<a name="%2F\&">/\&amp;</a>*</b>
+2. A branch is one or more concats, separated by "\&amp;".  It matches the last
+   concat, but only if all the preceding concats also match at the same
+   position.  Examples:
+	"foobeep\&amp;..." matches "foo" in "foobeep".
+	".<b class="vimtag">*<a name="Peter\&.">Peter\&amp;.</a>*</b>Bob" matches in a line containing both "Peter" and "Bob"
+
+   branch ::=	    concat
+		or  concat \&amp; concat
+		or  concat \&amp; concat \&amp; concat
+		etc.
+
+						<b class="vimtag">*<a name="%2Fconcat">/concat</a>*</b>
+3. A concat is one or more pieces, concatenated.  It matches a match for the
+   first piece, followed by a match for the second piece, etc.  Example:
+   "f[0-9]b", first matches "f", then a digit and then "b".
+
+   concat  ::=	    piece
+		or  piece piece
+		or  piece piece piece
+		etc.
+
+						<b class="vimtag">*<a name="%2Fpiece">/piece</a>*</b>
+4. A piece is an atom, possibly followed by a multi, an indication of how many
+   times the atom can be matched.  Example: "a*" matches any sequence of "a"
+   characters: "", "a", "aa", etc.  See |<a href="pattern.html#%2Fmulti">/multi</a>|.
+
+   piece   ::=	    atom
+		or  atom  multi
+
+						<b class="vimtag">*<a name="%2Fatom">/atom</a>*</b>
+5. An atom can be one of a long list of items.  Many atoms match one character
+   in the text.  It is often an ordinary character or a character class.
+   Braces can be used to make a pattern into an atom.  The "\z(\)" construct
+   is only for syntax highlighting.
+
+   atom    ::=	    ordinary-atom		|<a href="pattern.html#%2Fordinary-atom">/ordinary-atom</a>|
+		or  \( pattern \)		|<a href="pattern.html#%2F\(">/\(</a>|
+		or  \%( pattern \)		|<a href="pattern.html#%2F\%(">/\%(</a>|
+		or  \z( pattern \)		|<a href="syntax.html#%2F\z(">/\z(</a>|
+
+
+				<b class="vimtag">*<a name="%2F\%%23%20">/\%#=</a>*</b> <b class="vimtag">*<a name="two-engines">two-engines</a>*</b> <b class="vimtag">*<a name="NFA">NFA</a>*</b>
+Vim includes two regexp engines:
+1. An old, backtracking engine that supports everything.
+2. A new, NFA engine that works much faster on some patterns, possibly slower
+   on some patterns.
+
+Vim will automatically select the right engine for you.  However, if you run
+into a problem or want to specifically select one engine or the other, you can
+prepend one of the following to the pattern:
+
+	\%#=0	Force automatic selection.  Only has an effect when
+	        'regexpengine' has been set to a non-zero value.
+	\%#=1	Force using the old engine.
+	\%#=2	Force using the NFA engine.
+
+You can also use the 'regexpengine' option to change the default.
+
+			 <b class="vimtag">*<a name="E864">E864</a>*</b> <b class="vimtag">*<a name="E868">E868</a>*</b> <b class="vimtag">*<a name="E874">E874</a>*</b> <b class="vimtag">*<a name="E875">E875</a>*</b> <b class="vimtag">*<a name="E876">E876</a>*</b> <b class="vimtag">*<a name="E877">E877</a>*</b> <b class="vimtag">*<a name="E878">E878</a>*</b>
+If selecting the NFA engine and it runs into something that is not implemented
+the pattern will not match.  This is only useful when debugging Vim.
+
+</pre><hr/><pre>3. Magic							<b class="vimtag">*<a name="%2Fmagic">/magic</a>*</b>
+
+Some characters in the pattern are taken literally.  They match with the same
+character in the text.  When preceded with a backslash however, these
+characters get a special meaning.
+
+Other characters have a special meaning without a backslash.  They need to be
+preceded with a backslash to match literally.
+
+If a character is taken literally or not depends on the 'magic' option and the
+items mentioned next.
+							<b class="vimtag">*<a name="%2F\m">/\m</a>*</b> <b class="vimtag">*<a name="%2F\M">/\M</a>*</b>
+Use of "\m" makes the pattern after it be interpreted as if 'magic' is set,
+ignoring the actual value of the 'magic' option.
+Use of "\M" makes the pattern after it be interpreted as if 'nomagic' is used.
+							<b class="vimtag">*<a name="%2F\v">/\v</a>*</b> <b class="vimtag">*<a name="%2F\V">/\V</a>*</b>
+Use of "\v" means that after it, all ASCII characters except '0'-'9', 'a'-'z',
+'A'-'Z' and '_' have special meaning: "very magic"
+
+Use of "\V" means that after it, only a backslash and terminating character
+(usually / or ?) have special meaning: "very nomagic"
+
+Examples:
+<code class="section">after:	  \v	   \m	    \M	     \V		matches </code>
+		'magic' 'nomagic'
+	  $	   $	    $	     \$		matches end-of-line
+	  .	   .	    \.	     \.		matches any character
+	  <b class="vimtag">*<a name="	   ">	   </a>*</b>	    \<b class="vimtag">*<a name="	     \">	     \</a>*</b>		any number of the previous atom
+	  ~	   ~	    \~	     \~		latest substitute string
+	  ()	   \(\)     \(\)     \(\)	grouping into an atom
+	  |<code class="badlink">	   \</code>|	    \|<code class="badlink">	     \</code>|		separating alternatives
+	  \a	   \a	    \a	     \a		alphabetic character
+	  \\	   \\	    \\	     \\		literal backslash
+	  \.	   \.	    .	     .		literal dot
+	  \{	   {	    {	     {		literal '{'
+	  a	   a	    a	     a		literal 'a'
+
+<code class="special">{only Vim supports \m, \M, \v and \V}</code>
+
+It is recommended to always keep the 'magic' option at the default setting,
+which is 'magic'.  This avoids portability problems.  To make a pattern immune
+to the 'magic' option being set or not, put "\m" or "\M" at the start of the
+pattern.
+
+</pre><hr/><pre>4. Overview of pattern items				<b class="vimtag">*<a name="pattern-overview">pattern-overview</a>*</b>
+						<b class="vimtag">*<a name="E865">E865</a>*</b> <b class="vimtag">*<a name="E866">E866</a>*</b> <b class="vimtag">*<a name="E867">E867</a>*</b> <b class="vimtag">*<a name="E869">E869</a>*</b>
+
+Overview of multi items.				<b class="vimtag">*<a name="%2Fmulti">/multi</a>*</b> <b class="vimtag">*<a name="E61">E61</a>*</b> <b class="vimtag">*<a name="E62">E62</a>*</b>
+More explanation and examples below, follow the links.		<b class="vimtag">*<a name="E64">E64</a>*</b> <b class="vimtag">*<a name="E871">E871</a>*</b>
+
+<code class="section">	  multi </code>
+<code class="section">     'magic' 'nomagic'	matches of the preceding atom </code>
+|<a href="pattern.html#%2Fstar">/star</a>|	<b class="vimtag">*<a name="	\">	\</a>*</b>	0 or more	as many as possible
+|<a href="pattern.html#%2F\+">/\+</a>|	\+	\+	1 or more	as many as possible
+|<a href="pattern.html#%2F\%20">/\=</a>|	\=	\=	0 or 1		as many as possible
+|<a href="pattern.html#%2F\?">/\?</a>|	\?	\?	0 or 1		as many as possible
+
+|<a href="pattern.html#%2F\{">/\{</a>|	\<code class="special">{n,m}</code>	\<code class="special">{n,m}</code>	n to m		as many as possible
+	\<code class="special">{n}</code>	\<code class="special">{n}</code>	n		exactly
+	\<code class="special">{n,}</code>	\<code class="special">{n,}</code>	at least n	as many as possible
+	\<code class="special">{,m}</code>	\<code class="special">{,m}</code>	0 to m		as many as possible
+	\<code class="special">{}</code>	\<code class="special">{}</code>	0 or more	as many as possible (same as *)
+
+|<a href="pattern.html#%2F\{-">/\{-</a>|	\<code class="special">{-n,m}</code>	\<code class="special">{-n,m}</code>	n to m		as few as possible
+	\<code class="special">{-n}</code>	\<code class="special">{-n}</code>	n		exactly
+	\<code class="special">{-n,}</code>	\<code class="special">{-n,}</code>	at least n	as few as possible
+	\<code class="special">{-,m}</code>	\<code class="special">{-,m}</code>	0 to m		as few as possible
+	\<code class="special">{-}</code>	\<code class="special">{-}</code>	0 or more	as few as possible
+
+							<b class="vimtag">*<a name="E59">E59</a>*</b>
+|<a href="pattern.html#%2F\@%3E">/\@&gt;</a>|	\@&gt;	\@&gt;	1, like matching a whole pattern
+|<a href="pattern.html#%2F\@%20">/\@=</a>|	\@=	\@=	nothing, requires a match |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\@!">/\@!</a>|	\@!	\@!	nothing, requires NO match |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\@%3C%20">/\@&lt;=</a>|	\@&lt;=	\@&lt;=	nothing, requires a match behind |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\@%3C!">/\@&lt;!</a>|	\@&lt;!	\@&lt;!	nothing, requires NO match behind |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+
+
+Overview of ordinary atoms.				<b class="vimtag">*<a name="%2Fordinary-atom">/ordinary-atom</a>*</b>
+More explanation and examples below, follow the links.
+
+<code class="section">      ordinary atom </code>
+<code class="section">      magic   nomagic	matches </code>
+|<a href="pattern.html#%2F^">/^</a>|	^	^	start-of-line (at start of pattern) |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\^">/\^</a>|	\^	\^	literal '^'
+|<a href="pattern.html#%2F\_^">/\_^</a>|	\_^	\_^	start-of-line (used anywhere) |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F$">/$</a>|	$	$	end-of-line (at end of pattern) |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\$">/\$</a>|	\$	\$	literal '$'
+|<a href="pattern.html#%2F\_$">/\_$</a>|	\_$	\_$	end-of-line (used anywhere) |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F.">/.</a>|	.	\.	any single character (not an end-of-line)
+|<a href="pattern.html#%2F\_.">/\_.</a>|	\_.	\_.	any single character or end-of-line
+|<a href="pattern.html#%2F\%3C">/\&lt;</a>|	\&lt;	\&lt;	beginning of a word |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%3E">/\&gt;</a>|	\&gt;	\&gt;	end of a word |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\zs">/\zs</a>|	\zs	\zs	anything, sets start of match
+|<a href="pattern.html#%2F\ze">/\ze</a>|	\ze	\ze	anything, sets end of match
+|<a href="pattern.html#%2F\%^">/\%^</a>|	\%^	\%^	beginning of file |<a href="pattern.html#%2Fzero-width">/zero-width</a>|		<b class="vimtag">*<a name="E71">E71</a>*</b>
+|<a href="pattern.html#%2F\%$">/\%$</a>|	\%$	\%$	end of file |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%V">/\%V</a>|	\%V	\%V	inside Visual area |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%%23">/\%#</a>|	\%#	\%#	cursor position |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%'m">/\%'m</a>|	\%'m	\%'m	mark m position |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%l">/\%l</a>|	\%23l	\%23l	in line 23 |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%c">/\%c</a>|	\%23c	\%23c	in column 23 |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+|<a href="pattern.html#%2F\%v">/\%v</a>|	\%23v	\%23v	in virtual column 23 |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+
+Character classes:					<b class="vimtag">*<a name="%2Fcharacter-classes">/character-classes</a>*</b>
+<code class="section">      magic   nomagic	matches </code>
+|<a href="pattern.html#%2F\i">/\i</a>|	\i	\i	identifier character (see 'isident' option)
+|<a href="pattern.html#%2F\I">/\I</a>|	\I	\I	like "\i", but excluding digits
+|<a href="pattern.html#%2F\k">/\k</a>|	\k	\k	keyword character (see 'iskeyword' option)
+|<a href="pattern.html#%2F\K">/\K</a>|	\K	\K	like "\k", but excluding digits
+|<a href="pattern.html#%2F\f">/\f</a>|	\f	\f	file name character (see 'isfname' option)
+|<a href="pattern.html#%2F\F">/\F</a>|	\F	\F	like "\f", but excluding digits
+|<a href="pattern.html#%2F\p">/\p</a>|	\p	\p	printable character (see 'isprint' option)
+|<a href="pattern.html#%2F\P">/\P</a>|	\P	\P	like "\p", but excluding digits
+|<a href="pattern.html#%2F\s">/\s</a>|	\s	\s	whitespace character: <code class="special">&lt;Space&gt;</code> and <code class="special">&lt;Tab&gt;</code>
+|<a href="pattern.html#%2F\S">/\S</a>|	\S	\S	non-whitespace character; opposite of \s
+|<a href="pattern.html#%2F\d">/\d</a>|	\d	\d	digit:				[0-9]
+|<a href="pattern.html#%2F\D">/\D</a>|	\D	\D	non-digit:			[^0-9]
+|<a href="pattern.html#%2F\x">/\x</a>|	\x	\x	hex digit:			[0-9A-Fa-f]
+|<a href="pattern.html#%2F\X">/\X</a>|	\X	\X	non-hex digit:			[^0-9A-Fa-f]
+|<a href="pattern.html#%2F\o">/\o</a>|	\o	\o	octal digit:			[0-7]
+|<a href="pattern.html#%2F\O">/\O</a>|	\O	\O	non-octal digit:		[^0-7]
+|<a href="pattern.html#%2F\w">/\w</a>|	\w	\w	word character:			[0-9A-Za-z_]
+|<a href="pattern.html#%2F\W">/\W</a>|	\W	\W	non-word character:		[^0-9A-Za-z_]
+|<a href="pattern.html#%2F\h">/\h</a>|	\h	\h	head of word character:		[A-Za-z_]
+|<a href="pattern.html#%2F\H">/\H</a>|	\H	\H	non-head of word character:	[^A-Za-z_]
+|<a href="pattern.html#%2F\a">/\a</a>|	\a	\a	alphabetic character:		[A-Za-z]
+|<a href="pattern.html#%2F\A">/\A</a>|	\A	\A	non-alphabetic character:	[^A-Za-z]
+|<a href="pattern.html#%2F\l">/\l</a>|	\l	\l	lowercase character:		[a-z]
+|<a href="pattern.html#%2F\L">/\L</a>|	\L	\L	non-lowercase character:	[^a-z]
+|<a href="pattern.html#%2F\u">/\u</a>|	\u	\u	uppercase character:		[A-Z]
+|<a href="pattern.html#%2F\U">/\U</a>|	\U	\U	non-uppercase character		[^A-Z]
+|<a href="pattern.html#%2F\_">/\_</a>|	\_x	\_x	where x is any of the characters above: character
+			class with end-of-line included
+(end of character classes)
+
+<code class="section">      magic   nomagic	matches </code>
+|<a href="pattern.html#%2F\e">/\e</a>|	\e	\e	<code class="special">&lt;Esc&gt;</code>
+|<a href="pattern.html#%2F\t">/\t</a>|	\t	\t	<code class="special">&lt;Tab&gt;</code>
+|<a href="pattern.html#%2F\r">/\r</a>|	\r	\r	<code class="special">&lt;CR&gt;</code>
+|<a href="pattern.html#%2F\b">/\b</a>|	\b	\b	<code class="special">&lt;BS&gt;</code>
+|<a href="pattern.html#%2F\n">/\n</a>|	\n	\n	end-of-line
+|<a href="pattern.html#%2F%7E">/~</a>|	~	\~	last given substitute string
+|<a href="pattern.html#%2F\1">/\1</a>|	\1	\1	same string as matched by first \(\)
+|<a href="pattern.html#%2F\2">/\2</a>|	\2	\2	Like "\1", but uses second \(\)
+	   ...
+|<a href="pattern.html#%2F\9">/\9</a>|	\9	\9	Like "\1", but uses ninth \(\)
+								<b class="vimtag">*<a name="E68">E68</a>*</b>
+|<a href="syntax.html#%2F\z1">/\z1</a>|	\z1	\z1	only for syntax highlighting, see |<a href="syntax.html#:syn-ext-match">:syn-ext-match</a>|
+	   ...
+|<a href="syntax.html#%2F\z1">/\z1</a>|	\z9	\z9	only for syntax highlighting, see |<a href="syntax.html#:syn-ext-match">:syn-ext-match</a>|
+
+	x	x	a character with no special meaning matches itself
+
+|<a href="pattern.html#%2F[]">/[]</a>|	[]	\[]	any character specified inside the []
+|<a href="pattern.html#%2F\%[]">/\%[]</a>|	\%[]	\%[]	a sequence of optionally matched atoms
+
+|<a href="pattern.html#%2F\c">/\c</a>|	\c	\c	ignore case, do not use the 'ignorecase' option
+|<a href="pattern.html#%2F\C">/\C</a>|	\C	\C	match case, do not use the 'ignorecase' option
+|<a href="pattern.html#%2F\Z">/\Z</a>|	\Z	\Z	ignore differences in Unicode "combining characters".
+			Useful when searching voweled Hebrew or Arabic text.
+
+<code class="section">      magic   nomagic	matches </code>
+|<a href="pattern.html#%2F\m">/\m</a>|	\m	\m	'magic' on for the following chars in the pattern
+|<a href="pattern.html#%2F\M">/\M</a>|	\M	\M	'magic' off for the following chars in the pattern
+|<a href="pattern.html#%2F\v">/\v</a>|	\v	\v	the following chars in the pattern are "very magic"
+|<a href="pattern.html#%2F\V">/\V</a>|	\V	\V	the following chars in the pattern are "very nomagic"
+|<a href="pattern.html#%2F\%%23%20">/\%#=</a>|   \%#=1   \%#=1   select regexp engine |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+
+|<a href="pattern.html#%2F\%d">/\%d</a>|	\%d	\%d	match specified decimal character (eg \%d123)
+|<a href="pattern.html#%2F\%x">/\%x</a>|	\%x	\%x	match specified hex character (eg \%x2a)
+|<a href="pattern.html#%2F\%o">/\%o</a>|	\%o	\%o	match specified octal character (eg \%o040)
+|<a href="pattern.html#%2F\%u">/\%u</a>|	\%u	\%u	match specified multibyte character (eg \%u20ac)
+|<a href="pattern.html#%2F\%U">/\%U</a>|	\%U	\%U	match specified large multibyte character (eg
+			\%U12345678)
+|<a href="pattern.html#%2F\%C">/\%C</a>|	\%C	\%C	match any composing characters
+
+<code class="section">Example			matches </code>
+\&lt;\I\i*		or
+\&lt;\h\w*
+\&lt;[a-zA-Z_][a-zA-Z0-9_]*
+			An identifier (e.g., in a C program).
+
+\(\.$\|\. \)		A period followed by <code class="special">&lt;EOL&gt;</code> or a space.
+
+[.!?][])"']*\($\|[ ]\)	A search pattern that finds the end of a sentence,
+			with almost the same definition as the ")" command.
+
+cat\Z			Both "cat" and "càt" ("a" followed by 0x0300)
+			Does not match "càt" (character 0x00e0), even
+			though it may look the same.
+
+
+</pre><hr/><pre>5. Multi items						<b class="vimtag">*<a name="pattern-multi-items">pattern-multi-items</a>*</b>
+
+An atom can be followed by an indication of how many times the atom can be
+matched and in what way.  This is called a multi.  See |<a href="pattern.html#%2Fmulti">/multi</a>| for an
+overview.
+
+							<b class="vimtag">*<a name="%2Fstar">/star</a>*</b> <b class="vimtag">*<a name="%2F\star">/\star</a>*</b>
+<b class="vimtag">*<a name="	(use \">	(use \</a>*</b> when 'magic' is not set)
+	Matches 0 or more of the preceding atom, as many as possible.
+<code class="section">	Example  'nomagic'	matches </code>
+	a<b class="vimtag">*<a name="	   a\">	   a\</a>*</b>		"", "a", "aa", "aaa", etc.
+	.<b class="vimtag">*<a name="	   \.\">	   \.\</a>*</b>		anything, also an empty string, no end-of-line
+	\_.<b class="vimtag">*<a name="	   \_.\">	   \_.\</a>*</b>	everything up to the end of the buffer
+	\_.<b class="vimtag">*<a name="END	   \_.\">END	   \_.\</a>*</b>END	everything up to and including the last "END"
+				in the buffer
+
+	Exception: When "*" is used at the start of the pattern or just after
+	"^" it matches the star character.
+
+	Be aware that repeating "\_." can match a lot of text and take a long
+	time.  For example, "\_.*END" matches all text from the current
+	position to the last occurrence of "END" in the file.  Since the "*"
+	will match as many as possible, this first skips over all lines until
+	the end of the file and then tries matching "END", backing up one
+	character at a time.
+
+							<b class="vimtag">*<a name="%2F\+">/\+</a>*</b>
+\+	Matches 1 or more of the preceding atom, as many as possible.
+<code class="section">	Example		matches </code>
+	^.\+$		any non-empty line
+	\s\+		white space of at least one character
+
+							<b class="vimtag">*<a name="%2F\%20">/\=</a>*</b>
+\=	Matches 0 or 1 of the preceding atom, as many as possible.
+<code class="section">	Example		matches </code>
+	foo\=		"fo" and "foo"
+
+							<b class="vimtag">*<a name="%2F\?">/\?</a>*</b>
+\?	Just like \=.  Cannot be used when searching backwards with the "?"
+	command.
+
+					<b class="vimtag">*<a name="%2F\{">/\{</a>*</b> <b class="vimtag">*<a name="E60">E60</a>*</b> <b class="vimtag">*<a name="E554">E554</a>*</b> <b class="vimtag">*<a name="E870">E870</a>*</b>
+\<code class="special">{n,m}</code>	Matches n to m of the preceding atom, as many as possible
+\<code class="special">{n}</code>	Matches n of the preceding atom
+\<code class="special">{n,}</code>	Matches at least n of the preceding atom, as many as possible
+\<code class="special">{,m}</code>	Matches 0 to m of the preceding atom, as many as possible
+\<code class="special">{}</code>	Matches 0 or more of the preceding atom, as many as possible (like *)
+							<b class="vimtag">*<a name="%2F\{-">/\{-</a>*</b>
+\<code class="special">{-n,m}</code>	matches n to m of the preceding atom, as few as possible
+\<code class="special">{-n}</code>	matches n of the preceding atom
+\<code class="special">{-n,}</code>	matches at least n of the preceding atom, as few as possible
+\<code class="special">{-,m}</code>	matches 0 to m of the preceding atom, as few as possible
+\<code class="special">{-}</code>	matches 0 or more of the preceding atom, as few as possible
+
+	n and m are positive decimal numbers or zero
+								<b class="vimtag">*<a name="non-greedy">non-greedy</a>*</b>
+	If a "-" appears immediately after the "{", then a shortest match
+	first algorithm is used (see example below).  In particular, "\<code class="special">{-}</code>" is
+	the same as "*" but uses the shortest match first algorithm.  BUT: A
+	match that starts earlier is preferred over a shorter match: "a\<code class="special">{-}</code>b"
+	matches "aaab" in "xaaab".
+
+<code class="section">	Example			matches </code>
+	ab\<code class="special">{2,3}</code>c		"abbc" or "abbbc"
+	a\<code class="special">{5}</code>			"aaaaa"
+	ab\<code class="special">{2,}</code>c		"abbc", "abbbc", "abbbbc", etc.
+	ab\<code class="special">{,3}</code>c		"ac", "abc", "abbc" or "abbbc"
+	a[bc]\<code class="special">{3}</code>d		"abbbd", "abbcd", "acbcd", "acccd", etc.
+	a\(bc\)\<code class="special">{1,2}</code>d		"abcd" or "abcbcd"
+	a[bc]\<code class="special">{-}</code>[cd]		"abc" in "abcd"
+	a[bc]*[cd]		"abcd" in "abcd"
+
+	The } may optionally be preceded with a backslash: \<code class="special">{n,m\}</code>.
+
+							<b class="vimtag">*<a name="%2F\@%20">/\@=</a>*</b>
+\@=	Matches the preceding atom with zero width.
+	Like "(?=pattern)" in Perl.
+<code class="section">	Example			matches </code>
+	foo\(bar\)\@=		"foo" in "foobar"
+	foo\(bar\)\@=foo	nothing
+							<b class="vimtag">*<a name="%2Fzero-width">/zero-width</a>*</b>
+	When using "\@=" (or "^", "$", "\<code class="special">&lt;", "\&gt;</code>") no characters are included
+	in the match.  These items are only used to check if a match can be
+	made.  This can be tricky, because a match with following items will
+	be done in the same position.  The last example above will not match
+	"foobarfoo", because it tries match "foo" in the same position where
+	"bar" matched.
+
+	<code class="note">Note</code> that using "\&amp;" works the same as using "\@=": "foo\&amp;.." is the
+	same as "\(foo\)\@=..".  But using "\&amp;" is easier, you don't need the
+	braces.
+
+
+							<b class="vimtag">*<a name="%2F\@!">/\@!</a>*</b>
+\@!	Matches with zero width if the preceding atom does NOT match at the
+	current position. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+	Like "(?!pattern)" in Perl.
+<code class="section">	Example			matches </code>
+	foo\(bar\)\@!		any "foo" not followed by "bar"
+	a.\<code class="special">{-}</code>p\@!		"a", "ap", "app", "appp", etc. not immediately
+				followed by a "p"
+	if \(\(then\)\@!.\)*$	"if " not followed by "then"
+
+	Using "\@!" is tricky, because there are many places where a pattern
+	does not match.  "a.*p\@!" will match from an "a" to the end of the
+	line, because ".*" can match all characters in the line and the "p"
+	doesn't match at the end of the line.  "a.\<code class="special">{-}</code>p\@!" will match any
+	"a", "ap", "app", etc. that isn't followed by a "p", because the "."
+	can match a "p" and "p\@!" doesn't match after that.
+
+	You can't use "\@!" to look for a non-match before the matching
+	position: "\(foo\)\@!bar" will match "bar" in "foobar", because at the
+	position where "bar" matches, "foo" does not match.  To avoid matching
+	"foobar" you could use "\(foo\)\@!...bar", but that doesn't match a
+	bar at the start of a line.  Use "\(foo\)\@&lt;!bar".
+
+	Useful example: to find "foo" in a line that does not contain "bar":
+<code class="example">		/^\%(.<b class="vimtag">*<a name="bar\)\@!.">bar\)\@!.</a>*</b>\zsfoo</code>
+	This pattern first checks that there is not a single position in the
+	line where "bar" matches.  If ".*bar" matches somewhere the \@! will
+	reject the pattern.  When there is no match any "foo" will be found.
+	The "\zs" is to have the match start just before "foo".
+
+							<b class="vimtag">*<a name="%2F\@%3C%20">/\@&lt;=</a>*</b>
+\@&lt;=	Matches with zero width if the preceding atom matches just before what
+	follows. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+	Like "(?&lt;=pattern)" in Perl, but Vim allows non-fixed-width patterns.
+<code class="section">	Example			matches </code>
+	\(an\_s\+\)\@&lt;=file	"file" after "an" and white space or an
+				end-of-line
+	For speed it's often much better to avoid this multi.  Try using "\zs"
+	instead |<a href="pattern.html#%2F\zs">/\zs</a>|.  To match the same as the above example:
+		an\_s\+\zsfile
+	At least set a limit for the look-behind, see below.
+
+	"\@&lt;=" and "\@&lt;!" check for matches just before what follows.
+	Theoretically these matches could start anywhere before this position.
+	But to limit the time needed, only the line where what follows matches
+	is searched, and one line before that (if there is one).  This should
+	be sufficient to match most things and not be too slow.
+
+	In the old regexp engine the part of the pattern after "\@&lt;=" and
+	"\@&lt;!" are checked for a match first, thus things like "\1" don't work
+	to reference \(\) inside the preceding atom.  It does work the other
+	way around:
+<code class="section">	Bad example			matches </code>
+	\%#=1\1\@&lt;=,\([a-z]\+\)		",abc" in "abc,abc"
+
+	However, the new regexp engine works differently, it is better to not
+	rely on this behavior, do not use \@&lt;= if it can be avoided:
+<code class="section">	Example				matches </code>
+	\([a-z]\+\)\zs,\1		",abc" in "abc,abc"
+
+\@123&lt;=
+	Like "\@&lt;=" but only look back 123 bytes. This avoids trying lots
+	of matches that are known to fail and make executing the pattern very
+	slow.  Example, check if there is a "&lt;" just before "span":
+		/&lt;\@1&lt;=span
+	This will try matching "&lt;" only one byte before "span", which is the
+	only place that works anyway.
+	After crossing a line boundary, the limit is relative to the end of
+	the line.  Thus the characters at the start of the line with the match
+	are not counted (this is just to keep it simple).
+	The number zero is the same as no limit.
+
+							<b class="vimtag">*<a name="%2F\@%3C!">/\@&lt;!</a>*</b>
+\@&lt;!	Matches with zero width if the preceding atom does NOT match just
+	before what follows.  Thus this matches if there is no position in the
+	current or previous line where the atom matches such that it ends just
+	before what follows.  |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+	Like "(?&lt;!pattern)" in Perl, but Vim allows non-fixed-width patterns.
+	The match with the preceding atom is made to end just before the match
+	with what follows, thus an atom that ends in ".*" will work.
+	Warning: This can be slow (because many positions need to be checked
+	for a match).  Use a limit if you can, see below.
+<code class="section">	Example			matches </code>
+	\(foo\)\@&lt;!bar		any "bar" that's not in "foobar"
+	\(\/\/.*\)\@&lt;!in	"in" which is not after "//"
+
+\@123&lt;!
+	Like "\@&lt;!" but only look back 123 bytes. This avoids trying lots of
+	matches that are known to fail and make executing the pattern very
+	slow.
+
+							<b class="vimtag">*<a name="%2F\@%3E">/\@&gt;</a>*</b>
+\@&gt;	Matches the preceding atom like matching a whole pattern.
+	Like "(?&gt;pattern)" in Perl.
+<code class="section">	Example		matches </code>
+	\(a<b class="vimtag">*<a name="\)\@%3Ea	nothing (the %22a">\)\@&gt;a	nothing (the "a</a>*</b>" takes all the "a"'s, there can't be
+			another one following)
+
+	This matches the preceding atom as if it was a pattern by itself.  If
+	it doesn't match, there is no retry with shorter sub-matches or
+	anything.  Observe this difference: "a<b class="vimtag">*<a name="b%22 and %22a">b" and "a</a>*</b>ab" both match
+	"aaab", but in the second case the "a*" matches only the first two
+	"a"s.  "\(a<b class="vimtag">*<a name="\)\@%3Eab%22 will not match %22aaab%22, because the %22a">\)\@&gt;ab" will not match "aaab", because the "a</a>*</b>" matches
+	the "aaa" (as many "a"s as possible), thus the "ab" can't match.
+
+
+</pre><hr/><pre>6.  Ordinary atoms					<b class="vimtag">*<a name="pattern-atoms">pattern-atoms</a>*</b>
+
+An ordinary atom can be:
+
+							<b class="vimtag">*<a name="%2F^">/^</a>*</b>
+^	At beginning of pattern or after "\|", "\(", "\%(" or "\n": matches
+	start-of-line; at other positions, matches literal '^'. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+<code class="section">	Example		matches </code>
+	^beep(		the start of the C function "beep" (probably).
+
+							<b class="vimtag">*<a name="%2F\^">/\^</a>*</b>
+\^	Matches literal '^'.  Can be used at any position in the pattern.
+
+							<b class="vimtag">*<a name="%2F\_^">/\_^</a>*</b>
+\_^	Matches start-of-line. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|  Can be used at any position in
+	the pattern.
+<code class="section">	Example		matches </code>
+	\_s*\_^foo	white space and blank lines and then "foo" at
+			start-of-line
+
+							<b class="vimtag">*<a name="%2F$">/$</a>*</b>
+$	At end of pattern or in front of "\|", "\)" or "\n" ('magic' on):
+	matches end-of-line <code class="special">&lt;EOL&gt;</code>; at other positions, matches literal '$'.
+	|<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+
+							<b class="vimtag">*<a name="%2F\$">/\$</a>*</b>
+\$	Matches literal '$'.  Can be used at any position in the pattern.
+
+							<b class="vimtag">*<a name="%2F\_$">/\_$</a>*</b>
+\_$	Matches end-of-line. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|  Can be used at any position in the
+	pattern.  <code class="note">Note</code> that "a\_$b" never matches, since "b" cannot match an
+	end-of-line.  Use "a\nb" instead |<a href="pattern.html#%2F\n">/\n</a>|.
+<code class="section">	Example		matches </code>
+	foo\_$\_s*	"foo" at end-of-line and following white space and
+			blank lines
+
+.	(with 'nomagic': \.)				<b class="vimtag">*<a name="%2F.">/.</a>*</b> <b class="vimtag">*<a name="%2F\.">/\.</a>*</b>
+	Matches any single character, but not an end-of-line.
+
+							<b class="vimtag">*<a name="%2F\_.">/\_.</a>*</b>
+\_.	Matches any single character or end-of-line.
+	Careful: "\_.*" matches all text to the end of the buffer!
+
+							<b class="vimtag">*<a name="%2F\%3C">/\&lt;</a>*</b>
+\&lt;	Matches the beginning of a word: The next char is the first char of a
+	word.  The 'iskeyword' option specifies what is a word character.
+	|<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+
+							<b class="vimtag">*<a name="%2F\%3E">/\&gt;</a>*</b>
+\&gt;	Matches the end of a word: The previous char is the last char of a
+	word.  The 'iskeyword' option specifies what is a word character.
+	|<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+
+							<b class="vimtag">*<a name="%2F\zs">/\zs</a>*</b>
+\zs	Matches at any position, and sets the start of the match there: The
+	next char is the first char of the whole match. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+	Example:
+<code class="example">		/^\s*\zsif</code>
+	matches an "if" at the start of a line, ignoring white space.
+	Can be used multiple times, the last one encountered in a matching
+	branch is used.  Example:
+<code class="example">		/\(.\<code class="special">{-}</code>\zsFab\)\<code class="special">{3}</code></code>
+	Finds the third occurrence of "Fab".
+	This cannot be followed by a multi. <b class="vimtag">*<a name="E888">E888</a>*</b>
+	{not available when compiled without the |<a href="various.html#+syntax">+syntax</a>| feature}
+							<b class="vimtag">*<a name="%2F\ze">/\ze</a>*</b>
+\ze	Matches at any position, and sets the end of the match there: The
+	previous char is the last char of the whole match. |<a href="pattern.html#%2Fzero-width">/zero-width</a>|
+	Can be used multiple times, the last one encountered in a matching
+	branch is used.
+	Example: "end\ze\(if\|for\)" matches the "end" in "endif" and
+	"endfor".
+	This cannot be followed by a multi. |<a href="pattern.html#E888">E888</a>|
+	{not available when compiled without the |<a href="various.html#+syntax">+syntax</a>| feature}
+
+						<b class="vimtag">*<a name="%2F\%^">/\%^</a>*</b> <b class="vimtag">*<a name="start-of-file">start-of-file</a>*</b>
+\%^	Matches start of the file.  When matching with a string, matches the
+	start of the string.
+	For example, to find the first "VIM" in a file:
+<code class="example">		/\%^\_.\<code class="special">{-}</code>\zsVIM</code>
+
+						<b class="vimtag">*<a name="%2F\%$">/\%$</a>*</b> <b class="vimtag">*<a name="end-of-file">end-of-file</a>*</b>
+\%$	Matches end of the file.  When matching with a string, matches the
+	end of the string.
+	<code class="note">Note</code> that this does NOT find the last "VIM" in a file:
+<code class="example">		/VIM\_.\<code class="special">{-}</code>\%$</code>
+	It will find the next VIM, because the part after it will always
+	match.  This one will find the last "VIM" in the file:
+<code class="example">		/VIM\ze\(\(VIM\)\@!\_.\)*\%$</code>
+	This uses |<a href="pattern.html#%2F\@!">/\@!</a>| to ascertain that "VIM" does NOT match in any
+	position after the first "VIM".
+	Searching from the end of the file backwards is easier!
+
+						<b class="vimtag">*<a name="%2F\%V">/\%V</a>*</b>
+\%V	Match inside the Visual area.  When Visual mode has already been
+	stopped match in the area that |<a href="visual.html#gv">gv</a>| would reselect.
+	This is a |<a href="pattern.html#%2Fzero-width">/zero-width</a>| match.  To make sure the whole pattern is
+	inside the Visual area put it at the start and just before the end of
+	the pattern, e.g.:
+<code class="example">		/\%Vfoo.*ba\%Vr</code>
+&lt;	This also works if only "foo bar" was Visually selected. This:
+<code class="example">		/\%Vfoo.*bar\%V</code>
+	would match "foo bar" if the Visual selection continues after the "r".
+	Only works for the current buffer.
+
+						<b class="vimtag">*<a name="%2F\%%23">/\%#</a>*</b> <b class="vimtag">*<a name="cursor-position">cursor-position</a>*</b>
+\%#	Matches with the cursor position.  Only works when matching in a
+	buffer displayed in a window.
+	WARNING: When the cursor is moved after the pattern was used, the
+	result becomes invalid.  Vim doesn't automatically update the matches.
+	This is especially relevant for syntax highlighting and 'hlsearch'.
+	In other words: When the cursor moves the display isn't updated for
+	this change.  An update is done for lines which are changed (the whole
+	line is updated) or when using the |<a href="various.html#CTRL-L">CTRL-L</a>| command (the whole screen
+	is updated).  Example, to highlight the word under the cursor:
+<code class="example">		/\k<b class="vimtag">*<a name="\%%23\k">\%#\k</a>*</b></code>
+	When 'hlsearch' is set and you move the cursor around and make changes
+	this will clearly show when the match is updated or not.
+
+						<b class="vimtag">*<a name="%2F\%'m">/\%'m</a>*</b> <b class="vimtag">*<a name="%2F\%%3C'm">/\%&lt;'m</a>*</b> <b class="vimtag">*<a name="%2F\%%3E'm">/\%&gt;'m</a>*</b>
+\%'m	Matches with the position of mark m.
+\%&lt;'m	Matches before the position of mark m.
+\%&gt;'m	Matches after the position of mark m.
+	Example, to highlight the text from mark 's to 'e:
+<code class="example">		/.\%&gt;'s.*\%&lt;'e..</code>
+	<code class="note">Note</code> that two dots are required to include mark 'e in the match.  That
+	is because "\%&lt;'e" matches at the character before the 'e mark, and
+	since it's a |<a href="pattern.html#%2Fzero-width">/zero-width</a>| match it doesn't include that character.
+	WARNING: When the mark is moved after the pattern was used, the result
+	becomes invalid.  Vim doesn't automatically update the matches.
+	Similar to moving the cursor for "\%#" |<a href="pattern.html#%2F\%%23">/\%#</a>|.
+
+						<b class="vimtag">*<a name="%2F\%l">/\%l</a>*</b> <b class="vimtag">*<a name="%2F\%%3El">/\%&gt;l</a>*</b> <b class="vimtag">*<a name="%2F\%%3Cl">/\%&lt;l</a>*</b> <b class="vimtag">*<a name="E951">E951</a>*</b>
+\%23l	Matches in a specific line.
+\%&lt;23l	Matches above a specific line (lower line number).
+\%&gt;23l	Matches below a specific line (higher line number).
+	These three can be used to match specific lines in a buffer.  The "23"
+	can be any line number.  The first line is 1.
+	WARNING: When inserting or deleting lines Vim does not automatically
+	update the matches.  This means Syntax highlighting quickly becomes
+	wrong.
+	Example, to highlight the line where the cursor currently is:
+<code class="example">		:exe '/\%' . line(".") . 'l.*'</code>
+	When 'hlsearch' is set and you move the cursor around and make changes
+	this will clearly show when the match is updated or not.
+
+						<b class="vimtag">*<a name="%2F\%c">/\%c</a>*</b> <b class="vimtag">*<a name="%2F\%%3Ec">/\%&gt;c</a>*</b> <b class="vimtag">*<a name="%2F\%%3Cc">/\%&lt;c</a>*</b>
+\%23c	Matches in a specific column.
+\%&lt;23c	Matches before a specific column.
+\%&gt;23c	Matches after a specific column.
+	These three can be used to match specific columns in a buffer or
+	string.  The "23" can be any column number.  The first column is 1.
+	Actually, the column is the byte number (thus it's not exactly right
+	for multi-byte characters).
+	WARNING: When inserting or deleting text Vim does not automatically
+	update the matches.  This means Syntax highlighting quickly becomes
+	wrong.
+	Example, to highlight the column where the cursor currently is:
+<code class="example">		:exe '/\%' . col(".") . 'c'</code>
+	When 'hlsearch' is set and you move the cursor around and make changes
+	this will clearly show when the match is updated or not.
+	Example for matching a single byte in column 44:
+<code class="example">		/\%&gt;43c.\%&lt;46c</code>
+	<code class="note">Note</code> that "\%&lt;46c" matches in column 45 when the "." matches a byte in
+	column 44.
+						<b class="vimtag">*<a name="%2F\%v">/\%v</a>*</b> <b class="vimtag">*<a name="%2F\%%3Ev">/\%&gt;v</a>*</b> <b class="vimtag">*<a name="%2F\%%3Cv">/\%&lt;v</a>*</b>
+\%23v	Matches in a specific virtual column.
+\%&lt;23v	Matches before a specific virtual column.
+\%&gt;23v	Matches after a specific virtual column.
+	These three can be used to match specific virtual columns in a buffer
+	or string.  When not matching with a buffer in a window, the option
+	values of the current window are used (e.g., 'tabstop').
+	The "23" can be any column number.  The first column is 1.
+	<code class="note">Note</code> that some virtual column positions will never match, because they
+	are halfway through a tab or other character that occupies more than
+	one screen character.
+	WARNING: When inserting or deleting text Vim does not automatically
+	update highlighted matches.  This means Syntax highlighting quickly
+	becomes wrong.
+	Example, to highlight all the characters after virtual column 72:
+<code class="example">		/\%&gt;72v.*</code>
+	When 'hlsearch' is set and you move the cursor around and make changes
+	this will clearly show when the match is updated or not.
+	To match the text up to column 17:
+<code class="example">		/^.*\%17v</code>
+	Column 17 is not included, because this is a |<a href="pattern.html#%2Fzero-width">/zero-width</a>| match. To
+	include the column use:
+<code class="example">		/^.*\%17v.</code>
+	This command does the same thing, but also matches when there is no
+	character in column 17:
+<code class="example">		/^.*\%&lt;18v.</code>
+	<code class="note">Note</code> that without the "^" to anchor the match in the first column,
+	this will also highlight column 17:
+<code class="example">		/.*\%17v</code>
+	Column 17 is highlighted by 'hlsearch' because there is another match
+	where ".*" matches zero characters.
+&lt;
+
+Character classes:
+\i	identifier character (see 'isident' option)	<b class="vimtag">*<a name="%2F\i">/\i</a>*</b>
+\I	like "\i", but excluding digits			<b class="vimtag">*<a name="%2F\I">/\I</a>*</b>
+\k	keyword character (see 'iskeyword' option)	<b class="vimtag">*<a name="%2F\k">/\k</a>*</b>
+\K	like "\k", but excluding digits			<b class="vimtag">*<a name="%2F\K">/\K</a>*</b>
+\f	file name character (see 'isfname' option)	<b class="vimtag">*<a name="%2F\f">/\f</a>*</b>
+\F	like "\f", but excluding digits			<b class="vimtag">*<a name="%2F\F">/\F</a>*</b>
+\p	printable character (see 'isprint' option)	<b class="vimtag">*<a name="%2F\p">/\p</a>*</b>
+\P	like "\p", but excluding digits			<b class="vimtag">*<a name="%2F\P">/\P</a>*</b>
+
+<code class="note">NOTE:</code> the above also work for multi-byte characters.  The ones below only
+match ASCII characters, as indicated by the range.
+
+						<b class="vimtag">*<a name="whitespace">whitespace</a>*</b> <b class="vimtag">*<a name="white-space">white-space</a>*</b>
+\s	whitespace character: <code class="special">&lt;Space&gt;</code> and <code class="special">&lt;Tab&gt;</code>		<b class="vimtag">*<a name="%2F\s">/\s</a>*</b>
+\S	non-whitespace character; opposite of \s	<b class="vimtag">*<a name="%2F\S">/\S</a>*</b>
+\d	digit:				[0-9]		<b class="vimtag">*<a name="%2F\d">/\d</a>*</b>
+\D	non-digit:			[^0-9]		<b class="vimtag">*<a name="%2F\D">/\D</a>*</b>
+\x	hex digit:			[0-9A-Fa-f]	<b class="vimtag">*<a name="%2F\x">/\x</a>*</b>
+\X	non-hex digit:			[^0-9A-Fa-f]	<b class="vimtag">*<a name="%2F\X">/\X</a>*</b>
+\o	octal digit:			[0-7]		<b class="vimtag">*<a name="%2F\o">/\o</a>*</b>
+\O	non-octal digit:		[^0-7]		<b class="vimtag">*<a name="%2F\O">/\O</a>*</b>
+\w	word character:			[0-9A-Za-z_]	<b class="vimtag">*<a name="%2F\w">/\w</a>*</b>
+\W	non-word character:		[^0-9A-Za-z_]	<b class="vimtag">*<a name="%2F\W">/\W</a>*</b>
+\h	head of word character:		[A-Za-z_]	<b class="vimtag">*<a name="%2F\h">/\h</a>*</b>
+\H	non-head of word character:	[^A-Za-z_]	<b class="vimtag">*<a name="%2F\H">/\H</a>*</b>
+\a	alphabetic character:		[A-Za-z]	<b class="vimtag">*<a name="%2F\a">/\a</a>*</b>
+\A	non-alphabetic character:	[^A-Za-z]	<b class="vimtag">*<a name="%2F\A">/\A</a>*</b>
+\l	lowercase character:		[a-z]		<b class="vimtag">*<a name="%2F\l">/\l</a>*</b>
+\L	non-lowercase character:	[^a-z]		<b class="vimtag">*<a name="%2F\L">/\L</a>*</b>
+\u	uppercase character:		[A-Z]		<b class="vimtag">*<a name="%2F\u">/\u</a>*</b>
+\U	non-uppercase character:	[^A-Z]		<b class="vimtag">*<a name="%2F\U">/\U</a>*</b>
+
+	<code class="note">NOTE:</code> Using the atom is faster than the [] form.
+
+	<code class="note">NOTE:</code> 'ignorecase', "\c" and "\C" are not used by character classes.
+
+			<b class="vimtag">*<a name="%2F\_">/\_</a>*</b> <b class="vimtag">*<a name="E63">E63</a>*</b> <b class="vimtag">*<a name="%2F\_i">/\_i</a>*</b> <b class="vimtag">*<a name="%2F\_I">/\_I</a>*</b> <b class="vimtag">*<a name="%2F\_k">/\_k</a>*</b> <b class="vimtag">*<a name="%2F\_K">/\_K</a>*</b> <b class="vimtag">*<a name="%2F\_f">/\_f</a>*</b> <b class="vimtag">*<a name="%2F\_F">/\_F</a>*</b>
+			<b class="vimtag">*<a name="%2F\_p">/\_p</a>*</b> <b class="vimtag">*<a name="%2F\_P">/\_P</a>*</b> <b class="vimtag">*<a name="%2F\_s">/\_s</a>*</b> <b class="vimtag">*<a name="%2F\_S">/\_S</a>*</b> <b class="vimtag">*<a name="%2F\_d">/\_d</a>*</b> <b class="vimtag">*<a name="%2F\_D">/\_D</a>*</b> <b class="vimtag">*<a name="%2F\_x">/\_x</a>*</b> <b class="vimtag">*<a name="%2F\_X">/\_X</a>*</b>
+			<b class="vimtag">*<a name="%2F\_o">/\_o</a>*</b> <b class="vimtag">*<a name="%2F\_O">/\_O</a>*</b> <b class="vimtag">*<a name="%2F\_w">/\_w</a>*</b> <b class="vimtag">*<a name="%2F\_W">/\_W</a>*</b> <b class="vimtag">*<a name="%2F\_h">/\_h</a>*</b> <b class="vimtag">*<a name="%2F\_H">/\_H</a>*</b> <b class="vimtag">*<a name="%2F\_a">/\_a</a>*</b> <b class="vimtag">*<a name="%2F\_A">/\_A</a>*</b>
+			<b class="vimtag">*<a name="%2F\_l">/\_l</a>*</b> <b class="vimtag">*<a name="%2F\_L">/\_L</a>*</b> <b class="vimtag">*<a name="%2F\_u">/\_u</a>*</b> <b class="vimtag">*<a name="%2F\_U">/\_U</a>*</b>
+\_x	Where "x" is any of the characters above: The character class with
+	end-of-line added
+(end of character classes)
+
+\e	matches <code class="special">&lt;Esc&gt;</code>					<b class="vimtag">*<a name="%2F\e">/\e</a>*</b>
+\t	matches <code class="special">&lt;Tab&gt;</code>					<b class="vimtag">*<a name="%2F\t">/\t</a>*</b>
+\r	matches <code class="special">&lt;CR&gt;</code>					<b class="vimtag">*<a name="%2F\r">/\r</a>*</b>
+\b	matches <code class="special">&lt;BS&gt;</code>					<b class="vimtag">*<a name="%2F\b">/\b</a>*</b>
+\n	matches an end-of-line				<b class="vimtag">*<a name="%2F\n">/\n</a>*</b>
+	When matching in a string instead of buffer text a literal newline
+	character is matched.
+
+~	matches the last given substitute string	<b class="vimtag">*<a name="%2F%7E">/~</a>*</b> <b class="vimtag">*<a name="%2F\%7E">/\~</a>*</b>
+
+\(\)	A pattern enclosed by escaped parentheses.	<b class="vimtag">*<a name="%2F\(">/\(</a>*</b> <b class="vimtag">*<a name="%2F\(\)">/\(\)</a>*</b> <b class="vimtag">*<a name="%2F\)">/\)</a>*</b>
+	E.g., "\(^a\)" matches 'a' at the start of a line.
+	<b class="vimtag">*<a name="E51">E51</a>*</b> <b class="vimtag">*<a name="E54">E54</a>*</b> <b class="vimtag">*<a name="E55">E55</a>*</b> <b class="vimtag">*<a name="E872">E872</a>*</b> <b class="vimtag">*<a name="E873">E873</a>*</b>
+
+\1      Matches the same string that was matched by	<b class="vimtag">*<a name="%2F\1">/\1</a>*</b> <b class="vimtag">*<a name="E65">E65</a>*</b>
+	the first sub-expression in \( and \).
+	Example: "\([a-z]\).\1" matches "ata", "ehe", "tot", etc.
+\2      Like "\1", but uses second sub-expression,	<b class="vimtag">*<a name="%2F\2">/\2</a>*</b>
+   ...							<b class="vimtag">*<a name="%2F\3">/\3</a>*</b>
+\9      Like "\1", but uses ninth sub-expression.	<b class="vimtag">*<a name="%2F\9">/\9</a>*</b>
+	<code class="note">Note:</code> The numbering of groups is done based on which "\(" comes first
+	in the pattern (going left to right), NOT based on what is matched
+	first.
+
+\%(\)	A pattern enclosed by escaped parentheses.	<b class="vimtag">*<a name="%2F\%(\)">/\%(\)</a>*</b> <b class="vimtag">*<a name="%2F\%(">/\%(</a>*</b> <b class="vimtag">*<a name="E53">E53</a>*</b>
+	Just like \(\), but without counting it as a sub-expression.  This
+	allows using more groups and it's a little bit faster.
+
+x	A single character, with no special meaning, matches itself
+
+							<b class="vimtag">*<a name="%2F\">/\</a>*</b> <b class="vimtag">*<a name="%2F\\">/\\</a>*</b>
+\x	A backslash followed by a single character, with no special meaning,
+	is reserved for future expansions
+
+[]	(with 'nomagic': \[])		<b class="vimtag">*<a name="%2F[]">/[]</a>*</b> <b class="vimtag">*<a name="%2F\[]">/\[]</a>*</b> <b class="vimtag">*<a name="%2F\_[]">/\_[]</a>*</b> <b class="vimtag">*<a name="%2Fcollection">/collection</a>*</b>
+\_[]
+	A collection.  This is a sequence of characters enclosed in brackets.
+	It matches any single character in the collection.
+<code class="section">	Example		matches </code>
+	[xyz]		any 'x', 'y' or 'z'
+	[a-zA-Z]$	any alphabetic character at the end of a line
+	\c[a-z]$	same
+	[А-яЁё]		Russian alphabet (with utf-8 and cp1251)
+
+								<b class="vimtag">*<a name="%2F[\n]">/[\n]</a>*</b>
+	With "\_" prepended the collection also includes the end-of-line.
+	The same can be done by including "\n" in the collection.  The
+	end-of-line is also matched when the collection starts with "^"!  Thus
+	"\_[^ab]" matches the end-of-line and any character but "a" and "b".
+	This makes it Vi compatible: Without the "\_" or "\n" the collection
+	does not match an end-of-line.
+								<b class="vimtag">*<a name="E769">E769</a>*</b>
+	When the ']' is not there Vim will not give an error message but
+	assume no collection is used.  Useful to search for '['.  However, you
+	do get E769 for internal searching.  And be aware that in a
+	`:substitute` command the whole command becomes the pattern.  E.g.
+	":s/[/x/" searches for "[/x" and replaces it with nothing.  It does
+	not search for "[" and replaces it with "x"!
+
+								<b class="vimtag">*<a name="E944">E944</a>*</b> <b class="vimtag">*<a name="E945">E945</a>*</b>
+	If the sequence begins with "^", it matches any single character NOT
+	in the collection: "[^xyz]" matches anything but 'x', 'y' and 'z'.
+	- If two characters in the sequence are separated by '-', this is
+	  shorthand for the full list of ASCII characters between them.  E.g.,
+	  "[0-9]" matches any decimal digit. If the starting character exceeds
+	  the ending character, e.g. [c-a], E944 occurs. Non-ASCII characters
+	  can be used, but the character values must not be more than 256 apart
+	  in the old regexp engine. For example, searching by [\u3000-\u4000]
+	  after setting re=1 emits a E945 error. Prepending \%#=2 will fix it.
+	- A character class expression is evaluated to the set of characters
+	  belonging to that character class.  The following character classes
+	  are supported:
+<code class="section">		  Name	      Func	Contents </code>
+<b class="vimtag">*<a name="[:alnum:]">[:alnum:]</a>*</b>	  [:alnum:]   isalnum	ASCII letters and digits
+<b class="vimtag">*<a name="[:alpha:]">[:alpha:]</a>*</b>	  [:alpha:]   isalpha  	ASCII letters
+<b class="vimtag">*<a name="[:blank:]">[:blank:]</a>*</b>	  [:blank:]     	space and tab
+<b class="vimtag">*<a name="[:cntrl:]">[:cntrl:]</a>*</b>	  [:cntrl:]   iscntrl 	ASCII control characters
+<b class="vimtag">*<a name="[:digit:]">[:digit:]</a>*</b>	  [:digit:]     	decimal digits '0' to '9'
+<b class="vimtag">*<a name="[:graph:]">[:graph:]</a>*</b>	  [:graph:]   isgraph	ASCII printable characters excluding
+					space
+<b class="vimtag">*<a name="[:lower:]">[:lower:]</a>*</b>	  [:lower:]   (1)	lowercase letters (all letters when
+					'ignorecase' is used)
+<b class="vimtag">*<a name="[:print:]">[:print:]</a>*</b>	  [:print:]   (2) 	printable characters including space
+<b class="vimtag">*<a name="[:punct:]">[:punct:]</a>*</b>	  [:punct:]   ispunct	ASCII punctuation characters
+<b class="vimtag">*<a name="[:space:]">[:space:]</a>*</b>	  [:space:]     	whitespace characters: space, tab, CR,
+					NL, vertical tab, form feed
+<b class="vimtag">*<a name="[:upper:]">[:upper:]</a>*</b>	  [:upper:]   (3)	uppercase letters (all letters when
+					'ignorecase' is used)
+<b class="vimtag">*<a name="[:xdigit:]">[:xdigit:]</a>*</b>	  [:xdigit:]    	hexadecimal digits: 0-9, a-f, A-F
+<b class="vimtag">*<a name="[:return:]">[:return:]</a>*</b>	  [:return:]		the <code class="special">&lt;CR&gt;</code> character
+<b class="vimtag">*<a name="[:tab:]">[:tab:]</a>*</b>	  [:tab:]		the <code class="special">&lt;Tab&gt;</code> character
+<b class="vimtag">*<a name="[:escape:]">[:escape:]</a>*</b>	  [:escape:]		the <code class="special">&lt;Esc&gt;</code> character
+<b class="vimtag">*<a name="[:backspace:]">[:backspace:]</a>*</b>	  [:backspace:]		the <code class="special">&lt;BS&gt;</code> character
+<b class="vimtag">*<a name="[:ident:]">[:ident:]</a>*</b>	  [:ident:]		identifier character (same as "\i")
+<b class="vimtag">*<a name="[:keyword:]">[:keyword:]</a>*</b>	  [:keyword:]		keyword character (same as "\k")
+<b class="vimtag">*<a name="[:fname:]">[:fname:]</a>*</b>	  [:fname:]		file name character (same as "\f")
+	  The brackets in character class expressions are additional to the
+	  brackets delimiting a collection.  For example, the following is a
+	  plausible pattern for a UNIX filename: "[-./[:alnum:]_~]\+" That is,
+	  a list of at least one character, each of which is either '-', '.',
+	  '/', alphabetic, numeric, '_' or '~'.
+	  These items only work for 8-bit characters, except [:lower:] and
+	  [:upper:] also work for multi-byte characters when using the new
+	  regexp engine.  See |<a href="pattern.html#two-engines">two-engines</a>|.  In the future these items may
+	  work for multi-byte characters.  For now, to get all "alpha"
+	  characters you can use: [[:lower:][:upper:]].
+
+	  The "Func" column shows what library function is used.  The
+	  implementation depends on the system.  Otherwise:
+	  (1) Uses islower() for ASCII and Vim builtin rules for other
+	  characters.
+	  (2) Uses Vim builtin rules
+	  (3) As with (1) but using isupper()
+							<b class="vimtag">*<a name="%2F[[%20">/[[=</a>*</b> <b class="vimtag">*<a name="[%20%20]">[==]</a>*</b>
+	- An equivalence class.  This means that characters are matched that
+	  have almost the same meaning, e.g., when ignoring accents.  This
+	  only works for Unicode, latin1 and latin9.  The form is:
+		[=a=]
+							<b class="vimtag">*<a name="%2F[[.">/[[.</a>*</b> <b class="vimtag">*<a name="[..]">[..]</a>*</b>
+	- A collation element.  This currently simply accepts a single
+	  character in the form:
+		[.a.]
+							  <b class="vimtag">*<a name="%2F\]">/\]</a>*</b>
+	- To include a literal ']', '^', '-' or '\' in the collection, put a
+	  backslash before it: "[xyz\]]", "[\^xyz]", "[xy\-z]" and "[xyz\\]".
+	  (<code class="note">Note:</code> POSIX does not support the use of a backslash this way).  For
+	  ']' you can also make it the first character (following a possible
+	  "^"):  "[]xyz]" or "[^]xyz]".
+	  For '-' you can also make it the first or last character: "[-xyz]",
+	  "[^-xyz]" or "[xyz-]".  For '\' you can also let it be followed by
+	  any character that's not in "^]-\bdertnoUux".  "[\xyz]" matches '\',
+	  'x', 'y' and 'z'.  It's better to use "\\" though, future expansions
+	  may use other characters after '\'.
+	- Omitting the trailing ] is not considered an error. "[]" works like
+	  "[]]", it matches the ']' character.
+	- The following translations are accepted when the 'l' flag is not
+	  included in 'cpoptions':
+		\e	<code class="special">&lt;Esc&gt;</code>
+		\t	<code class="special">&lt;Tab&gt;</code>
+		\r	<code class="special">&lt;CR&gt;</code>	(NOT end-of-line!)
+		\b	<code class="special">&lt;BS&gt;</code>
+		\n	line break, see above |<a href="pattern.html#%2F[\n]">/[\n]</a>|
+		\d123	decimal number of character
+		\o40	octal number of character up to 0377
+		\x20	hexadecimal number of character up to 0xff
+		\u20AC	hex. number of multibyte character up to 0xffff
+		\U1234	hex. number of multibyte character up to 0xffffffff
+	  <code class="note">NOTE:</code> The other backslash codes mentioned above do not work inside
+	  []!
+	- Matching with a collection can be slow, because each character in
+	  the text has to be compared with each character in the collection.
+	  Use one of the other atoms above when possible.  Example: "\d" is
+	  much faster than "[0-9]" and matches the same characters.  However,
+	  the new |<a href="pattern.html#NFA">NFA</a>| regexp engine deals with this better than the old one.
+
+						<b class="vimtag">*<a name="%2F\%[]">/\%[]</a>*</b> <b class="vimtag">*<a name="E69">E69</a>*</b> <b class="vimtag">*<a name="E70">E70</a>*</b> <b class="vimtag">*<a name="E369">E369</a>*</b>
+\%[]	A sequence of optionally matched atoms.  This always matches.
+	It matches as much of the list of atoms it contains as possible.  Thus
+	it stops at the first atom that doesn't match.  For example:
+<code class="example">		/r\%[ead]</code>
+	matches "r", "re", "rea" or "read".  The longest that matches is used.
+	To match the Ex command "function", where "fu" is required and
+	"nction" is optional, this would work:
+<code class="example">		/\<code class="special">&lt;fu\%[nction]\&gt;</code></code>
+	The end-of-word atom "\&gt;" is used to avoid matching "fu" in "full".
+	It gets more complicated when the atoms are not ordinary characters.
+	You don't often have to use it, but it is possible.  Example:
+<code class="example">		/\<code class="special">&lt;r\%[[eo]ad]\&gt;</code></code>
+	Matches the words "r", "re", "ro", "rea", "roa", "read" and "road".
+	There can be no \(\), \%(\) or \z(\) items inside the [] and \%[] does
+	not nest.
+	To include a "[" use "[[]" and for "]" use []]", e.g.,:
+<code class="example">		/index\%[[[]0[]]]</code>
+	matches "index" "index[", "index[0" and "index[0]".
+	{not available when compiled without the |<a href="various.html#+syntax">+syntax</a>| feature}
+
+				<b class="vimtag">*<a name="%2F\%d">/\%d</a>*</b> <b class="vimtag">*<a name="%2F\%x">/\%x</a>*</b> <b class="vimtag">*<a name="%2F\%o">/\%o</a>*</b> <b class="vimtag">*<a name="%2F\%u">/\%u</a>*</b> <b class="vimtag">*<a name="%2F\%U">/\%U</a>*</b> <b class="vimtag">*<a name="E678">E678</a>*</b>
+
+\%d123	Matches the character specified with a decimal number.  Must be
+	followed by a non-digit.
+\%o40	Matches the character specified with an octal number up to 0377.
+	Numbers below 040 must be followed by a non-octal digit or a non-digit.
+\%x2a	Matches the character specified with up to two hexadecimal characters.
+\%u20AC	Matches the character specified with up to four hexadecimal
+	characters.
+\%U1234abcd	Matches the character specified with up to eight hexadecimal
+	characters, up to 0x7fffffff
+
+</pre><hr/><pre>7. Ignoring case in a pattern					<b class="vimtag">*<a name="%2Fignorecase">/ignorecase</a>*</b>
+
+If the 'ignorecase' option is on, the case of normal letters is ignored.
+'smartcase' can be set to ignore case when the pattern contains lowercase
+letters only.
+							<b class="vimtag">*<a name="%2F\c">/\c</a>*</b> <b class="vimtag">*<a name="%2F\C">/\C</a>*</b>
+When "\c" appears anywhere in the pattern, the whole pattern is handled like
+'ignorecase' is on.  The actual value of 'ignorecase' and 'smartcase' is
+ignored.  "\C" does the opposite: Force matching case for the whole pattern.
+<code class="special">{only Vim supports \c and \C}</code>
+<code class="note">Note</code> that 'ignorecase', "\c" and "\C" are not used for the character classes.
+
+Examples:
+<code class="section">      pattern	'ignorecase'  'smartcase'	matches </code>
+	foo	  off		-		foo
+	foo	  on		-		foo Foo FOO
+	Foo	  on		off		foo Foo FOO
+	Foo	  on		on		    Foo
+	\cfoo	  -		-		foo Foo FOO
+	foo\C	  -		-		foo
+
+Technical detail:				<b class="vimtag">*<a name="NL-used-for-Nul">NL-used-for-Nul</a>*</b>
+<code class="special">&lt;Nul&gt;</code> characters in the file are stored as <code class="special">&lt;NL&gt;</code> in memory.  In the display
+they are shown as "^@".  The translation is done when reading and writing
+files.  To match a <code class="special">&lt;Nul&gt;</code> with a search pattern you can just enter CTRL-@ or
+"<code class="keystroke">CTRL-V</code> 000".  This is probably just what you expect.  Internally the
+character is replaced with a <code class="special">&lt;NL&gt;</code> in the search pattern.  What is unusual is
+that typing <code class="keystroke">CTRL-V</code> <code class="keystroke">CTRL-J</code> also inserts a <code class="special">&lt;NL&gt;</code>, thus also searches for a <code class="special">&lt;Nul&gt;</code>
+in the file.
+
+						<b class="vimtag">*<a name="CR-used-for-NL">CR-used-for-NL</a>*</b>
+When 'fileformat' is "mac", <code class="special">&lt;NL&gt;</code> characters in the file are stored as <code class="special">&lt;CR&gt;</code>
+characters internally.  In the text they are shown as "^J".  Otherwise this
+works similar to the usage of <code class="special">&lt;NL&gt;</code> for a <code class="special">&lt;Nul&gt;</code>.
+
+When working with expression evaluation, a <code class="special">&lt;NL&gt;</code> character in the pattern
+matches a <code class="special">&lt;NL&gt;</code> in the string.  The use of "\n" (backslash n) to match a <code class="special">&lt;NL&gt;</code>
+doesn't work there, it only works to match text in the buffer.
+
+						<b class="vimtag">*<a name="pattern-multi-byte">pattern-multi-byte</a>*</b>
+Patterns will also work with multi-byte characters, mostly as you would
+expect.  But invalid bytes may cause trouble, a pattern with an invalid byte
+will probably never match.
+
+</pre><hr/><pre>8. Composing characters					<b class="vimtag">*<a name="patterns-composing">patterns-composing</a>*</b>
+
+							<b class="vimtag">*<a name="%2F\Z">/\Z</a>*</b>
+When "\Z" appears anywhere in the pattern, all composing characters are
+ignored.  Thus only the base characters need to match, the composing
+characters may be different and the number of composing characters may differ.
+Only relevant when 'encoding' is "utf-8".
+Exception: If the pattern starts with one or more composing characters, these
+must match.
+							<b class="vimtag">*<a name="%2F\%C">/\%C</a>*</b>
+Use "\%C" to skip any composing characters.  For example, the pattern "a" does
+not match in "càt" (where the a has the composing character 0x0300), but
+"a\%C" does.  <code class="note">Note</code> that this does not match "cát" (where the á is character
+0xe1, it does not have a compositing character).  It does match "cat" (where
+the a is just an a).
+
+When a composing character appears at the start of the pattern of after an
+item that doesn't include the composing character, a match is found at any
+character that includes this composing character.
+
+When using a dot and a composing character, this works the same as the
+composing character by itself, except that it doesn't matter what comes before
+this.
+
+The order of composing characters does not matter.  Also, the text may have
+more composing characters than the pattern, it still matches.  But all
+composing characters in the pattern must be found in the text.
+
+Suppose B is a base character and x and y are composing characters:
+<code class="section">	pattern		text		match </code>
+	Bxy		Bxy		yes (perfect match)
+	Bxy		Byx		yes (order ignored)
+	Bxy		By		no (x missing)
+	Bxy		Bx		no (y missing)
+	Bx		Bx		yes (perfect match)
+	Bx		By		no (x missing)
+	Bx		Bxy		yes (extra y ignored)
+	Bx		Byx		yes (extra y ignored)
+
+</pre><hr/><pre>9. Compare with Perl patterns				<b class="vimtag">*<a name="perl-patterns">perl-patterns</a>*</b>
+
+Vim's regexes are most similar to Perl's, in terms of what you can do.  The
+difference between them is mostly just notation;  here's a summary of where
+they differ:
+
+<code class="section">Capability			in Vimspeak	in Perlspeak </code>
+</pre><hr/><pre>force case insensitivity	\c		(?i)
+force case sensitivity		\C		(?-i)
+backref-less grouping		\%(atom\)	(?:atom)
+conservative quantifiers	\<code class="special">{-n,m}</code>		*?, +?, ??, <code class="special">{}</code>?
+0-width match			atom\@=		(?=atom)
+0-width non-match		atom\@!		(?!atom)
+0-width preceding match		atom\@&lt;=	(?&lt;=atom)
+0-width preceding non-match	atom\@&lt;!	(?&lt;!atom)
+match without retry		atom\@&gt;		(?&gt;atom)
+
+Vim and Perl handle newline characters inside a string a bit differently:
+
+In Perl, ^ and $ only match at the very beginning and end of the text,
+by default, but you can set the 'm' flag, which lets them match at
+embedded newlines as well.  You can also set the 's' flag, which causes
+a . to match newlines as well.  (Both these flags can be changed inside
+a pattern using the same syntax used for the i flag above, BTW.)
+
+On the other hand, Vim's ^ and $ always match at embedded newlines, and
+you get two separate atoms, \%^ and \%$, which only match at the very
+start and end of the text, respectively.  Vim solves the second problem
+by giving you the \_ "modifier":  put it in front of a . or a character
+class, and they will match newlines as well.
+
+Finally, these constructs are unique to Perl:
+- execution of arbitrary code in the regex:  (?<code class="special">{perl code}</code>)
+- conditional expressions:  (?(condition)true-expr|false-expr)
+
+...and these are unique to Vim:
+- changing the magic-ness of a pattern:  \v \V \m \M
+   (very useful for avoiding backslashitis)
+- sequence of optionally matching atoms:  \%[atoms]
+- \&amp; (which is to \| what "and" is to "or";  it forces several branches
+   to match at one spot)
+- matching lines/columns by number:  \%5l \%5c \%5v
+- setting the start and end of the match:  \zs \ze
+
+</pre><hr/><pre>10. Highlighting matches				<b class="vimtag">*<a name="match-highlight">match-highlight</a>*</b>
+
+							<b class="vimtag">*<a name=":mat">:mat</a>*</b> <b class="vimtag">*<a name=":match">:match</a>*</b>
+:mat[ch] <code class="special">{group}</code> /<code class="special">{pattern}</code>/
+		Define a pattern to highlight in the current window.  It will
+		be highlighted with <code class="special">{group}</code>.  Example:
+<code class="example">			:highlight MyGroup ctermbg=green guibg=green</code>
+<code class="example">			:match MyGroup /TODO/</code>
+		Instead of // any character can be used to mark the start and
+		end of the <code class="special">{pattern}</code>.  Watch out for using special characters,
+		such as '"' and '|'.
+
+		<code class="special">{group}</code> must exist at the moment this command is executed.
+
+		The <code class="special">{group}</code> highlighting still applies when a character is
+		to be highlighted for 'hlsearch', as the highlighting for
+		matches is given higher priority than that of 'hlsearch'.
+		Syntax highlighting (see 'syntax') is also overruled by
+		matches.
+
+		<code class="note">Note</code> that highlighting the last used search pattern with
+		'hlsearch' is used in all windows, while the pattern defined
+		with ":match" only exists in the current window.  It is kept
+		when switching to another buffer.
+
+		'ignorecase' does not apply, use |<a href="pattern.html#%2F\c">/\c</a>| in the pattern to
+		ignore case.  Otherwise case is not ignored.
+
+		'redrawtime' defines the maximum time searched for pattern
+		matches.
+
+		When matching end-of-line and Vim redraws only part of the
+		display you may get unexpected results.  That is because Vim
+		looks for a match in the line where redrawing starts.
+
+		Also see |<a href="eval.html#matcharg()">matcharg()</a>| and |<a href="eval.html#getmatches()">getmatches()</a>|. The former returns
+		the highlight group and pattern of a previous |<a href="pattern.html#:match">:match</a>|
+		command.  The latter returns a list with highlight groups and
+		patterns defined by both |<a href="eval.html#matchadd()">matchadd()</a>| and |<a href="pattern.html#:match">:match</a>|.
+
+		Highlighting matches using |<a href="pattern.html#:match">:match</a>| are limited to three
+		matches (aside from |<a href="pattern.html#:match">:match</a>|, |<a href="pattern.html#:2match">:2match</a>| and |<a href="pattern.html#:3match">:3match</a>| are
+		available). |<a href="eval.html#matchadd()">matchadd()</a>| does not have this limitation and in
+		addition makes it possible to prioritize matches.
+
+		Another example, which highlights all characters in virtual
+		column 72 and more:
+<code class="example">			:highlight rightMargin term=bold ctermfg=blue guifg=blue</code>
+<code class="example">			:match rightMargin /.\%&gt;72v/</code>
+&lt;		To highlight all character that are in virtual column 7:
+<code class="example">			:highlight col8 ctermbg=grey guibg=grey</code>
+<code class="example">			:match col8 /\%<code class="special">&lt;8v.\%&gt;</code>7v/</code>
+		<code class="note">Note</code> the use of two items to also match a character that
+		occupies more than one virtual column, such as a TAB.
+
+:mat[ch]
+:mat[ch] none
+		Clear a previously defined match pattern.
+
+
+:2mat[ch] <code class="special">{group}</code> /<code class="special">{pattern}</code>/					<b class="vimtag">*<a name=":2match">:2match</a>*</b>
+:2mat[ch]
+:2mat[ch] none
+:3mat[ch] <code class="special">{group}</code> /<code class="special">{pattern}</code>/					<b class="vimtag">*<a name=":3match">:3match</a>*</b>
+:3mat[ch]
+:3mat[ch] none
+		Just like |<a href="pattern.html#:match">:match</a>| above, but set a separate match.  Thus
+		there can be three matches active at the same time.  The match
+		with the lowest number has priority if several match at the
+		same position.
+		The ":3match" command is used by the |<a href="pi_paren.html#matchparen">matchparen</a>| plugin.  You
+		are suggested to use ":match" for manual matching and
+		":2match" for another plugin.
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

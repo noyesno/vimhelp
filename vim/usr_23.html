@@ -1,0 +1,352 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_23</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_23</h2>
+<pre>
+<b class="vimtag">*<a name="usr_23.txt">usr_23.txt</a>*</b>	For Vim version 8.2.  Last change: 2006 Apr 24
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			     Editing other files
+
+
+This chapter is about editing files that are not ordinary files.  With Vim you
+can edit files that are compressed or encrypted.  Some files need to be
+accessed over the internet.  With some restrictions, binary files can be
+edited as well.
+
+|<a href="usr_23.html#23.1">23.1</a>|	DOS, Mac and Unix files
+|<a href="usr_23.html#23.2">23.2</a>|	Files on the internet
+|<a href="usr_23.html#23.3">23.3</a>|	Encryption
+|<a href="usr_23.html#23.4">23.4</a>|	Binary files
+|<a href="usr_23.html#23.5">23.5</a>|	Compressed files
+
+     Next chapter: |<a href="usr_24.html#usr_24.txt">usr_24</a>|  Inserting quickly
+ Previous chapter: |<a href="usr_22.html#usr_22.txt">usr_22</a>|  Finding the file to edit
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="23.1">23.1</a>*</b>	DOS, Mac and Unix files
+
+Back in the early days, the old Teletype machines used two characters to
+start a new line.  One to move the carriage back to the first position
+(carriage return, <code class="special">&lt;CR&gt;</code>), another to move the paper up (line feed, <code class="special">&lt;LF&gt;</code>).
+   When computers came out, storage was expensive.  Some people decided that
+they did not need two characters for end-of-line.  The UNIX people decided
+they could use <code class="special">&lt;Line Feed&gt;</code> only for end-of-line.  The Apple people
+standardized on <code class="special">&lt;CR&gt;</code>.  The Microsoft Windows folks decided to keep
+the old <code class="special">&lt;CR&gt;</code><code class="special">&lt;LF&gt;</code>.
+   This means that if you try to move a file from one system to another, you
+have line-break problems.  The Vim editor automatically recognizes the
+different file formats and handles things properly behind your back.
+   The option 'fileformats' contains the various formats that will be tried
+when a new file is edited.  The following command, for example, tells Vim to
+try UNIX format first and MS-DOS format second:
+<code class="example"></code>
+<code class="example">	:set fileformats=unix,dos</code>
+<code class="example"></code>
+You will notice the format in the message you get when editing a file.  You
+don't see anything if you edit a native file format.  Thus editing a Unix file
+on Unix won't result in a remark.  But when you edit a dos file, Vim will
+notify you of this:
+
+<code class="section">	"/tmp/test" [dos] 3L, 71C </code>
+
+For a Mac file you would see "[mac]".
+   The detected file format is stored in the 'fileformat' option.  To see
+which format you have, execute the following command:
+<code class="example"></code>
+<code class="example">	:set fileformat?</code>
+<code class="example"></code>
+The three names that Vim uses are:
+
+	unix		<code class="special">&lt;LF&gt;</code>
+	dos		<code class="special">&lt;CR&gt;</code><code class="special">&lt;LF&gt;</code>
+	mac		<code class="special">&lt;CR&gt;</code>
+
+
+USING THE MAC FORMAT
+
+On Unix, <code class="special">&lt;LF&gt;</code> is used to break a line.  It's not unusual to have a <code class="special">&lt;CR&gt;</code>
+character halfway a line.  Incidentally, this happens quite often in Vi (and
+Vim) scripts.
+   On the Macintosh, where <code class="special">&lt;CR&gt;</code> is the line break character, it's possible to
+have a <code class="special">&lt;LF&gt;</code> character halfway a line.
+   The result is that it's not possible to be 100% sure whether a file
+containing both <code class="special">&lt;CR&gt;</code> and <code class="special">&lt;LF&gt;</code> characters is a Mac or a Unix file.  Therefore,
+Vim assumes that on Unix you probably won't edit a Mac file, and doesn't check
+for this type of file.  To check for this format anyway, add "mac" to
+'fileformats':
+<code class="example"></code>
+<code class="example">	:set fileformats+=mac</code>
+<code class="example"></code>
+Then Vim will take a guess at the file format.  Watch out for situations where
+Vim guesses wrong.
+
+
+OVERRULING THE FORMAT
+
+If you use the good old Vi and try to edit an MS-DOS format file, you will
+find that each line ends with a ^M character.  (^M is <code class="special">&lt;CR&gt;</code>).  The automatic
+detection avoids this.  Suppose you do want to edit the file that way?  Then
+you need to overrule the format:
+<code class="example"></code>
+<code class="example">	:edit ++ff=unix file.txt</code>
+<code class="example"></code>
+The "++" string is an item that tells Vim that an option name follows, which
+overrules the default for this single command.  "++ff" is used for
+'fileformat'.  You could also use "++ff=mac" or "++ff=dos".
+   This doesn't work for any option, only "++ff" and "++enc" are currently
+implemented.  The full names "++fileformat" and "++encoding" also work.
+
+
+CONVERSION
+
+You can use the 'fileformat' option to convert from one file format to
+another.  Suppose, for example, that you have an MS-DOS file named README.TXT
+that you want to convert to UNIX format.  Start by editing the MS-DOS format
+file:
+<code class="example">	vim README.TXT</code>
+<code class="example"></code>
+Vim will recognize this as a dos format file.  Now change the file format to
+UNIX:
+<code class="example"></code>
+<code class="example">	:set fileformat=unix</code>
+<code class="example">	:write</code>
+<code class="example"></code>
+The file is written in Unix format.
+
+</pre><hr/><pre><b class="vimtag">*<a name="23.2">23.2</a>*</b>	Files on the internet
+
+Someone sends you an e-mail message, which refers to a file by its URL.  For
+example:
+
+<code class="section">	You can find the information here: </code>
+<code class="section">		ftp://ftp.vim.org/pub/vim/README </code>
+
+You could start a program to download the file, save it on your local disk and
+then start Vim to edit it.
+   There is a much simpler way.  Move the cursor to any character of the URL.
+Then use this command:
+<code class="example"></code>
+<code class="example">	gf</code>
+<code class="example"></code>
+With a bit of luck, Vim will figure out which program to use for downloading
+the file, download it and edit the copy.  To open the file in a new window use
+<code class="keystroke">CTRL-W</code> f.
+   If something goes wrong you will get an error message.  It's possible that
+the URL is wrong, you don't have permission to read it, the network connection
+is down, etc.  Unfortunately, it's hard to tell the cause of the error.  You
+might want to try the manual way of downloading the file.
+
+Accessing files over the internet works with the netrw plugin.  Currently URLs
+with these formats are recognized:
+
+	ftp://		uses ftp
+	rcp://		uses rcp
+	scp://		uses scp
+	http://		uses wget (reading only)
+
+Vim doesn't do the communication itself, it relies on the mentioned programs
+to be available on your computer.  On most Unix systems "ftp" and "rcp" will
+be present.  "scp" and "wget" might need to be installed.
+
+Vim detects these URLs for each command that starts editing a new file, also
+with ":edit" and ":split", for example.  Write commands also work, except for
+http://.
+
+For more information, also about passwords, see |<a href="pi_netrw.html#netrw">netrw</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="23.3">23.3</a>*</b>	Encryption
+
+Some information you prefer to keep to yourself.  For example, when writing
+a test on a computer that students also use.  You don't want clever students
+to figure out a way to read the questions before the exam starts.  Vim can
+encrypt the file for you, which gives you some protection.
+   To start editing a new file with encryption, use the "-x" argument to start
+Vim.  Example:
+<code class="example"></code>
+<code class="example">	vim -x exam.txt</code>
+<code class="example"></code>
+Vim prompts you for a key used for encrypting and decrypting the file:
+
+<code class="section">	Enter encryption key: </code>
+
+Carefully type the secret key now.  You cannot see the characters you type,
+they will be replaced by stars.  To avoid the situation that a typing mistake
+will cause trouble, Vim asks you to enter the key again:
+
+<code class="section">	Enter same key again: </code>
+
+You can now edit this file normally and put in all your secrets.  When you
+finish editing the file and tell Vim to exit, the file is encrypted and
+written.
+   When you edit the file with Vim, it will ask you to enter the same key
+again.  You don't need to use the "-x" argument.  You can also use the normal
+":edit" command.  Vim adds a magic string to the file by which it recognizes
+that the file was encrypted.
+   If you try to view this file using another program, all you get is garbage.
+Also, if you edit the file with Vim and enter the wrong key, you get garbage.
+Vim does not have a mechanism to check if the key is the right one (this makes
+it much harder to break the key).
+
+
+SWITCHING ENCRYPTION ON AND OFF
+
+To disable the encryption of a file, set the 'key' option to an empty string:
+
+<code class="example">	:set key=</code>
+<code class="example"></code>
+The next time you write the file this will be done without encryption.
+   Setting the 'key' option to enable encryption is not a good idea, because
+the password appears in the clear.  Anyone shoulder-surfing can read your
+password.
+   To avoid this problem, the ":X" command was created.  It asks you for an
+encryption key, just like the "-x" argument did:
+<code class="example"></code>
+<code class="example">	:X</code>
+<code class="example">	Enter encryption key: ******</code>
+<code class="example">	Enter same key again: ******</code>
+<code class="example"></code>
+<code class="example"></code>
+LIMITS ON ENCRYPTION
+
+The encryption algorithm used by Vim is not very strong.  It is good enough to
+keep out the casual prowler, but not good enough to keep out a cryptology
+expert with lots of time on his hands.  The text in the swap file and the undo
+file is also encrypted.  However, this is done block-by-block and may reduce
+the time needed to crack a password.  You can disable the swap file, but then
+a crash will cause you to lose your work, since Vim keeps all the text in
+memory only.  The undo file can be disabled with the only disadvantage that
+you can't undo after unloading the buffer.
+   To avoid using a swap file, supply the -n argument on the command line.
+For example, to edit the encrypted file "file.txt" without a swap file use the
+following command:
+<code class="example"></code>
+<code class="example">	vim -x -n file.txt</code>
+<code class="example"></code>
+When already editing a file, the swapfile can be disabled with:
+<code class="example"></code>
+<code class="example">	:setlocal noswapfile</code>
+<code class="example"></code>
+Since there is no swapfile, recovery will be impossible.  Save the file a bit
+more often to avoid the risk of losing your changes.
+
+While the file is in memory, it is in plain text.  Anyone with privilege can
+look in the editor's memory and discover the contents of the file.
+   If you use a viminfo file, be aware that the contents of text registers are
+written out in the clear as well.
+   If you really want to secure the contents of a file, edit it only on a
+portable computer not connected to a network, use good encryption tools, and
+keep the computer locked up in a big safe when not in use.
+
+</pre><hr/><pre><b class="vimtag">*<a name="23.4">23.4</a>*</b>	Binary files
+
+You can edit binary files with Vim.  Vim wasn't really made for this, thus
+there are a few restrictions.  But you can read a file, change a character and
+write it back, with the result that only that one character was changed and
+the file is identical otherwise.
+   To make sure that Vim does not use its clever tricks in the wrong way, add
+the "-b" argument when starting Vim:
+<code class="example"></code>
+<code class="example">	vim -b datafile</code>
+<code class="example"></code>
+This sets the 'binary' option.  The effect of this is that unexpected side
+effects are turned off.  For example, 'textwidth' is set to zero, to avoid
+automatic formatting of lines.  And files are always read in Unix file format.
+
+Binary mode can be used to change a message in a program.  Be careful not to
+insert or delete any characters, it would stop the program from working.  Use
+"R" to enter replace mode.
+
+Many characters in the file will be unprintable.  To see them in Hex format:
+<code class="example"></code>
+<code class="example">	:set display=uhex</code>
+<code class="example"></code>
+Otherwise, the "ga" command can be used to see the value of the character
+under the cursor.  The output, when the cursor is on an <code class="special">&lt;Esc&gt;</code>, looks like
+this:
+
+<code class="section">	<code class="special">&lt;^[&gt;</code>  27,  Hex 1b,  Octal 033 </code>
+
+There might not be many line breaks in the file.  To get some overview switch
+the 'wrap' option off:
+<code class="example"></code>
+<code class="example">	:set nowrap</code>
+<code class="example"></code>
+<code class="example"></code>
+BYTE POSITION
+
+To see on which byte you are in the file use this command:
+<code class="example"></code>
+<code class="example">	g <code class="keystroke">CTRL-G</code></code>
+<code class="example"></code>
+The output is verbose:
+
+<code class="section">    Col 9-16 of 9-16; Line 277 of 330; Word 1806 of 2058; Byte 10580 of 12206 </code>
+
+The last two numbers are the byte position in the file and the total number of
+bytes.  This takes into account how 'fileformat' changes the number of bytes
+that a line break uses.
+    To move to a specific byte in the file, use the "go" command.  For
+example, to move to byte 2345:
+<code class="example"></code>
+<code class="example">	2345go</code>
+<code class="example"></code>
+<code class="example"></code>
+USING XXD
+
+A real binary editor shows the text in two ways: as it is and in hex format.
+You can do this in Vim by first converting the file with the "xxd" program.
+This comes with Vim.
+   First edit the file in binary mode:
+<code class="example"></code>
+<code class="example">	vim -b datafile</code>
+<code class="example"></code>
+Now convert the file to a hex dump with xxd:
+<code class="example"></code>
+<code class="example">	:%!xxd</code>
+<code class="example"></code>
+The text will look like this:
+
+<code class="section">	0000000: 1f8b 0808 39d7 173b 0203 7474 002b 4e49  ....9..;..tt.+NI </code>
+<code class="section">	0000010: 4b2c 8660 eb9c ecac c462 eb94 345e 2e30  K,.`.....b..4^.0 </code>
+<code class="section">	0000020: 373b 2731 0b22 0ca6 c1a2 d669 1035 39d9  7;'1.".....i.59. </code>
+
+You can now view and edit the text as you like.  Vim treats the information as
+ordinary text.  Changing the hex does not cause the printable character to be
+changed, or the other way around.
+   Finally convert it back with:
+
+<code class="example">	:%!xxd -r</code>
+<code class="example"></code>
+Only changes in the hex part are used.  Changes in the printable text part on
+the right are ignored.
+
+See the manual page of xxd for more information.
+
+</pre><hr/><pre><b class="vimtag">*<a name="23.5">23.5</a>*</b>	Compressed files
+
+This is easy: You can edit a compressed file just like any other file.  The
+"gzip" plugin takes care of decompressing the file when you edit it.  And
+compressing it again when you write it.
+   These compression methods are currently supported:
+
+	.Z	compress
+	.gz	gzip
+	.bz2	bzip2
+
+Vim uses the mentioned programs to do the actual compression and
+decompression.  You might need to install the programs first.
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_24.html#usr_24.txt">usr_24</a>|  Inserting quickly
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

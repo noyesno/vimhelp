@@ -1,0 +1,463 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: if_lua</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>IF_LUA</h2>
+<pre>
+<b class="vimtag">*<a name="if_lua.txt">if_lua.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 Jul 21
+
+
+		  VIM REFERENCE MANUAL    by Luis Carvalho
+
+
+The Lua Interface to Vim				<b class="vimtag">*<a name="lua">lua</a>*</b> <b class="vimtag">*<a name="Lua">Lua</a>*</b>
+
+1. Commands			|<a href="if_lua.html#lua-commands">lua-commands</a>|
+2. The vim module		|<a href="if_lua.html#lua-vim">lua-vim</a>|
+3. List userdata		|<a href="if_lua.html#lua-list">lua-list</a>|
+4. Dict userdata		|<a href="if_lua.html#lua-dict">lua-dict</a>|
+5. Blob userdata		|<a href="if_lua.html#lua-blob">lua-blob</a>|
+6. Funcref userdata		|<a href="if_lua.html#lua-funcref">lua-funcref</a>|
+7. Buffer userdata		|<a href="if_lua.html#lua-buffer">lua-buffer</a>|
+8. Window userdata		|<a href="if_lua.html#lua-window">lua-window</a>|
+9. luaeval() Vim function	|<a href="if_lua.html#lua-luaeval">lua-luaeval</a>|
+10. Dynamic loading		|<a href="if_lua.html#lua-dynamic">lua-dynamic</a>|
+
+{only available when Vim was compiled with the |<a href="various.html#+lua">+lua</a>| feature}
+
+</pre><hr/><pre>1. Commands						<b class="vimtag">*<a name="lua-commands">lua-commands</a>*</b>
+
+							<b class="vimtag">*<a name=":lua">:lua</a>*</b>
+:<code class="special">[range]</code>lua <code class="special">{chunk}</code>
+			Execute Lua chunk <code class="special">{chunk}</code>.
+
+Examples:
+
+<code class="example">	:lua print("Hello, Vim!")</code>
+<code class="example">	:lua local curbuf = vim.buffer() curbuf[7] = "line #7"</code>
+
+
+:<code class="special">[range]</code>lua &lt;&lt; [endmarker]
+<code class="special">{script}</code>
+<code class="special">{endmarker}</code>
+			Execute Lua script <code class="special">{script}</code>.
+			<code class="note">Note:</code> This command doesn't work when the Lua
+			feature wasn't compiled in.  To avoid errors, see
+			|<a href="if_perl.html#script-here">script-here</a>|.
+
+The <code class="special">{endmarker}</code> must NOT be preceded by any white space.
+
+If [endmarker] is omitted from after the "&lt;&lt;", a dot '.' must be used after
+<code class="special">{script}</code>, like for the |<a href="insert.html#:append">:append</a>| and |<a href="insert.html#:insert">:insert</a>| commands.
+
+This form of the |<a href="if_lua.html#:lua">:lua</a>| command is mainly useful for including Lua code
+in Vim scripts.
+
+Example:
+
+<code class="example">	function! CurrentLineInfo()</code>
+<code class="example">	lua &lt;&lt; EOF</code>
+<code class="example">	local linenr = vim.window().line</code>
+<code class="example">	local curline = vim.buffer()[linenr]</code>
+<code class="example">	print(string.format("Current line [%d] has %d chars",</code>
+<code class="example">		linenr, #curline))</code>
+<code class="example">	EOF</code>
+<code class="example">	endfunction</code>
+
+To see what version of Lua you have:
+<code class="example">	:lua print(_VERSION)</code>
+<code class="example"></code>
+If you use LuaJIT you can also use this:
+<code class="example">	:lua print(jit.version)</code>
+
+
+							<b class="vimtag">*<a name=":luado">:luado</a>*</b>
+:<code class="special">[range]</code>luado <code class="special">{body}</code>	Execute Lua function "function (line, linenr) <code class="special">{body}</code>
+			end" for each line in the <code class="special">[range]</code>, with the function
+			argument being set to the text of each line in turn,
+			without a trailing <code class="special">&lt;EOL&gt;</code>, and the current line number.
+			If the value returned by the function is a string it
+			becomes the text of the line in the current turn. The
+			default for <code class="special">[range]</code> is the whole file: "1,$".
+
+Examples:
+
+<code class="example">	:luado return string.format("%s\t%d", line:reverse(), #line)</code>
+<code class="example"></code>
+<code class="example">	:lua require"lpeg"</code>
+<code class="example">	:lua -- balanced parenthesis grammar:</code>
+<code class="example">	:lua bp = lpeg.P{ "(" <b class="vimtag">*<a name=" ((1 - lpeg.S%22()%22) + lpeg.V(1))^0 "> ((1 - lpeg.S"()") + lpeg.V(1))^0 </a>*</b> ")" }</code>
+<code class="example">	:luado if bp:match(line) then return "--&gt;\t" .. line end</code>
+
+
+							<b class="vimtag">*<a name=":luafile">:luafile</a>*</b>
+:<code class="special">[range]</code>luafile <code class="special">{file}</code>
+			Execute Lua script in <code class="special">{file}</code>.
+			The whole argument is used as a single file name.
+
+Examples:
+
+<code class="example">	:luafile script.lua</code>
+<code class="example">	:luafile %</code>
+
+
+All these commands execute a Lua chunk from either the command line (:lua and
+:luado) or a file (:luafile) with the given line <code class="special">[range]</code>. Similarly to the Lua
+interpreter, each chunk has its own scope and so only global variables are
+shared between command calls. All Lua default libraries are available. In
+addition, Lua "print" function has its output redirected to the Vim message
+area, with arguments separated by a white space instead of a tab.
+
+Lua uses the "vim" module (see |<a href="if_lua.html#lua-vim">lua-vim</a>|) to issue commands to Vim
+and manage buffers (|<a href="if_lua.html#lua-buffer">lua-buffer</a>|) and windows (|<a href="if_lua.html#lua-window">lua-window</a>|). However,
+procedures that alter buffer content, open new buffers, and change cursor
+position are restricted when the command is executed in the |<a href="eval.html#sandbox">sandbox</a>|.
+
+
+</pre><hr/><pre>2. The vim module					<b class="vimtag">*<a name="lua-vim">lua-vim</a>*</b>
+
+Lua interfaces Vim through the "vim" module. The first and last line of the
+input range are stored in "vim.firstline" and "vim.lastline" respectively. The
+module also includes routines for buffer, window, and current line queries,
+Vim evaluation and command execution, and others.
+
+	vim.list([arg])		Returns an empty list or, if "arg" is a Lua
+				table with numeric keys 1, ..., n (a
+				"sequence"), returns a list l such that l[i] =
+				arg[i] for i = 1, ..., n (see |<a href="eval.html#List">List</a>|).
+				Non-numeric keys are not used to initialize
+				the list. See also |<a href="if_lua.html#lua-eval">lua-eval</a>| for conversion
+				rules. Example:
+<code class="example">				    :lua t = <code class="special">{math.pi, false, say = 'hi'}</code></code>
+<code class="example">				    :echo luaeval('vim.list(t)')</code>
+<code class="example">				    :" [3.141593, v:false], 'say' is ignored</code>
+
+	vim.dict([arg])		Returns an empty dictionary or, if "arg" is a
+				Lua table, returns a dict d such that d[k] =
+				arg[k] for all string keys k in "arg" (see
+				|<a href="eval.html#Dictionary">Dictionary</a>|). Number keys are converted to
+				strings. Keys that are not strings are not
+				used to initialize the dictionary. See also
+				|<a href="if_lua.html#lua-eval">lua-eval</a>| for conversion rules. Example:
+<code class="example">				    :lua t = <code class="special">{math.pi, false, say = 'hi'}</code></code>
+<code class="example">				    :echo luaeval('vim.dict(t)')</code>
+<code class="example">				    :" {'1': 3.141593, '2': v:false,</code>
+<code class="example">				    :" 'say': 'hi'}</code>
+
+	vim.blob([arg])		Returns an empty blob or, if "arg" is a Lua
+				string, returns a blob b such that b is
+				equivalent to "arg" as a byte string.
+				Examples:
+<code class="example">				    :lua s = "12ab\x00\x80\xfe\xff"</code>
+<code class="example">				    :echo luaeval('vim.blob(s)')</code>
+<code class="example">				    :" 0z31326162.0080FEFF</code>
+
+	vim.funcref(<code class="special">{name}</code>)	Returns a Funcref to function <code class="special">{name}</code> (see
+				|<a href="eval.html#Funcref">Funcref</a>|). It is equivalent to Vim's
+				function().
+
+	vim.buffer([arg])	If "arg" is a number, returns buffer with
+				number "arg" in the buffer list or, if "arg"
+				is a string, returns buffer whose full or short
+				name is "arg". In both cases, returns 'nil'
+				(nil value, not string) if the buffer is not
+				found. Otherwise, if "toboolean(arg)" is
+				'true' returns the first buffer in the buffer
+				list or else the current buffer.
+
+	vim.window([arg])	If "arg" is a number, returns window with
+				number "arg" or 'nil' (nil value, not string)
+				if not found. Otherwise, if "toboolean(arg)"
+				is 'true' returns the first window or else the
+				current window.
+
+	vim.type(<code class="special">{arg}</code>)		Returns the type of <code class="special">{arg}</code>. It is equivalent to
+				Lua's "type" function, but returns "list",
+				"dict", "funcref", "buffer", or "window" if
+				<code class="special">{arg}</code> is a list, dictionary, funcref, buffer,
+				or window, respectively. Examples:
+<code class="example">					:lua l = vim.list()</code>
+<code class="example">					:lua print(type(l), vim.type(l))</code>
+<code class="example">					:" list</code>
+
+	vim.command(<code class="special">{cmd}</code>)	Executes the vim (ex-mode) command <code class="special">{cmd}</code>.
+				Examples:
+<code class="example">					:lua vim.command"set tw=60"</code>
+<code class="example">					:lua vim.command"normal ddp"</code>
+
+	vim.eval(<code class="special">{expr}</code>)	Evaluates expression <code class="special">{expr}</code> (see |<a href="eval.html#expression">expression</a>|),
+				converts the result to Lua, and returns it.
+				Vim strings and numbers are directly converted
+				to Lua strings and numbers respectively. Vim
+				lists and dictionaries are converted to Lua
+				userdata (see |<a href="if_lua.html#lua-list">lua-list</a>| and |<a href="if_lua.html#lua-dict">lua-dict</a>|).
+				Examples:
+<code class="example">					:lua tw = vim.eval"&amp;tw"</code>
+<code class="example">					:lua print(vim.eval"<code class="special">{'a': 'one'}</code>".a)</code>
+
+	vim.line()		Returns the current line (without the trailing
+				<code class="special">&lt;EOL&gt;</code>), a Lua string.
+
+	vim.beep()		Beeps.
+
+	vim.open(<code class="special">{fname}</code>)	Opens a new buffer for file <code class="special">{fname}</code> and
+				returns it. <code class="note">Note</code> that the buffer is not set as
+				current.
+
+
+</pre><hr/><pre>3. List userdata					<b class="vimtag">*<a name="lua-list">lua-list</a>*</b>
+
+List userdata represent vim lists, and the interface tries to follow closely
+Vim's syntax for lists. Since lists are objects, changes in list references in
+Lua are reflected in Vim and vice-versa. A list "l" has the following
+properties and methods:
+
+Properties
+</pre><hr/><pre>	o "#l" is the number of items in list "l", equivalent to "len(l)"
+	    in Vim.
+	o "l[k]" returns the k-th item in "l"; "l" is zero-indexed, as in Vim.
+	    To modify the k-th item, simply do "l[k] = newitem"; in
+	    particular, "l[k] = nil" removes the k-th item from "l".
+	o "l()" returns an iterator for "l".
+
+Methods
+</pre><hr/><pre>	o "l:add(item)" appends "item" to the end of "l".
+	o "l:insert(item[, pos])" inserts "item" at (optional)
+	    position "pos" in the list. The default value for "pos" is 0.
+
+Examples:
+
+<code class="example">	:let l = [1, 'item']</code>
+<code class="example">	:lua l = vim.eval('l') -- same 'l'</code>
+<code class="example">	:lua l:add(vim.list())</code>
+<code class="example">	:lua l[0] = math.pi</code>
+<code class="example">	:echo l[0] " 3.141593</code>
+<code class="example">	:lua l[0] = nil -- remove first item</code>
+<code class="example">	:lua l:insert(true, 1)</code>
+<code class="example">	:lua print(l, #l, l[0], l[1], l[-1])</code>
+<code class="example">	:lua for item in l() do print(item) end</code>
+
+
+</pre><hr/><pre>4. Dict userdata					<b class="vimtag">*<a name="lua-dict">lua-dict</a>*</b>
+
+Similarly to list userdata, dict userdata represent vim dictionaries; since
+dictionaries are also objects, references are kept between Lua and Vim. A dict
+"d" has the following properties:
+
+Properties
+</pre><hr/><pre>	o "#d" is the number of items in dict "d", equivalent to "len(d)"
+	    in Vim.
+	o "d.key" or "d['key']" returns the value at entry "key" in "d".
+	    To modify the entry at this key, simply do "d.key = newvalue"; in
+	    particular, "d.key = nil" removes the entry from "d".
+	o "d()" returns an iterator for "d" and is equivalent to "items(d)" in
+	    Vim.
+
+Examples:
+
+<code class="example">	:let d = <code class="special">{'n':10}</code></code>
+<code class="example">	:lua d = vim.eval('d') -- same 'd'</code>
+<code class="example">	:lua print(d, d.n, #d)</code>
+<code class="example">	:let d.self = d</code>
+<code class="example">	:lua for k, v in d() do print(d, k, v) end</code>
+<code class="example">	:lua d.x = math.pi</code>
+<code class="example">	:lua d.self = nil -- remove entry</code>
+<code class="example">	:echo d</code>
+
+
+</pre><hr/><pre>5. Blob userdata					<b class="vimtag">*<a name="lua-blob">lua-blob</a>*</b>
+
+Blob userdata represent vim blobs. A blob "b" has the following properties:
+
+Properties
+</pre><hr/><pre>	o "#b" is the length of blob "b", equivalent to "len(b)" in Vim.
+	o "b[k]" returns the k-th item in "b"; "b" is zero-indexed, as in Vim.
+	    To modify the k-th item, simply do "b[k] = number"; in particular,
+	    "b[#b] = number" can append a byte to tail.
+
+Methods
+</pre><hr/><pre>	o "b:add(bytes)" appends "bytes" to the end of "b".
+
+Examples:
+
+<code class="example">	:let b = 0z001122</code>
+<code class="example">	:lua b = vim.eval('b') -- same 'b'</code>
+<code class="example">	:lua print(b, b[0], #b)</code>
+<code class="example">	:lua b[1] = 32</code>
+<code class="example">	:lua b[#b] = 0x33 -- append a byte to tail</code>
+<code class="example">	:lua b:add("\x80\x81\xfe\xff")</code>
+<code class="example">	:echo b</code>
+
+
+</pre><hr/><pre>6. Funcref userdata					<b class="vimtag">*<a name="lua-funcref">lua-funcref</a>*</b>
+
+Funcref userdata represent funcref variables in Vim. Funcrefs that were
+defined with a "dict" attribute need to be obtained as a dictionary key
+in order to have "self" properly assigned to the dictionary (see examples
+below.) A funcref "f" has the following properties:
+
+Properties
+</pre><hr/><pre>	o "#f" is the name of the function referenced by "f"
+	o "f(...)" calls the function referenced by "f" (with arguments)
+
+Examples:
+
+<code class="example">	:function I(x)</code>
+<code class="example">	:  return a:x</code>
+<code class="example">	:  endfunction</code>
+<code class="example">	:let R = function('I')</code>
+<code class="example">	:lua i1 = vim.funcref('I')</code>
+<code class="example">	:lua i2 = vim.eval('R')</code>
+<code class="example">	:lua print(#i1, #i2) -- both 'I'</code>
+<code class="example">	:lua print(i1, i2, #i2(i1) == #i1(i2))</code>
+<code class="example">	:function Mylen() dict</code>
+<code class="example">	:  return len(self.data)</code>
+<code class="example">	:  endfunction</code>
+<code class="example">	:let mydict = <code class="special">{'data': [0, 1, 2, 3]}</code></code>
+<code class="example">	:lua d = vim.eval('mydict'); d.len = vim.funcref('Mylen')</code>
+<code class="example">	:echo mydict.len()</code>
+<code class="example">	:lua l = d.len -- assign d as 'self'</code>
+<code class="example">	:lua print(l())</code>
+
+
+</pre><hr/><pre>7. Buffer userdata					<b class="vimtag">*<a name="lua-buffer">lua-buffer</a>*</b>
+
+Buffer userdata represent vim buffers. A buffer userdata "b" has the following
+properties and methods:
+
+Properties
+</pre><hr/><pre>	o "b()" sets "b" as the current buffer.
+	o "#b" is the number of lines in buffer "b".
+	o "b[k]" represents line number k: "b[k] = newline" replaces line k
+	    with string "newline" and "b[k] = nil" deletes line k.
+	o "b.name" contains the short name of buffer "b" (read-only).
+	o "b.fname" contains the full name of buffer "b" (read-only).
+	o "b.number" contains the position of buffer "b" in the buffer list
+	    (read-only).
+
+Methods
+</pre><hr/><pre>	o "b:insert(newline[, pos])" inserts string "newline" at (optional)
+	    position "pos" in the buffer. The default value for "pos" is
+	    "#b + 1". If "pos == 0" then "newline" becomes the first line in
+	    the buffer.
+	o "b:next()" returns the buffer next to "b" in the buffer list.
+	o "b:previous()" returns the buffer previous to "b" in the buffer
+	    list.
+	o "b:isvalid()" returns 'true' (boolean) if buffer "b" corresponds to
+	    a "real" (not freed from memory) Vim buffer.
+
+Examples:
+
+<code class="example">	:lua b = vim.buffer() -- current buffer</code>
+<code class="example">	:lua print(b.name, b.number)</code>
+<code class="example">	:lua b[1] = "first line"</code>
+<code class="example">	:lua b:insert("FIRST!", 0)</code>
+<code class="example">	:lua b[1] = nil -- delete top line</code>
+<code class="example">	:lua for i=1,3 do b:insert(math.random()) end</code>
+<code class="example">	:3,4lua for i=vim.lastline,vim.firstline,-1 do b[i] = nil end</code>
+<code class="example">	:lua vim.open"myfile"() -- open buffer and set it as current</code>
+<code class="example"></code>
+<code class="example">	function! ListBuffers()</code>
+<code class="example">	lua &lt;&lt; EOF</code>
+<code class="example">	local b = vim.buffer(true) -- first buffer in list</code>
+<code class="example">	while b ~= nil do</code>
+<code class="example">		print(b.number, b.name, #b)</code>
+<code class="example">		b = b:next()</code>
+<code class="example">	end</code>
+<code class="example">	vim.beep()</code>
+<code class="example">	EOF</code>
+<code class="example">	endfunction</code>
+
+
+</pre><hr/><pre>8. Window userdata					<b class="vimtag">*<a name="lua-window">lua-window</a>*</b>
+
+Window objects represent vim windows. A window userdata "w" has the following
+properties and methods:
+
+Properties
+</pre><hr/><pre>	o "w()" sets "w" as the current window.
+	o "w.buffer" contains the buffer of window "w" (read-only).
+	o "w.line" represents the cursor line position in window "w".
+	o "w.col" represents the cursor column position in window "w".
+	o "w.width" represents the width of window "w".
+	o "w.height" represents the height of window "w".
+
+Methods
+</pre><hr/><pre>	o "w:next()" returns the window next to "w".
+	o "w:previous()" returns the window previous to "w".
+	o "w:isvalid()" returns 'true' (boolean) if window "w" corresponds to
+	    a "real" (not freed from memory) Vim window.
+
+Examples:
+
+<code class="example">	:lua w = vim.window() -- current window</code>
+<code class="example">	:lua print(w.buffer.name, w.line, w.col)</code>
+<code class="example">	:lua w.width = w.width + math.random(10)</code>
+<code class="example">	:lua w.height = 2 <b class="vimtag">*<a name=" math.random() "> math.random() </a>*</b> w.height</code>
+<code class="example">	:lua n,w = 0,vim.window(true) while w~=nil do n,w = n + 1,w:next() end</code>
+<code class="example">	:lua print("There are " .. n .. " windows")</code>
+
+
+</pre><hr/><pre>9. luaeval() Vim function				<b class="vimtag">*<a name="lua-luaeval">lua-luaeval</a>*</b> <b class="vimtag">*<a name="lua-eval">lua-eval</a>*</b>
+
+The (dual) equivalent of "vim.eval" for passing Lua values to Vim is
+"luaeval". "luaeval" takes an expression string and an optional argument and
+returns the result of the expression. It is semantically equivalent in Lua to:
+
+<code class="example">	local chunkheader = "local _A = select(1, ...) return "</code>
+<code class="example">	function luaeval (expstr, arg)</code>
+<code class="example">	    local chunk = assert(loadstring(chunkheader .. expstr, "luaeval"))</code>
+<code class="example">	    return chunk(arg) -- return typval</code>
+<code class="example">	end</code>
+
+<code class="note">Note</code> that "_A" receives the argument to "luaeval". Lua numbers, strings, and
+list, dict, blob, and funcref userdata are converted to their Vim respective
+types, while Lua booleans are converted to numbers. An error is thrown if
+conversion of any of the remaining Lua types, including userdata other than
+lists, dicts, blobs, and funcrefs, is attempted.
+
+Examples:
+<code class="example"></code>
+<code class="example">	:echo luaeval('math.pi')</code>
+<code class="example">	:lua a = vim.list():add('newlist')</code>
+<code class="example">	:let a = luaeval('a')</code>
+<code class="example">	:echo a[0] " 'newlist'</code>
+<code class="example">	:function Rand(x,y) " random uniform between x and y</code>
+<code class="example">	:  return luaeval('(_A.y-_A.x)*math.random()+_A.x', <code class="special">{'x':a:x,'y':a:y}</code>)</code>
+<code class="example">	:  endfunction</code>
+<code class="example">	:echo Rand(1,10)</code>
+<code class="example"></code>
+<code class="example"></code>
+</pre><hr/><pre>10. Dynamic loading				    <b class="vimtag">*<a name="lua-dynamic">lua-dynamic</a>*</b>
+
+On MS-Windows and Unix the Lua library can be loaded dynamically.  The
+|<a href="various.html#:version">:version</a>| output then includes |<a href="various.html#+lua%2Fdyn">+lua/dyn</a>|.
+
+This means that Vim will search for the Lua DLL or shared library file only
+when needed.  When you don't use the Lua interface you don't need it, thus
+you can use Vim without this file.
+
+
+<code class="section">MS-Windows </code>
+
+To use the Lua interface the Lua DLL must be in your search path.  In a
+console window type "path" to see what directories are used.  The 'luadll'
+option can be also used to specify the Lua DLL.  The version of the DLL must
+match the Lua version Vim was compiled with.
+
+
+<code class="section">Unix </code>
+
+The 'luadll' option can be used to specify the Lua shared library file instead
+of DYNAMIC_LUA_DLL file what was specified at compile time.  The version of
+the shared library must match the Lua version Vim was compiled with.
+
+
+</pre><hr/><pre> vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

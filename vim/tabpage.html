@@ -1,0 +1,483 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: tabpage</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>TABPAGE</h2>
+<pre>
+<b class="vimtag">*<a name="tabpage.txt">tabpage.txt</a>*</b>   For Vim version 8.2.  Last change: 2020 Feb 06
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Editing with windows in multiple tab pages.		<b class="vimtag">*<a name="tab-page">tab-page</a>*</b> <b class="vimtag">*<a name="tabpage">tabpage</a>*</b>
+
+The commands which have been added to use multiple tab pages are explained
+here.  Additionally, there are explanations for commands that work differently
+when used in combination with more than one tab page.
+
+1. Introduction			|<a href="tabpage.html#tab-page-intro">tab-page-intro</a>|
+2. Commands			|<a href="tabpage.html#tab-page-commands">tab-page-commands</a>|
+3. Other items			|<a href="tabpage.html#tab-page-other">tab-page-other</a>|
+4. Setting 'tabline'		|<a href="tabpage.html#setting-tabline">setting-tabline</a>|
+5. Setting 'guitablabel'	|<a href="tabpage.html#setting-guitablabel">setting-guitablabel</a>|
+
+{not able to use multiple tab pages when the |<a href="various.html#+windows">+windows</a>| feature was disabled
+at compile time}
+
+</pre><hr/><pre>1. Introduction						<b class="vimtag">*<a name="tab-page-intro">tab-page-intro</a>*</b>
+
+A tab page holds one or more windows.  You can easily switch between tab
+pages, so that you have several collections of windows to work on different
+things.
+
+Usually you will see a list of labels at the top of the Vim window, one for
+each tab page.  With the mouse you can click on the label to jump to that tab
+page.  There are other ways to move between tab pages, see below.
+
+Most commands work only in the current tab page.  That includes the |<a href="index.html#CTRL-W">CTRL-W</a>|
+commands, |<a href="windows.html#:windo">:windo</a>|, |<a href="windows.html#:all">:all</a>| and |<a href="windows.html#:ball">:ball</a>| (when not using the |<a href="tabpage.html#:tab">:tab</a>| modifier).
+The commands that are aware of other tab pages than the current one are
+mentioned below.
+
+Tabs are also a nice way to edit a buffer temporarily without changing the
+current window layout.  Open a new tab page, do whatever you want to do and
+close the tab page.
+
+</pre><hr/><pre>2. Commands						<b class="vimtag">*<a name="tab-page-commands">tab-page-commands</a>*</b>
+
+OPENING A NEW TAB PAGE:
+
+When starting Vim "vim -p filename ..." opens each file argument in a separate
+tab page (up to 'tabpagemax').  See |<a href="starting.html#-p">-p</a>|
+
+A double click with the mouse in the non-GUI tab pages line opens a new, empty
+tab page.  It is placed left of the position of the click.  The first click
+may select another tab page first, causing an extra screen update.
+
+This also works in a few GUI versions, esp. Win32 and Motif.  But only when
+clicking right of the labels.
+
+In the GUI tab pages line you can use the right mouse button to open menu.
+|<a href="tabpage.html#tabline-menu">tabline-menu</a>|.
+
+For the related autocommands see |<a href="tabpage.html#tabnew-autocmd">tabnew-autocmd</a>|.
+
+:<code class="special">[count]</code>tabe[dit]				<b class="vimtag">*<a name=":tabe">:tabe</a>*</b> <b class="vimtag">*<a name=":tabedit">:tabedit</a>*</b> <b class="vimtag">*<a name=":tabnew">:tabnew</a>*</b>
+:<code class="special">[count]</code>tabnew
+		Open a new tab page with an empty window, after the current
+		tab page.  If <code class="special">[count]</code> is given the new tab page appears after
+		the tab page <code class="special">[count]</code> otherwise the new tab page will appear
+		after the current one.
+<code class="example">		    :tabnew	" opens tabpage after the current one</code>
+<code class="example">		    :.tabnew	" as above</code>
+<code class="example">		    :+tabnew	" opens tabpage after the next tab page</code>
+<code class="example">				" <code class="note">note:</code> it is one further than :tabnew</code>
+<code class="example">		    :-tabnew	" opens tabpage before the current one</code>
+<code class="example">		    :0tabnew	" opens tabpage before the first one</code>
+<code class="example">		    :$tabnew	" opens tabpage after the last one</code>
+<code class="example"></code>
+:<code class="special">[count]</code>tabe[dit] [++opt] [+cmd] <code class="special">{file}</code>
+:<code class="special">[count]</code>tabnew [++opt] [+cmd] <code class="special">{file}</code>
+		Open a new tab page and edit <code class="special">{file}</code>, like with |<a href="editing.html#:edit">:edit</a>|.
+		For <code class="special">[count]</code> see |<a href="tabpage.html#:tabnew">:tabnew</a>| above.
+
+:<code class="special">[count]</code>tabf[ind] [++opt] [+cmd] <code class="special">{file}</code>			<b class="vimtag">*<a name=":tabf">:tabf</a>*</b> <b class="vimtag">*<a name=":tabfind">:tabfind</a>*</b>
+		Open a new tab page and edit <code class="special">{file}</code> in 'path', like with
+		|<a href="editing.html#:find">:find</a>|.  For <code class="special">[count]</code> see |<a href="tabpage.html#:tabnew">:tabnew</a>| above.
+		{not available when the |<a href="various.html#+file_in_path">+file_in_path</a>| feature was disabled
+		at compile time}
+
+:<code class="special">[count]</code>tab <code class="special">{cmd}</code>					<b class="vimtag">*<a name=":tab">:tab</a>*</b>
+		Execute <code class="special">{cmd}</code> and when it opens a new window open a new tab
+		page instead.  Doesn't work for |<a href="diff.html#:diffsplit">:diffsplit</a>|, |<a href="diff.html#:diffpatch">:diffpatch</a>|,
+		|<a href="eval.html#:execute">:execute</a>| and |<a href="various.html#:normal">:normal</a>|.
+		If <code class="special">[count]</code> is given the new tab page appears after the tab
+		page <code class="special">[count]</code> otherwise the new tab page will appear after the
+		current one.
+		Examples:
+<code class="example">		    :tab split	    " opens current buffer in new tab page</code>
+<code class="example">		    :tab help gt    " opens tab page with help for "gt"</code>
+<code class="example">		    :.tab help gt   " as above</code>
+<code class="example">		    :+tab help	    " opens tab page with help after the next</code>
+<code class="example">				    " tab page</code>
+<code class="example">		    :-tab help	    " opens tab page with help before the</code>
+<code class="example">				    " current one</code>
+<code class="example">		    :0tab help	    " opens tab page with help before the</code>
+<code class="example">				    " first one</code>
+<code class="example">		    :$tab help	    " opens tab page with help after the last</code>
+<code class="example">				    " one</code>
+<code class="example"></code>
+<code class="keystroke">CTRL-W</code> gf	Open a new tab page and edit the file name under the cursor.
+		See |<a href="windows.html#CTRL-W_gf">CTRL-W_gf</a>|.
+
+<code class="keystroke">CTRL-W</code> gF	Open a new tab page and edit the file name under the cursor
+		and jump to the line number following the file name.
+		See |<a href="windows.html#CTRL-W_gF">CTRL-W_gF</a>|.
+
+CLOSING A TAB PAGE:
+
+Closing the last window of a tab page closes the tab page too, unless there is
+only one tab page.
+
+Using the mouse: If the tab page line is displayed you can click in the "X" at
+the top right to close the current tab page.  A custom |<a href="options.html#'tabline'">'tabline'</a>| may show
+something else.
+
+							<b class="vimtag">*<a name=":tabc">:tabc</a>*</b> <b class="vimtag">*<a name=":tabclose">:tabclose</a>*</b>
+:tabc[lose][!]	Close current tab page.
+		This command fails when:
+		- There is only one tab page on the screen.		<b class="vimtag">*<a name="E784">E784</a>*</b>
+		- When 'hidden' is not set, [!] is not used, a buffer has
+		  changes, and there is no other window on this buffer.
+		Changes to the buffer are not written and won't get lost, so
+		this is a "safe" command.
+<code class="example">		    :tabclose	    " close the current tab page</code>
+<code class="example"></code>
+:<code class="special">{count}</code>tabc[lose][!]
+:tabc[lose][!] <code class="special">{count}</code>
+		Close tab page <code class="special">{count}</code>.  Fails in the same way as `:tabclose`
+		above.
+<code class="example">		    :-tabclose	    " close the previous tab page</code>
+<code class="example">		    :+tabclose	    " close the next tab page</code>
+<code class="example">		    :1tabclose	    " close the first tab page</code>
+<code class="example">		    :$tabclose	    " close the last tab page</code>
+<code class="example">		    :tabclose -2    " close the 2nd previous tab page</code>
+<code class="example">		    :tabclose +	    " close the next tab page</code>
+<code class="example">		    :tabclose 3	    " close the third tab page</code>
+<code class="example">		    :tabclose $	    " close the last tab page</code>
+
+							<b class="vimtag">*<a name=":tabo">:tabo</a>*</b> <b class="vimtag">*<a name=":tabonly">:tabonly</a>*</b>
+:tabo[nly][!]	Close all other tab pages.
+		When the 'hidden' option is set, all buffers in closed windows
+		become hidden.
+		When 'hidden' is not set, and the 'autowrite' option is set,
+		modified buffers are written.  Otherwise, windows that have
+		buffers that are modified are not removed, unless the [!] is
+		given, then they become hidden.  But modified buffers are
+		never abandoned, so changes cannot get lost.
+<code class="example">		    :tabonly	    " close all tab pages except the current</code>
+<code class="example">				    " one</code>
+<code class="example"></code>
+:<code class="special">{count}</code>tabo[nly][!]
+:tabo[nly][!] <code class="special">{count}</code>
+		Close all tab pages except <code class="special">{count}</code> one.
+<code class="example">		    :.tabonly	    " as above</code>
+<code class="example">		    :-tabonly	    " close all tab pages except the previous</code>
+<code class="example">				    " one</code>
+<code class="example">		    :+tabonly	    " close all tab pages except the next one</code>
+<code class="example">		    :1tabonly	    " close all tab pages except the first one</code>
+<code class="example">		    :$tabonly	    " close all tab pages except the last one</code>
+<code class="example">		    :tabonly -	    " close all tab pages except the previous</code>
+<code class="example">				    " one</code>
+<code class="example">		    :tabonly +2     " close all tab pages except the two next</code>
+<code class="example">				    " one</code>
+<code class="example">		    :tabonly 1	    " close all tab pages except the first one</code>
+<code class="example">		    :tabonly $	    " close all tab pages except the last one</code>
+<code class="example"></code>
+<code class="example"></code>
+SWITCHING TO ANOTHER TAB PAGE:
+
+Using the mouse: If the tab page line is displayed you can click in a tab page
+label to switch to that tab page.  Click where there is no label to go to the
+next tab page.  |<a href="options.html#'tabline'">'tabline'</a>|
+
+:tabn[ext]				<b class="vimtag">*<a name=":tabn">:tabn</a>*</b> <b class="vimtag">*<a name=":tabnext">:tabnext</a>*</b> <b class="vimtag">*<a name="gt">gt</a>*</b>
+<code class="special">&lt;C-PageDown&gt;</code>				<b class="vimtag">*<a name="CTRL-%3CPageDown%3E">CTRL-&lt;PageDown&gt;</a>*</b> <b class="vimtag">*<a name="%3CC-PageDown%3E">&lt;C-PageDown&gt;</a>*</b>
+gt					<b class="vimtag">*<a name="i_CTRL-%3CPageDown%3E">i_CTRL-&lt;PageDown&gt;</a>*</b> <b class="vimtag">*<a name="i_%3CC-PageDown%3E">i_&lt;C-PageDown&gt;</a>*</b>
+		Go to the next tab page.  Wraps around from the last to the
+		first one.
+
+:<code class="special">{count}</code>tabn[ext]
+:tabn[ext] <code class="special">{count}</code>
+		Go to tab page <code class="special">{count}</code>.  The first tab page has number one.
+<code class="example">		    :-tabnext	" go to the previous tab page</code>
+<code class="example">		    :+tabnext	" go to the next tab page</code>
+<code class="example">		    :+2tabnext	" go to the two next tab page</code>
+<code class="example">		    :1tabnext	" go to the first tab page</code>
+<code class="example">		    :$tabnext	" go to the last tab page</code>
+<code class="example">		    :tabnext $	" as above</code>
+<code class="example">		    :tabnext -	" go to the previous tab page</code>
+<code class="example">		    :tabnext -1	" as above</code>
+<code class="example">		    :tabnext +	" go to the next tab page</code>
+<code class="example">		    :tabnext +1	" as above</code>
+<code class="example"></code>
+<code class="special">{count}</code><code class="special">&lt;C-PageDown&gt;</code>
+<code class="special">{count}</code>gt	Go to tab page <code class="special">{count}</code>.  The first tab page has number one.
+
+
+:tabp[revious]				<b class="vimtag">*<a name=":tabp">:tabp</a>*</b> <b class="vimtag">*<a name=":tabprevious">:tabprevious</a>*</b> <b class="vimtag">*<a name="gT">gT</a>*</b> <b class="vimtag">*<a name=":tabN">:tabN</a>*</b>
+:tabN[ext]				<b class="vimtag">*<a name=":tabNext">:tabNext</a>*</b> <b class="vimtag">*<a name="CTRL-%3CPageUp%3E">CTRL-&lt;PageUp&gt;</a>*</b>
+<code class="special">&lt;C-PageUp&gt;</code>			 <b class="vimtag">*<a name="%3CC-PageUp%3E">&lt;C-PageUp&gt;</a>*</b> <b class="vimtag">*<a name="i_CTRL-%3CPageUp%3E">i_CTRL-&lt;PageUp&gt;</a>*</b> <b class="vimtag">*<a name="i_%3CC-PageUp%3E">i_&lt;C-PageUp&gt;</a>*</b>
+gT		Go to the previous tab page.  Wraps around from the first one
+		to the last one.
+
+:tabp[revious] <code class="special">{count}</code>
+:tabN[ext] <code class="special">{count}</code>
+<code class="special">{count}</code><code class="special">&lt;C-PageUp&gt;</code>
+<code class="special">{count}</code>gT	Go <code class="special">{count}</code> tab pages back.  Wraps around from the first one
+		to the last one.  <code class="note">Note</code> that the use of <code class="special">{count}</code> is different
+		from |<a href="tabpage.html#:tabnext">:tabnext</a>|, where it is used as the tab page number.
+
+:tabr[ewind]			<b class="vimtag">*<a name=":tabfir">:tabfir</a>*</b> <b class="vimtag">*<a name=":tabfirst">:tabfirst</a>*</b> <b class="vimtag">*<a name=":tabr">:tabr</a>*</b> <b class="vimtag">*<a name=":tabrewind">:tabrewind</a>*</b>
+:tabfir[st]	Go to the first tab page.
+
+							<b class="vimtag">*<a name=":tabl">:tabl</a>*</b> <b class="vimtag">*<a name=":tablast">:tablast</a>*</b>
+:tabl[ast]	Go to the last tab page.
+
+
+Other commands:
+							<b class="vimtag">*<a name=":tabs">:tabs</a>*</b>
+:tabs		List the tab pages and the windows they contain.
+		Shows a "&gt;" for the current window.
+		Shows a "+" for modified buffers.
+		For example:
+<code class="section">			Tab page 1 </code>
+<code class="section">			  + tabpage.txt </code>
+<code class="section">			    ex_docmd.c </code>
+<code class="section">			Tab page 2 </code>
+<code class="section">			&gt;   main.c </code>
+
+
+REORDERING TAB PAGES:
+
+:tabm[ove] [N]						<b class="vimtag">*<a name=":tabm">:tabm</a>*</b> <b class="vimtag">*<a name=":tabmove">:tabmove</a>*</b>
+:[N]tabm[ove]
+		Move the current tab page to after tab page N.  Use zero to
+		make the current tab page the first one.  N is counted before
+		the move, thus if the second tab is the current one,
+		`:tabmove 1` and `:tabmove 2`  have no effect.
+		Without N the tab page is made the last one.
+<code class="example">		    :.tabmove	" do nothing</code>
+<code class="example">		    :-tabmove	" move the tab page to the left</code>
+<code class="example">		    :+tabmove	" move the tab page to the right</code>
+<code class="example">		    :0tabmove	" move the tab page to the beginning of the tab</code>
+<code class="example">				" list</code>
+<code class="example">		    :tabmove 0	" as above</code>
+<code class="example">		    :tabmove	" move the tab page to the last</code>
+<code class="example">		    :$tabmove	" as above</code>
+<code class="example">		    :tabmove $	" as above</code>
+<code class="example"></code>
+:tabm[ove] +[N]
+:tabm[ove] -[N]
+		Move the current tab page N places to the right (with +) or to
+		the left (with -).
+<code class="example">		    :tabmove -	" move the tab page to the left</code>
+<code class="example">		    :tabmove -1	" as above</code>
+<code class="example">		    :tabmove +	" move the tab page to the right</code>
+<code class="example">		    :tabmove +1	" as above</code>
+<code class="example"></code>
+<code class="example"></code>
+<code class="note">Note</code> that although it is possible to move a tab behind the N-th one by using
+:Ntabmove. And move it by N places by using :+Ntabmove. For clarification what
++N means in this context see |<a href="cmdline.html#[range]">[range]</a>|.
+
+
+LOOPING OVER TAB PAGES:
+
+							<b class="vimtag">*<a name=":tabd">:tabd</a>*</b> <b class="vimtag">*<a name=":tabdo">:tabdo</a>*</b>
+:<code class="special">[range]</code>tabd[o] <code class="special">{cmd}</code>
+		Execute <code class="special">{cmd}</code> in each tab page or if <code class="special">[range]</code> is given only in
+		tab pages which tab page number is in the <code class="special">[range]</code>.  It works
+		like doing this:
+<code class="example">			:tabfirst</code>
+<code class="example">			:<code class="special">{cmd}</code></code>
+<code class="example">			:tabnext</code>
+<code class="example">			:<code class="special">{cmd}</code></code>
+<code class="example">			etc.</code>
+		This only operates in the current window of each tab page.
+		When an error is detected on one tab page, further tab pages
+		will not be visited.
+		The last tab page (or where an error occurred) becomes the
+		current tab page.
+		<code class="special">{cmd}</code> can contain '|' to concatenate several commands.
+		<code class="special">{cmd}</code> must not open or close tab pages or reorder them.
+		Also see |<a href="windows.html#:windo">:windo</a>|, |<a href="editing.html#:argdo">:argdo</a>|, |<a href="windows.html#:bufdo">:bufdo</a>|, |<a href="quickfix.html#:cdo">:cdo</a>|, |<a href="quickfix.html#:ldo">:ldo</a>|, |<a href="quickfix.html#:cfdo">:cfdo</a>|
+		and |<a href="quickfix.html#:lfdo">:lfdo</a>|
+
+</pre><hr/><pre>3. Other items						<b class="vimtag">*<a name="tab-page-other">tab-page-other</a>*</b>
+
+							<b class="vimtag">*<a name="tabline-menu">tabline-menu</a>*</b>
+The GUI tab pages line has a popup menu.  It is accessed with a right click.
+The entries are:
+	Close		Close the tab page under the mouse pointer.  The
+			current one if there is no label under the mouse
+			pointer.
+	New Tab		Open a tab page, editing an empty buffer.  It appears
+			to the left of the mouse pointer.
+	Open Tab...	Like "New Tab" and additionally use a file selector to
+			select a file to edit.
+
+Diff mode works per tab page.  You can see the diffs between several files
+within one tab page.  Other tab pages can show differences between other
+files.
+
+Variables local to a tab page start with "t:". |<a href="eval.html#tabpage-variable">tabpage-variable</a>|
+
+Currently there is only one option local to a tab page: 'cmdheight'.
+
+						<b class="vimtag">*<a name="tabnew-autocmd">tabnew-autocmd</a>*</b>
+The TabLeave and TabEnter autocommand events can be used to do something when
+switching from one tab page to another.  The exact order depends on what you
+are doing.  When creating a new tab page this works as if you create a new
+window on the same buffer and then edit another buffer.  Thus ":tabnew"
+triggers:
+	WinLeave		leave current window
+	TabLeave		leave current tab page
+	WinEnter		enter window in new tab page
+	TabEnter		enter new tab page
+	BufLeave		leave current buffer
+	BufEnter		enter new empty buffer
+
+When switching to another tab page the order is:
+	BufLeave
+	WinLeave
+	TabLeave
+	TabEnter
+	WinEnter
+	BufEnter
+
+</pre><hr/><pre>4. Setting 'tabline'					<b class="vimtag">*<a name="setting-tabline">setting-tabline</a>*</b>
+
+The 'tabline' option specifies what the line with tab pages labels looks like.
+It is only used when there is no GUI tab line.
+
+You can use the 'showtabline' option to specify when you want the line with
+tab page labels to appear: never, when there is more than one tab page or
+always.
+
+The highlighting of the tab pages line is set with the groups TabLine
+TabLineSel and TabLineFill.  |<a href="syntax.html#hl-TabLine">hl-TabLine</a>| |<a href="syntax.html#hl-TabLineSel">hl-TabLineSel</a>| |<a href="syntax.html#hl-TabLineFill">hl-TabLineFill</a>|
+
+A "+" will be shown for a tab page that has a modified window.  The number of
+windows in a tabpage is also shown.  Thus "3+" means three windows and one of
+them has a modified buffer.
+
+The 'tabline' option allows you to define your preferred way to tab pages
+labels.  This isn't easy, thus an example will be given here.
+
+For basics see the 'statusline' option.  The same items can be used in the
+'tabline' option.  Additionally, the |<a href="eval.html#tabpagebuflist()">tabpagebuflist()</a>|, |<a href="eval.html#tabpagenr()">tabpagenr()</a>| and
+|<a href="eval.html#tabpagewinnr()">tabpagewinnr()</a>| functions are useful.
+
+Since the number of tab labels will vary, you need to use an expression for
+the whole option.  Something like:
+<code class="example">	:set tabline=%!MyTabLine()</code>
+<code class="example"></code>
+Then define the MyTabLine() function to list all the tab pages labels.  A
+convenient method is to split it in two parts:  First go over all the tab
+pages and define labels for them.  Then get the label for each tab page.
+<code class="example"></code>
+<code class="example">	function MyTabLine()</code>
+<code class="example">	  let s = ''</code>
+<code class="example">	  for i in range(tabpagenr('$'))</code>
+<code class="example">	    " select the highlighting</code>
+<code class="example">	    if i + 1 == tabpagenr()</code>
+<code class="example">	      let s .= '%#TabLineSel#'</code>
+<code class="example">	    else</code>
+<code class="example">	      let s .= '%#TabLine#'</code>
+<code class="example">	    endif</code>
+<code class="example"></code>
+<code class="example">	    " set the tab page number (for mouse clicks)</code>
+<code class="example">	    let s .= '%' . (i + 1) . 'T'</code>
+<code class="example"></code>
+<code class="example">	    " the label is made by MyTabLabel()</code>
+<code class="example">	    let s .= ' %<code class="special">{MyTabLabel(' . (i + 1) . ')}</code> '</code>
+<code class="example">	  endfor</code>
+<code class="example"></code>
+<code class="example">	  " after the last tab fill with TabLineFill and reset tab page nr</code>
+<code class="example">	  let s .= '%#TabLineFill#%T'</code>
+<code class="example"></code>
+<code class="example">	  " right-align the label to close the current tab page</code>
+<code class="example">	  if tabpagenr('$') &gt; 1</code>
+<code class="example">	    let s .= '%=%#TabLine#%999Xclose'</code>
+<code class="example">	  endif</code>
+<code class="example"></code>
+<code class="example">	  return s</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+Now the MyTabLabel() function is called for each tab page to get its label.
+<code class="example"></code>
+<code class="example">	function MyTabLabel(n)</code>
+<code class="example">	  let buflist = tabpagebuflist(a:n)</code>
+<code class="example">	  let winnr = tabpagewinnr(a:n)</code>
+<code class="example">	  return bufname(buflist[winnr - 1])</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+This is just a simplistic example that results in a tab pages line that
+resembles the default, but without adding a + for a modified buffer or
+truncating the names.  You will want to reduce the width of labels in a
+clever way when there is not enough room.  Check the 'columns' option for the
+space available.
+
+</pre><hr/><pre>5. Setting 'guitablabel'				<b class="vimtag">*<a name="setting-guitablabel">setting-guitablabel</a>*</b>
+
+When the GUI tab pages line is displayed, 'guitablabel' can be used to
+specify the label to display for each tab page.  Unlike 'tabline', which
+specifies the whole tab pages line at once, 'guitablabel' is used for each
+label separately.
+
+'guitabtooltip' is very similar and is used for the tooltip of the same label.
+This only appears when the mouse pointer hovers over the label, thus it
+usually is longer.  Only supported on some systems though.
+
+See the 'statusline' option for the format of the value.
+
+The "%N" item can be used for the current tab page number.  The |<a href="eval.html#v:lnum">v:lnum</a>|
+variable is also set to this number when the option is evaluated.
+The items that use a file name refer to the current window of the tab page.
+
+<code class="note">Note</code> that syntax highlighting is not used for the option.  The %T and %X
+items are also ignored.
+
+A simple example that puts the tab page number and the buffer name in the
+label:
+<code class="example">	:set guitablabel=%N\ %f</code>
+<code class="example"></code>
+An example that resembles the default 'guitablabel': Show the number of
+windows in the tab page and a '+' if there is a modified buffer:
+<code class="example"></code>
+<code class="example">	function GuiTabLabel()</code>
+<code class="example">	  let label = ''</code>
+<code class="example">	  let bufnrlist = tabpagebuflist(v:lnum)</code>
+<code class="example"></code>
+<code class="example">	  " Add '+' if one of the buffers in the tab page is modified</code>
+<code class="example">	  for bufnr in bufnrlist</code>
+<code class="example">	    if getbufvar(bufnr, "&amp;modified")</code>
+<code class="example">	      let label = '+'</code>
+<code class="example">	      break</code>
+<code class="example">	    endif</code>
+<code class="example">	  endfor</code>
+<code class="example"></code>
+<code class="example">	  " Append the number of windows in the tab page if more than one</code>
+<code class="example">	  let wincount = tabpagewinnr(v:lnum, '$')</code>
+<code class="example">	  if wincount &gt; 1</code>
+<code class="example">	    let label .= wincount</code>
+<code class="example">	  endif</code>
+<code class="example">	  if label != ''</code>
+<code class="example">	    let label .= ' '</code>
+<code class="example">	  endif</code>
+<code class="example"></code>
+<code class="example">	  " Append the buffer name</code>
+<code class="example">	  return label . bufname(bufnrlist[tabpagewinnr(v:lnum) - 1])</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+<code class="example">	set guitablabel=%<code class="special">{GuiTabLabel()}</code></code>
+<code class="example"></code>
+<code class="note">Note</code> that the function must be defined before setting the option, otherwise
+you get an error message for the function not being known.
+
+If you want to fall back to the default label, return an empty string.
+
+If you want to show something specific for a tab page, you might want to use a
+tab page local variable. |<a href="eval.html#t:var">t:var</a>|
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

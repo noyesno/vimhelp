@@ -1,0 +1,529 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: tips</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>TIPS</h2>
+<pre>
+<b class="vimtag">*<a name="tips.txt">tips.txt</a>*</b>      For Vim version 8.2.  Last change: 2009 Nov 07
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Tips and ideas for using Vim				<b class="vimtag">*<a name="tips">tips</a>*</b>
+
+These are just a few that we thought would be helpful for many users.
+You can find many more tips on the wiki.  The URL can be found on
+http://www.vim.org
+
+Don't forget to browse the user manual, it also contains lots of useful tips
+|<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|.
+
+Editing C programs				|<a href="tips.html#C-editing">C-editing</a>|
+Finding where identifiers are used		|<a href="tips.html#ident-search">ident-search</a>|
+Switching screens in an xterm			|<a href="tips.html#xterm-screens">xterm-screens</a>|
+Scrolling in Insert mode			|<a href="tips.html#scroll-insert">scroll-insert</a>|
+Smooth scrolling				|<a href="tips.html#scroll-smooth">scroll-smooth</a>|
+Correcting common typing mistakes		|<a href="tips.html#type-mistakes">type-mistakes</a>|
+Counting words, lines, etc.			|<a href="tips.html#count-items">count-items</a>|
+Restoring the cursor position			|<a href="tips.html#restore-position">restore-position</a>|
+Renaming files					|<a href="tips.html#rename-files">rename-files</a>|
+Change a name in multiple files			|<a href="tips.html#change-name">change-name</a>|
+Speeding up external commands			|<a href="tips.html#speed-up">speed-up</a>|
+Useful mappings					|<a href="tips.html#useful-mappings">useful-mappings</a>|
+Compressing the help files			|<a href="tips.html#gzip-helpfile">gzip-helpfile</a>|
+Executing shell commands in a window		|<a href="tips.html#shell-window">shell-window</a>|
+Hex editing					|<a href="tips.html#hex-editing">hex-editing</a>|
+Using <code class="special">&lt;&gt;</code> notation in autocommands		|<a href="tips.html#autocmd-%3C%3E">autocmd-&lt;&gt;</a>|
+Highlighting matching parens			|<a href="tips.html#match-parens">match-parens</a>|
+
+</pre><hr/><pre>Editing C programs					<b class="vimtag">*<a name="C-editing">C-editing</a>*</b>
+
+There are quite a few features in Vim to help you edit C program files.  Here
+is an overview with tags to jump to:
+
+|<a href="usr_29.html#usr_29.txt">usr_29</a>|		Moving through programs chapter in the user manual.
+|<a href="usr_30.html#usr_30.txt">usr_30</a>|		Editing programs chapter in the user manual.
+|<a href="indent.html#C-indenting">C-indenting</a>|		Automatically set the indent of a line while typing
+			text.
+|<a href="change.html#%20">=</a>|			Re-indent a few lines.
+|<a href="change.html#format-comments">format-comments</a>|	Format comments.
+
+|<a href="tagsrch.html#:checkpath">:checkpath</a>|		Show all recursively included files.
+|<a href="tagsrch.html#[i">[i</a>|			Search for identifier under cursor in current and
+			included files.
+|<a href="tagsrch.html#[_CTRL-I">[_CTRL-I</a>|		Jump to match for "[i"
+|<a href="tagsrch.html#[I">[I</a>|			List all lines in current and included files where
+			identifier under the cursor matches.
+|<a href="tagsrch.html#[d">[d</a>|			Search for define under cursor in current and included
+			files.
+
+|<a href="tagsrch.html#CTRL-]">CTRL-]</a>|		Jump to tag under cursor (e.g., definition of a
+			function).
+|<a href="tagsrch.html#CTRL-T">CTRL-T</a>|		Jump back to before a CTRL-] command.
+|<a href="tagsrch.html#:tselect">:tselect</a>|		Select one tag out of a list of matching tags.
+
+|<a href="pattern.html#gd">gd</a>|			Go to Declaration of local variable under cursor.
+|<a href="pattern.html#gD">gD</a>|			Go to Declaration of global variable under cursor.
+
+|<a href="editing.html#gf">gf</a>|			Go to file name under the cursor.
+
+|<a href="motion.html#%">%</a>|			Go to matching (), <code class="special">{}</code>, [], /<b class="vimtag">*<a name=" "> </a>*</b>/, #if, #else, #endif.
+|<a href="motion.html#[%2F">[/</a>|			Go to previous start of comment.
+|<a href="motion.html#]%2F">]/</a>|			Go to next end of comment.
+|<a href="motion.html#[%23">[#</a>|			Go back to unclosed #if, #ifdef, or #else.
+|<a href="motion.html#]%23">]#</a>|			Go forward to unclosed #else or #endif.
+|<a href="motion.html#[(">[(</a>|			Go back to unclosed '('
+|<a href="motion.html#])">])</a>|			Go forward to unclosed ')'
+|<a href="motion.html#[{">[{</a>|			Go back to unclosed '{'
+|<a href="motion.html#]}">]}</a>|			Go forward to unclosed '}'
+
+|<a href="motion.html#v_ab">v_ab</a>|			Select "a block" from "[(" to "])", including braces
+|<a href="motion.html#v_ib">v_ib</a>|			Select "inner block" from "[(" to "])"
+|<a href="motion.html#v_aB">v_aB</a>|			Select "a block" from "[<code class="special">{" to "]}</code>", including brackets
+|<a href="motion.html#v_iB">v_iB</a>|			Select "inner block" from "[<code class="special">{" to "]}</code>"
+
+</pre><hr/><pre>Finding where identifiers are used			<b class="vimtag">*<a name="ident-search">ident-search</a>*</b>
+
+You probably already know that |<a href="tagsrch.html#tags">tags</a>| can be used to jump to the place where a
+function or variable is defined.  But sometimes you wish you could jump to all
+the places where a function or variable is being used.  This is possible in
+two ways:
+1. Using the |<a href="quickfix.html#:grep">:grep</a>| command.  This should work on most Unix systems,
+   but can be slow (it reads all files) and only searches in one directory.
+2. Using ID utils.  This is fast and works in multiple directories.  It uses a
+   database to store locations.  You will need some additional programs for
+   this to work.  And you need to keep the database up to date.
+
+Using the GNU id-tools:
+
+What you need:
+- The GNU id-tools installed (mkid is needed to create ID and lid is needed to
+  use the macros).
+- An identifier database file called "ID" in the current directory.  You can
+  create it with the shell command "mkid file1 file2 ..".
+
+Put this in your .vimrc:
+<code class="example">	map _u :call ID_search()<code class="special">&lt;Bar&gt;</code>execute "/\\<code class="special">&lt;" . g:word . "\\&gt;</code>"<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	map _n :n<code class="special">&lt;Bar&gt;</code>execute "/\\<code class="special">&lt;" . g:word . "\\&gt;</code>"<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+<code class="example">	function! ID_search()</code>
+<code class="example">	  let g:word = expand("<code class="special">&lt;cword&gt;</code>")</code>
+<code class="example">	  let x = system("lid --key=none ". g:word)</code>
+<code class="example">	  let x = substitute(x, "\n", " ", "g")</code>
+<code class="example">	  execute "next " . x</code>
+<code class="example">	endfun</code>
+<code class="example"></code>
+To use it, place the cursor on a word, type "_u" and vim will load the file
+that contains the word.  Search for the next occurrence of the word in the
+same file with "n".  Go to the next file with "_n".
+
+This has been tested with id-utils-3.2 (which is the name of the id-tools
+archive file on your closest gnu-ftp-mirror).
+
+[the idea for this comes from Andreas Kutschera]
+
+</pre><hr/><pre>Switching screens in an xterm		<b class="vimtag">*<a name="xterm-screens">xterm-screens</a>*</b> <b class="vimtag">*<a name="xterm-save-screen">xterm-save-screen</a>*</b>
+
+(From comp.editors, by Juergen Weigert, in reply to a question)
+
+:&gt; Another question is that after exiting vim, the screen is left as it
+:&gt; was, i.e. the contents of the file I was viewing (editing) was left on
+:&gt; the screen. The output from my previous like "ls" were lost,
+:&gt; ie. no longer in the scrolling buffer. I know that there is a way to
+:&gt; restore the screen after exiting vim or other vi like editors,
+:&gt; I just don't know how. Helps are appreciated. Thanks.
+:
+:I imagine someone else can answer this.  I assume though that vim and vi do
+:the same thing as each other for a given xterm setup.
+
+They not necessarily do the same thing, as this may be a termcap vs.
+terminfo problem.  You should be aware that there are two databases for
+describing attributes of a particular type of terminal: termcap and
+terminfo.  This can cause differences when the entries differ AND when of
+the programs in question one uses terminfo and the other uses termcap
+(also see |<a href="various.html#+terminfo">+terminfo</a>|).
+
+In your particular problem, you are looking for the control sequences
+^[[?47h and ^[[?47l.  These switch between xterms alternate and main screen
+buffer.  As a quick workaround a command sequence like
+<code class="example">	echo -n "^[[?47h"; vim ... ; echo -n "^[[?47l"</code>
+may do what you want.  (My notation ^[ means the ESC character, further down
+you'll see that the databases use \E instead).
+
+On startup, vim echoes the value of the termcap variable ti (terminfo:
+smcup) to the terminal.  When exiting, it echoes te (terminfo: rmcup).  Thus
+these two variables are the correct place where the above mentioned control
+sequences should go.
+
+Compare your xterm termcap entry (found in /etc/termcap) with your xterm
+terminfo entry (retrieved with "infocmp -C xterm").  Both should contain
+entries similar to:
+<code class="example">	:te=\E[2J\E[?47l\E8:ti=\E7\E[?47h:</code>
+<code class="example"></code>
+PS: If you find any difference, someone (your sysadmin?) should better check
+    the complete termcap and terminfo database for consistency.
+
+<code class="note">NOTE</code> 1: If you recompile Vim with FEAT_XTERM_SAVE defined in feature.h, the
+builtin xterm will include the mentioned "te" and "ti" entries.
+
+<code class="note">NOTE</code> 2: If you want to disable the screen switching, and you don't want to
+change your termcap, you can add these lines to your .vimrc:
+<code class="example">	:set t_ti= t_te=</code>
+<code class="example"></code>
+</pre><hr/><pre>Scrolling in Insert mode				<b class="vimtag">*<a name="scroll-insert">scroll-insert</a>*</b>
+
+If you are in insert mode and you want to see something that is just off the
+screen, you can use <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-E</code> and <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-Y</code> to scroll the screen.
+						|<a href="insert.html#i_CTRL-X_CTRL-E">i_CTRL-X_CTRL-E</a>|
+
+To make this easier, you could use these mappings:
+<code class="example">	:inoremap <code class="special">&lt;C-E&gt;</code> <code class="special">&lt;C-X&gt;</code><code class="special">&lt;C-E&gt;</code></code>
+<code class="example">	:inoremap <code class="special">&lt;C-Y&gt;</code> <code class="special">&lt;C-X&gt;</code><code class="special">&lt;C-Y&gt;</code></code>
+(Type this literally, make sure the '&lt;' flag is not in 'cpoptions').
+You then lose the ability to copy text from the line above/below the cursor
+|<a href="insert.html#i_CTRL-E">i_CTRL-E</a>|.
+
+Also consider setting 'scrolloff' to a larger value, so that you can always see
+some context around the cursor.  If 'scrolloff' is bigger than half the window
+height, the cursor will always be in the middle and the text is scrolled when
+the cursor is moved up/down.
+
+</pre><hr/><pre>Smooth scrolling					<b class="vimtag">*<a name="scroll-smooth">scroll-smooth</a>*</b>
+
+If you like the scrolling to go a bit smoother, you can use these mappings:
+<code class="example">	:map <code class="special">&lt;C-U&gt;</code> <code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code><code class="special">&lt;C-Y&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;C-D&gt;</code> <code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code><code class="special">&lt;C-E&gt;</code></code>
+<code class="example"></code>
+(Type this literally, make sure the '&lt;' flag is not in 'cpoptions').
+
+</pre><hr/><pre>Correcting common typing mistakes			<b class="vimtag">*<a name="type-mistakes">type-mistakes</a>*</b>
+
+When there are a few words that you keep on typing in the wrong way, make
+abbreviations that correct them.  For example:
+<code class="example">	:ab teh the</code>
+<code class="example">	:ab fro for</code>
+<code class="example"></code>
+</pre><hr/><pre>Counting words, lines, etc.				<b class="vimtag">*<a name="count-items">count-items</a>*</b>
+
+To count how often any pattern occurs in the current buffer use the substitute
+command and add the 'n' flag to avoid the substitution.  The reported number
+of substitutions is the number of items.  Examples:
+<code class="example"></code>
+<code class="example">	:%s/./&amp;/gn		characters</code>
+<code class="example">	:%s/\i\+/&amp;/gn		words</code>
+<code class="example">	:%s/^//n		lines</code>
+<code class="example">	:%s/the/&amp;/gn		"the" anywhere</code>
+<code class="example">	:%s/\<code class="special">&lt;the\&gt;</code>/&amp;/gn	"the" as a word</code>
+<code class="example"></code>
+You might want to reset 'hlsearch' or do ":nohlsearch".
+Add the 'e' flag if you don't want an error when there are no matches.
+
+An alternative is using |<a href="editing.html#v_g_CTRL-G">v_g_CTRL-G</a>| in Visual mode.
+
+If you want to find matches in multiple files use |<a href="quickfix.html#:vimgrep">:vimgrep</a>|.
+
+							<b class="vimtag">*<a name="count-bytes">count-bytes</a>*</b>
+If you want to count bytes, you can use this:
+
+	Visually select the characters (block is also possible)
+	Use "y" to yank the characters
+	Use the strlen() function:
+<code class="example">		:echo strlen(@")</code>
+A line break is counted for one byte.
+
+</pre><hr/><pre>Restoring the cursor position				<b class="vimtag">*<a name="restore-position">restore-position</a>*</b>
+
+Sometimes you want to write a mapping that makes a change somewhere in the
+file and restores the cursor position, without scrolling the text.  For
+example, to change the date mark in a file:
+<code class="example">   :map <code class="special">&lt;F2&gt;</code> msHmtgg/Last [cC]hange:\s*/e+1<code class="special">&lt;CR&gt;</code>"_D"=strftime("%Y %b %d")<code class="special">&lt;CR&gt;</code>p'tzt`s</code>
+<code class="example"></code>
+Breaking up saving the position:
+	ms	store cursor position in the 's' mark
+	H	go to the first line in the window
+	mt	store this position in the 't' mark
+
+Breaking up restoring the position:
+	't	go to the line previously at the top of the window
+	zt	scroll to move this line to the top of the window
+	`s	jump to the original position of the cursor
+
+For something more advanced see |<a href="eval.html#winsaveview()">winsaveview()</a>| and |<a href="eval.html#winrestview()">winrestview()</a>|.
+
+</pre><hr/><pre>Renaming files						<b class="vimtag">*<a name="rename-files">rename-files</a>*</b>
+
+Say I have a directory with the following files in them (directory picked at
+random :-):
+
+buffer.c
+charset.c
+digraph.c
+...
+
+and I want to rename <b class="vimtag">*<a name=".c ">.c </a>*</b>.bla.  I'd do it like this:
+<code class="example"></code>
+<code class="example">	$ vim</code>
+<code class="example">	:r !ls *.c</code>
+<code class="example">	:%s/\(.*\).c/mv &amp; \1.bla</code>
+<code class="example">	:w !sh</code>
+<code class="example">	:q!</code>
+<code class="example"></code>
+</pre><hr/><pre>Change a name in multiple files				<b class="vimtag">*<a name="change-name">change-name</a>*</b>
+
+Example for using a script file to change a name in several files:
+
+	Create a file "subs.vim" containing substitute commands and a :update
+	command:
+<code class="example">		:%s/Jones/Smith/g</code>
+<code class="example">		:%s/Allen/Peter/g</code>
+<code class="example">		:update</code>
+
+	Execute Vim on all files you want to change, and source the script for
+	each argument:
+<code class="example"></code>
+<code class="example">		vim *.let</code>
+<code class="example">		argdo source subs.vim</code>
+<code class="example"></code>
+See |<a href="editing.html#:argdo">:argdo</a>|.
+
+</pre><hr/><pre>Speeding up external commands				<b class="vimtag">*<a name="speed-up">speed-up</a>*</b>
+
+In some situations, execution of an external command can be very slow.  This
+can also slow down wildcard expansion on Unix.  Here are a few suggestions to
+increase the speed.
+
+If your .cshrc (or other file, depending on the shell used) is very long, you
+should separate it into a section for interactive use and a section for
+non-interactive use (often called secondary shells).  When you execute a
+command from Vim like ":!ls", you do not need the interactive things (for
+example, setting the prompt).  Put the stuff that is not needed after these
+lines:
+<code class="example"></code>
+<code class="example">	if ($?prompt == 0) then</code>
+<code class="example">		exit 0</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+Another way is to include the "-f" flag in the 'shell' option, e.g.:
+<code class="example"></code>
+<code class="example">	:set shell=csh\ -f</code>
+<code class="example"></code>
+(the backslash is needed to include the space in the option).
+This will make csh completely skip the use of the .cshrc file.  This may cause
+some things to stop working though.
+
+</pre><hr/><pre>Useful mappings						<b class="vimtag">*<a name="useful-mappings">useful-mappings</a>*</b>
+
+Here are a few mappings that some people like to use.
+
+							<b class="vimtag">*<a name="map-backtick">map-backtick</a>*</b>
+<code class="example">	:map ' `</code>
+Make the single quote work like a backtick.  Puts the cursor on the column of
+a mark, instead of going to the first non-blank character in the line.
+
+							<b class="vimtag">*<a name="emacs-keys">emacs-keys</a>*</b>
+For Emacs-style editing on the command-line:
+<code class="example">	" start of line</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-A&gt;</code>		<code class="special">&lt;Home&gt;</code></code>
+<code class="example">	" back one character</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-B&gt;</code>		<code class="special">&lt;Left&gt;</code></code>
+<code class="example">	" delete character under cursor</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-D&gt;</code>		<code class="special">&lt;Del&gt;</code></code>
+<code class="example">	" end of line</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-E&gt;</code>		<code class="special">&lt;End&gt;</code></code>
+<code class="example">	" forward one character</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-F&gt;</code>		<code class="special">&lt;Right&gt;</code></code>
+<code class="example">	" recall newer command-line</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-N&gt;</code>		<code class="special">&lt;Down&gt;</code></code>
+<code class="example">	" recall previous (older) command-line</code>
+<code class="example">	:cnoremap <code class="special">&lt;C-P&gt;</code>		<code class="special">&lt;Up&gt;</code></code>
+<code class="example">	" back one word</code>
+<code class="example">	:cnoremap <code class="special">&lt;Esc&gt;</code><code class="special">&lt;C-B&gt;</code>	<code class="special">&lt;S-Left&gt;</code></code>
+<code class="example">	" forward one word</code>
+<code class="example">	:cnoremap <code class="special">&lt;Esc&gt;</code><code class="special">&lt;C-F&gt;</code>	<code class="special">&lt;S-Right&gt;</code></code>
+<code class="example"></code>
+<code class="note">NOTE:</code> This requires that the '&lt;' flag is excluded from 'cpoptions'. |<a href="intro.html#%3C%3E">&lt;&gt;</a>|
+
+							<b class="vimtag">*<a name="format-bullet-list">format-bullet-list</a>*</b>
+This mapping will format any bullet list.  It requires that there is an empty
+line above and below each list entry.  The expression commands are used to
+be able to give comments to the parts of the mapping.
+<code class="example"></code>
+<code class="example">	:let m =     ":map _f  :set ai<code class="special">&lt;CR&gt;</code>"    " need 'autoindent' set</code>
+<code class="example">	:let m = m . "{O<code class="special">&lt;Esc&gt;</code>"		      " add empty line above item</code>
+<code class="example">	:let m = m . "}{)^W"		      " move to text after bullet</code>
+<code class="example">	:let m = m . "i     <code class="special">&lt;CR&gt;</code>     <code class="special">&lt;Esc&gt;</code>"    " add space for indent</code>
+<code class="example">	:let m = m . "gq}"		      " format text after the bullet</code>
+<code class="example">	:let m = m . "{dd"		      " remove the empty line</code>
+<code class="example">	:let m = m . "5lDJ"		      " put text after bullet</code>
+<code class="example">	:execute m			      |" define the mapping</code>
+<code class="example"></code>
+(<code class="special">&lt;&gt;</code> notation |<a href="intro.html#%3C%3E">&lt;&gt;</a>|.  <code class="note">Note</code> that this is all typed literally.  ^W is "^" "W", not
+<code class="keystroke">CTRL-W</code>.  You can copy/paste this into Vim if '&lt;' is not included in
+'cpoptions'.)
+
+<code class="note">Note</code> that the last comment starts with |", because the ":execute" command
+doesn't accept a comment directly.
+
+You also need to set 'textwidth' to a non-zero value, e.g.,
+<code class="example">	:set tw=70</code>
+<code class="example"></code>
+A mapping that does about the same, but takes the indent for the list from the
+first line (<code class="note">Note:</code> this mapping is a single long line with a lot of spaces):
+<code class="example">	:map _f :set ai<code class="special">&lt;CR&gt;</code>}<code class="special">{a                                                          <code class="special">&lt;Esc&gt;</code>WWmmkD`mi<code class="special">&lt;CR&gt;</code><code class="special">&lt;Esc&gt;</code>kkddpJgq}</code>'mJO<code class="special">&lt;Esc&gt;</code>j</code>
+
+							<b class="vimtag">*<a name="collapse">collapse</a>*</b>
+These two mappings reduce a sequence of empty (;b) or blank (;n) lines into a
+single line
+<code class="example">    :map ;b   GoZ<code class="special">&lt;Esc&gt;</code>:g/^$/.,/./-j<code class="special">&lt;CR&gt;</code>Gdd</code>
+<code class="example">    :map ;n   GoZ<code class="special">&lt;Esc&gt;</code>:g/^[ <code class="special">&lt;Tab&gt;</code>]*$/.,/[^ <code class="special">&lt;Tab&gt;</code>]/-j<code class="special">&lt;CR&gt;</code>Gdd</code>
+<code class="example"></code>
+</pre><hr/><pre>Compressing the help files				<b class="vimtag">*<a name="gzip-helpfile">gzip-helpfile</a>*</b>
+
+For those of you who are really short on disk space, you can compress the help
+files and still be able to view them with Vim.  This makes accessing the help
+files a bit slower and requires the "gzip" program.
+
+(1) Compress all the help files: "gzip doc/*.txt".
+
+(2) Edit "doc/tags" and change the ".txt" to ".txt.gz":
+<code class="example">	:%s=\(\t.*\.txt\)\t=\1.gz\t=</code>
+<code class="example"></code>
+(3) Add this line to your vimrc:
+<code class="example">	set helpfile=<code class="special">{dirname}</code>/help.txt.gz</code>
+<code class="example"></code>
+Where <code class="special">{dirname}</code> is the directory where the help files are.  The |<a href="pi_gzip.html#gzip">gzip</a>| plugin
+will take care of decompressing the files.
+You must make sure that $VIMRUNTIME is set to where the other Vim files are,
+when they are not in the same location as the compressed "doc" directory.  See
+|<a href="starting.html#$VIMRUNTIME">$VIMRUNTIME</a>|.
+
+</pre><hr/><pre>Executing shell commands in a window			<b class="vimtag">*<a name="shell-window">shell-window</a>*</b>
+
+See |<a href="terminal.html#terminal">terminal</a>|.
+
+Another solution is splitting your terminal screen or display window with the
+"splitvt" program.  You can probably find it on some ftp server.  The person
+that knows more about this is Sam Lantinga <code class="special">&lt;slouken@cs.ucdavis.edu&gt;</code>.
+
+Another alternative is the "window" command, found on BSD Unix systems, which
+supports multiple overlapped windows.  Or the "screen" program, found at
+www.uni-erlangen.de, which supports a stack of windows.
+
+</pre><hr/><pre>Hex editing					<b class="vimtag">*<a name="hex-editing">hex-editing</a>*</b> <b class="vimtag">*<a name="using-xxd">using-xxd</a>*</b>
+
+See section |<a href="usr_23.html#23.4">23.4</a>| of the user manual.
+
+If one has a particular extension that one uses for binary files (such as exe,
+bin, etc), you may find it helpful to automate the process with the following
+bit of autocmds for your <code class="special">&lt;.vimrc&gt;</code>.  Change that "*.bin" to whatever
+comma-separated list of extension(s) you find yourself wanting to edit:
+<code class="example"></code>
+<code class="example">	" vim -b : edit binary using xxd-format!</code>
+<code class="example">	augroup Binary</code>
+<code class="example">	  au!</code>
+<code class="example">	  au BufReadPre  *.bin let &amp;bin=1</code>
+<code class="example">	  au BufReadPost *.bin if &amp;bin | %!xxd</code>
+<code class="example">	  au BufReadPost *.bin set ft=xxd | endif</code>
+<code class="example">	  au BufWritePre *.bin if &amp;bin | %!xxd -r</code>
+<code class="example">	  au BufWritePre *.bin endif</code>
+<code class="example">	  au BufWritePost *.bin if &amp;bin | %!xxd</code>
+<code class="example">	  au BufWritePost *.bin set nomod | endif</code>
+<code class="example">	augroup END</code>
+<code class="example"></code>
+</pre><hr/><pre>Using <code class="special">&lt;&gt;</code> notation in autocommands			<b class="vimtag">*<a name="autocmd-%3C%3E">autocmd-&lt;&gt;</a>*</b>
+
+The <code class="special">&lt;&gt;</code> notation is not recognized in the argument of an :autocmd.  To avoid
+having to use special characters, you could use a self-destroying mapping to
+get the <code class="special">&lt;&gt;</code> notation and then call the mapping from the autocmd.  Example:
+
+						<b class="vimtag">*<a name="map-self-destroy">map-self-destroy</a>*</b>
+<code class="example"> " This is for automatically adding the name of the file to the menu list.</code>
+<code class="example"> " It uses a self-destroying mapping!</code>
+<code class="example"> " 1. use a line in the buffer to convert the 'dots' in the file name to \.</code>
+<code class="example"> " 2. store that in register '"'</code>
+<code class="example"> " 3. add that name to the Buffers menu list</code>
+<code class="example"> " WARNING: this does have some side effects, like overwriting the</code>
+<code class="example"> " current register contents and removing any mapping for the "i" command.</code>
+<code class="example"> "</code>
+<code class="example"> autocmd BufNewFile,BufReadPre * nmap i :nunmap i<code class="special">&lt;CR&gt;</code>O<code class="special">&lt;C-R&gt;</code>%<code class="special">&lt;Esc&gt;</code>:.g/\./s/\./\\./g<code class="special">&lt;CR&gt;</code>0"9y$u:menu Buffers.<code class="special">&lt;C-R&gt;</code>9 :buffer <code class="special">&lt;C-R&gt;</code>%<code class="special">&lt;C-V&gt;</code><code class="special">&lt;CR&gt;</code><code class="special">&lt;CR&gt;</code></code>
+<code class="example"> autocmd BufNewFile,BufReadPre * normal i</code>
+<code class="example"></code>
+Another method, perhaps better, is to use the ":execute" command.  In the
+string you can use the <code class="special">&lt;&gt;</code> notation by preceding it with a backslash.  Don't
+forget to double the number of existing backslashes and put a backslash before
+'"'.
+
+<code class="example">  autocmd BufNewFile,BufReadPre * exe "normal O\<code class="special">&lt;C-R&gt;</code>%\<code class="special">&lt;Esc&gt;</code>:.g/\\./s/\\./\\\\./g\<code class="special">&lt;CR&gt;</code>0\"9y$u:menu Buffers.\<code class="special">&lt;C-R&gt;</code>9 :buffer \<code class="special">&lt;C-R&gt;</code>%\<code class="special">&lt;C-V&gt;</code>\<code class="special">&lt;CR&gt;</code>\<code class="special">&lt;CR&gt;</code>"</code>
+<code class="example"></code>
+For a real buffer menu, user functions should be used (see |<a href="eval.html#:function">:function</a>|), but
+then the <code class="special">&lt;&gt;</code> notation isn't used, which defeats using it as an example here.
+
+</pre><hr/><pre>Highlighting matching parens					<b class="vimtag">*<a name="match-parens">match-parens</a>*</b>
+
+This example shows the use of a few advanced tricks:
+- using the |<a href="autocmd.html#CursorMoved">CursorMoved</a>| autocommand event
+- using |<a href="eval.html#searchpairpos()">searchpairpos()</a>| to find a matching paren
+- using |<a href="eval.html#synID()">synID()</a>| to detect whether the cursor is in a string or comment
+- using |<a href="pattern.html#:match">:match</a>| to highlight something
+- using a |<a href="pattern.html#pattern">pattern</a>| to match a specific position in the file.
+
+This should be put in a Vim script file, since it uses script-local variables.
+It skips matches in strings or comments, unless the cursor started in string
+or comment.  This requires syntax highlighting.
+
+A slightly more advanced version is used in the |<a href="pi_paren.html#matchparen">matchparen</a>| plugin.
+
+<code class="example">	let s:paren_hl_on = 0</code>
+<code class="example">	function s:Highlight_Matching_Paren()</code>
+<code class="example">	  if s:paren_hl_on</code>
+<code class="example">	    match none</code>
+<code class="example">	    let s:paren_hl_on = 0</code>
+<code class="example">	  endif</code>
+<code class="example"></code>
+<code class="example">	  let c_lnum = line('.')</code>
+<code class="example">	  let c_col = col('.')</code>
+<code class="example"></code>
+<code class="example">	  let c = getline(c_lnum)[c_col - 1]</code>
+<code class="example">	  let plist = split(&amp;matchpairs, ':\|,')</code>
+<code class="example">	  let i = index(plist, c)</code>
+<code class="example">	  if i &lt; 0</code>
+<code class="example">	    return</code>
+<code class="example">	  endif</code>
+<code class="example">	  if i % 2 == 0</code>
+<code class="example">	    let s_flags = 'nW'</code>
+<code class="example">	    let c2 = plist[i + 1]</code>
+<code class="example">	  else</code>
+<code class="example">	    let s_flags = 'nbW'</code>
+<code class="example">	    let c2 = c</code>
+<code class="example">	    let c = plist[i - 1]</code>
+<code class="example">	  endif</code>
+<code class="example">	  if c == '['</code>
+<code class="example">	    let c = '\['</code>
+<code class="example">	    let c2 = '\]'</code>
+<code class="example">	  endif</code>
+<code class="example">	  let s_skip ='synIDattr(synID(line("."), col("."), 0), "name") ' .</code>
+<code class="example">		\ '=~?	"string\\|comment"'</code>
+<code class="example">	  execute 'if' s_skip '|<code class="badlink"> let s_skip = 0 </code>| endif'</code>
+<code class="example"></code>
+<code class="example">	  let [m_lnum, m_col] = searchpairpos(c, '', c2, s_flags, s_skip)</code>
+<code class="example"></code>
+<code class="example">	  if m_lnum &gt; 0 &amp;&amp; m_lnum &gt;= line('w0') &amp;&amp; m_lnum &lt;= line('w$')</code>
+<code class="example">	    exe 'match Search /\(\%' . c_lnum . 'l\%' . c_col .</code>
+<code class="example">		  \ 'c\)\|\(\%' . m_lnum . 'l\%' . m_col . 'c\)/'</code>
+<code class="example">	    let s:paren_hl_on = 1</code>
+<code class="example">	  endif</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+<code class="example">	autocmd CursorMoved,CursorMovedI * call s:Highlight_Matching_Paren()</code>
+<code class="example">	autocmd InsertEnter * match none</code>
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

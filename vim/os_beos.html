@@ -1,0 +1,333 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: os_beos</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>OS_BEOS</h2>
+<pre>
+<b class="vimtag">*<a name="os_beos.txt">os_beos.txt</a>*</b>	For Vim version 8.2.  Last change: 2016 Mar 28
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+							<b class="vimtag">*<a name="BeOS">BeOS</a>*</b> <b class="vimtag">*<a name="BeBox">BeBox</a>*</b>
+This is a port of Vim 5.1 to the BeOS Preview Release 2 (also known as PR2)
+or later.
+
+This file contains the particularities for the BeBox/BeOS version of Vim.  For
+matters not discussed in this file, Vim behaves very much like the Unix
+|<a href="os_unix.html#os_unix.txt">os_unix</a>| version.
+
+ 1. General			|<a href="os_beos.html#beos-general">beos-general</a>|
+ 2. Compiling Vim		|<a href="os_beos.html#beos-compiling">beos-compiling</a>|
+ 3. Timeout in the Terminal	|<a href="os_beos.html#beos-timeout">beos-timeout</a>|
+ 4. Unicode vs. Latin1		|<a href="os_beos.html#beos-unicode">beos-unicode</a>|
+ 5. The BeOS GUI		|<a href="os_beos.html#beos-gui">beos-gui</a>|
+ 6. The $VIM directory		|<a href="os_beos.html#beos-vimdir">beos-vimdir</a>|
+ 7. Drag &amp; Drop			|<a href="os_beos.html#beos-dragndrop">beos-dragndrop</a>|
+ 8. Single Launch vs. Multiple
+    Launch			|<a href="os_beos.html#beos-launch">beos-launch</a>|
+ 9. Fonts			|<a href="os_beos.html#beos-fonts">beos-fonts</a>|
+10. The meta key modifier	|<a href="os_beos.html#beos-meta">beos-meta</a>|
+11. Mouse key mappings		|<a href="os_beos.html#beos-mouse">beos-mouse</a>|
+12. Color names			|<a href="os_beos.html#beos-colors">beos-colors</a>|
+13. Compiling with Perl		|<a href="os_beos.html#beos-perl">beos-perl</a>|
+
+
+1. General						<b class="vimtag">*<a name="beos-general">beos-general</a>*</b>
+
+The default syntax highlighting mostly works with different foreground colors
+to highlight items.  This works best if you set your Terminal window to a
+darkish background and light letters.  Some middle-grey background (for
+instance (r,g,b)=(168,168,168)) with black letters also works nicely.  If you
+use the default light background and dark letters, it may look better to
+simply reverse the notion of foreground and background color settings.  To do
+this, add this to your .vimrc file (where <code class="special">&lt;Esc&gt;</code> may need to be replaced with
+the escape character):
+<code class="example"></code>
+<code class="example">  :if &amp;term == "beos-ansi"</code>
+<code class="example">  :    set t_AB=<code class="special">&lt;Esc&gt;</code>[3%dm</code>
+<code class="example">  :    set t_AF=<code class="special">&lt;Esc&gt;</code>[4%dm</code>
+<code class="example">  :endif</code>
+<code class="example"></code>
+<code class="example"></code>
+2. Compiling Vim					<b class="vimtag">*<a name="beos-compiling">beos-compiling</a>*</b>
+
+From the Advanced Access Preview Release (AAPR) on, Vim can be configured with
+the standard configure script.  To get the compiler and its flags right, use
+the following command-line in the shell (you can cut and paste it in one go):
+
+CC=$BE_C_COMPILER CFLAGS="$BE_DEFAULT_C_FLAGS -O7" \
+    ./configure --prefix=/boot/home/config
+
+$BE_C_COMPILER is usually "mwcc", $BE_DEFAULT_C_FLAGS is usually "-I- -I."
+
+When configure has run, and you wish to enable GUI support, you must edit the
+config.mk file so that the lines with GUI_xxx refer to $(BEOSGUI_xxx) instead
+of $(NONE_xxx).
+Alternatively you can make this change in the Makefile; it will have a
+more permanent effect.  Search for "NONE_".
+
+After compilation you need to add the resources to the binary.  Add the
+following few lines near the end (before the line with "exit $exit_value") of
+the link.sh script to do this automatically.
+
+    rmattr BEOS:TYPE vim
+    copyres os_beos.rsrc vim
+    mimeset vim
+
+Also, create a dummy file "strip":
+
+    #!/bin/sh
+    mimeset $1
+    exit 0
+
+You will need it when using "make install" to install Vim.
+
+Now type "make" to compile Vim, then "make install" to install it.
+
+If you want to install Vim by hand, you must copy Vim to $HOME/config/bin, and
+create a bunch of symlinks to it (<code class="special">{g,r,rg}</code><code class="special">{vim,ex,view}</code>).  Furthermore you must
+copy Vim's configuration files to $HOME/config/share/vim:
+vim-5.0s/<code class="special">{*.vim,doc,syntax}</code>.  For completeness, you should also copy the nroff
+manual pages to $HOME/config/man/man1.  Don't forget ctags/ctags and xxd/xxd!
+
+Obviously, you need the unlimited linker to actually link Vim.  See
+http://www.metrowerks.com for purchasing the CodeWarrior compiler for BeOS.
+There are currently no other linkers that can do the job.
+
+This won't be able to include the Perl or Python interfaces even if
+you have the appropriate files installed. |<a href="os_beos.html#beos-perl">beos-perl</a>|
+
+
+3. Timeout in the Terminal				<b class="vimtag">*<a name="beos-timeout">beos-timeout</a>*</b>
+
+Because some POSIX/UNIX features are still missing[1], there is no direct OS
+support for read-with-timeout in the Terminal.  This would mean that you cannot
+use :mappings of more than one character, unless you also :set notimeout.
+|<a href="options.html#'timeout'">'timeout'</a>|
+
+To circumvent this problem, I added a workaround to provide the necessary
+input with timeout by using an extra thread which reads ahead one character.
+As a side effect, it also makes Vim recognize when the Terminal window
+resizes.
+
+Function keys are not supported in the Terminal since they produce very
+indistinctive character sequences.
+
+These problems do not exist in the GUI.
+
+[1]: there is no select() on file descriptors; also the termios VMIN and VTIME
+settings do not seem to work properly.  This has been the case since DR7 at
+least and still has not been fixed as of PR2.
+
+							<b class="vimtag">*<a name="beos-unicode">beos-unicode</a>*</b>
+4. Unicode vs. Latin1					<b class="vimtag">*<a name="beos-utf8">beos-utf8</a>*</b>
+
+BeOS uses Unicode and UTF-8 for text strings (16-bit characters encoded to
+8-bit characters).  Vim assumes ISO-Latin1 or other 8-bit character codes.
+This does not produce the desired results for non-ASCII characters.  Try the
+command :digraphs to see.  If they look messed up, use :set isprint=@ to
+(slightly) improve the display of ISO-Latin1 characters 128-255.  This works
+better in the GUI, depending on which font you use (below).
+
+You may also use the /boot/bin/xtou command to convert UTF-8 files from (xtou
+-f iso1 filename) or to (xtou -t iso1 filename) ISO-Latin1 characters.
+
+
+5. The BeOS GUI						<b class="vimtag">*<a name="beos-gui">beos-gui</a>*</b>
+
+The BeOS GUI is no longer included.  It was not maintained for a while and
+most likely didn't work.  If you want to work on this: get the Vim 6.x version
+and merge it back in.
+
+
+6. The $VIM directory					<b class="vimtag">*<a name="beos-vimdir">beos-vimdir</a>*</b>
+
+$VIM is the symbolic name for the place where Vims support files are stored.
+The default value for $VIM is set at compile time and can be determined with
+<code class="example"></code>
+<code class="example">  :version</code>
+<code class="example"></code>
+The normal value is /boot/home/config/share/vim.  If you don't like it you can
+set the VIM environment variable to override this, or set 'helpfile' in your
+.vimrc:
+<code class="example"></code>
+<code class="example">  :if version &gt;= 500</code>
+<code class="example">  :    set helpfile=~/vim/vim54/doc/help.txt</code>
+<code class="example">  :    syntax on</code>
+<code class="example">  :endif</code>
+<code class="example"></code>
+<code class="example"></code>
+7. Drag &amp; Drop						<b class="vimtag">*<a name="beos-dragndrop">beos-dragndrop</a>*</b>
+
+You can drop files and directories on either the Vim icon (starts a new Vim
+session, unless you use the File Types application to set Vim to be "Single
+Launch") or on the Vim window (starts editing the files).  Dropping a folder
+sets Vim's current working directory. |<a href="editing.html#:cd">:cd</a>| |<a href="editing.html#:pwd">:pwd</a>| If you drop files or
+folders with either SHIFT key pressed, Vim changes directory to the folder
+that contains the first item dropped.  When starting Vim, there is no need to
+press shift: Vim behaves as if you do.
+
+Files dropped set the current argument list. |<a href="editing.html#argument-list">argument-list</a>|
+
+
+8. Single Launch vs. Multiple Launch			<b class="vimtag">*<a name="beos-launch">beos-launch</a>*</b>
+
+As distributed Vim's Application Flags (as seen in the FileTypes preference)
+are set to Multiple Launch.  If you prefer, you can set them to Single Launch
+instead.  Attempts to start a second copy of Vim will cause the first Vim to
+open the files instead.  This works from the Tracker but also from the command
+line.  In the latter case, non-file (option) arguments are not supported.
+
+NB: Only the GUI version has a BApplication (and hence Application Flags).
+This section does not apply to the GUI-less version, should you compile one.
+
+
+9. Fonts						<b class="vimtag">*<a name="beos-fonts">beos-fonts</a>*</b>
+
+Set fonts with
+<code class="example"></code>
+<code class="example">  :set guifont=Courier10_BT/Roman/10</code>
+<code class="example"></code>
+where the first part is the font family, the second part the style, and the
+third part the size.  You can use underscores instead of spaces in family and
+style.
+
+Best results are obtained with monospaced fonts (such as Courier).  Vim
+attempts to use all fonts in B_FIXED_SPACING mode but apparently this does not
+work for proportional fonts (despite what the BeBook says).
+
+Vim also tries to use the B_ISO8859_1 encoding, also known as ISO Latin 1.
+This also does not work for all fonts.  It does work for Courier, but not for
+ProFontISOLatin1/Regular (strangely enough).  You can verify this by giving the
+<code class="example"></code>
+<code class="example">  :digraphs</code>
+<code class="example"></code>
+command, which lists a bunch of characters with their ISO Latin 1 encoding.
+If, for instance, there are "box" characters among them, or the last character
+isn't a dotted-y, then for this font the encoding does not work.
+
+If the font you specify is unavailable, you get the system fixed font.
+
+Standard fixed-width system fonts are:
+
+	      ProFontISOLatin1/Regular
+		  Courier10_BT/Roman
+		  Courier10_BT/Italic
+		  Courier10_BT/Bold
+		  Courier10_BT/Bold_Italic
+
+Standard proportional system fonts are:
+
+		    Swis721_BT/Roman
+		    Swis721_BT/Italic
+		    Swis721_BT/Bold
+		    Swis721_BT/Bold_Italic
+		Dutch801_Rm_BT/Roman
+		Dutch801_Rm_BT/Italic
+		Dutch801_Rm_BT/Bold
+		Dutch801_Rm_BT/Bold_Italic
+		   Baskerville/Roman
+		   Baskerville/Italic
+		   Baskerville/Bold
+		   Baskerville/Bold_Italic
+		 SymbolProp_BT/Regular
+
+Try some of them, just for fun.
+
+
+10. The meta key modifier				<b class="vimtag">*<a name="beos-meta">beos-meta</a>*</b>
+
+The META key modifier is obtained by the left or right OPTION keys.  This is
+because the ALT (aka COMMAND) keys are not passed to applications.
+
+
+11. Mouse key mappings					<b class="vimtag">*<a name="beos-mouse">beos-mouse</a>*</b>
+
+Vim calls the various mouse buttons LeftMouse, MiddleMouse and RightMouse.  If
+you use the default Mouse preference settings these names indeed correspond to
+reality.  Vim uses this mapping:
+
+    Button 1 -&gt; LeftMouse,
+    Button 2 -&gt; RightMouse,
+    Button 3 -&gt; MiddleMouse.
+
+If your mouse has fewer than 3 buttons you can provide your own mapping from
+mouse clicks with modifier(s) to other mouse buttons.  See the swapmouse
+package for an example:					 |<a href="gui.html#gui-mouse-mapping">gui-mouse-mapping</a>|
+$VIMRUNTIME/pack/dist/opt/swapmouse/plugin/swapmouse.vim
+
+
+12. Color names						<b class="vimtag">*<a name="beos-colors">beos-colors</a>*</b>
+
+Vim has a number of color names built-in.  Additional names are read from the
+file $VIMRUNTIME/rgb.txt, if present.  This file is basically the color
+database from X.  Names used from this file are cached for efficiency.
+
+
+13. Compiling with Perl					<b class="vimtag">*<a name="beos-perl">beos-perl</a>*</b>
+
+Compiling with Perl support enabled is slightly tricky.  The Metrowerks
+compiler has some strange ideas where to search for include files.  Since
+several include files with Perl have the same names as some Vim header
+files, the wrong ones get included.  To fix this, run the following Perl
+script while in the vim-5.0/src directory:
+<code class="example"></code>
+<code class="example">   preproc.pl &gt; perl.h</code>
+<code class="example"></code>
+<code class="example">    #!/bin/env perl</code>
+<code class="example">    # Simple #include expander, just good enough for the Perl header files.</code>
+<code class="example"></code>
+<code class="example">    use strict;</code>
+<code class="example">    use IO::File;</code>
+<code class="example">    use Config;</code>
+<code class="example"></code>
+<code class="example">    sub doinclude</code>
+<code class="example">    {</code>
+<code class="example">	my $filename = $_[0];</code>
+<code class="example">	my $fh = new IO::File($filename, "r");</code>
+<code class="example">	if (defined $fh) {</code>
+<code class="example">	    print "/<b class="vimtag">*<a name=" Start of $filename "> Start of $filename </a>*</b>/\n";</code>
+<code class="example"></code>
+<code class="example">	    while (<code class="special">&lt;$fh&gt;</code>) {</code>
+<code class="example">		if (/^#include "(.*)"/) {</code>
+<code class="example">		    doinclude($1);</code>
+<code class="example">		    print "/<b class="vimtag">*<a name=" Back in $filename "> Back in $filename </a>*</b>/\n";</code>
+<code class="example">		} else {</code>
+<code class="example">		    print $_;</code>
+<code class="example">		}</code>
+<code class="example">	    }</code>
+<code class="example">	    print "/<b class="vimtag">*<a name=" End of $filename "> End of $filename </a>*</b>/\n";</code>
+<code class="example"></code>
+<code class="example">	    undef $fh;</code>
+<code class="example">	} else {</code>
+<code class="example">	    print "/<b class="vimtag">*<a name=" Cannot open $filename "> Cannot open $filename </a>*</b>/\n";</code>
+<code class="example">	    print "#include \"$filename\"\n";</code>
+<code class="example">	}</code>
+<code class="example">    }</code>
+<code class="example"></code>
+<code class="example">    chdir     $Config<code class="special">{installarchlib}</code>."/CORE";</code>
+<code class="example">    doinclude "perl.h";</code>
+<code class="example"></code>
+It expands the "perl.h" header file, using only other Perl header files.
+
+Now you can configure &amp; make Vim with the --enable-perlinterp option.
+Be warned though that this adds about 616 kilobytes to the size of Vim!
+Without Perl, Vim with default features and GUI is about 575K, with Perl
+it is about 1191K.
+
+-Olaf Seibert
+
+[<code class="note">Note:</code> these addresses no longer work:]
+<code class="special">&lt;rhialto@polder.ubc.kun.nl&gt;</code>
+http://polder.ubc.kun.nl/~rhialto/be
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

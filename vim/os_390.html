@@ -1,0 +1,140 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: os_390</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>OS_390</h2>
+<pre>
+<b class="vimtag">*<a name="os_390.txt">os_390.txt</a>*</b>    For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL	  by Ralf Schandl
+
+					<b class="vimtag">*<a name="zOS">zOS</a>*</b> <b class="vimtag">*<a name="z%2FOS">z/OS</a>*</b> <b class="vimtag">*<a name="OS390">OS390</a>*</b> <b class="vimtag">*<a name="os390">os390</a>*</b> <b class="vimtag">*<a name="MVS">MVS</a>*</b>
+This file contains the particulars for the z/OS UNIX version of Vim.
+
+1. ASCII/EBCDIC dependent scripts	|<a href="os_390.html#zOS-has-ebcdic">zOS-has-ebcdic</a>|
+2. Putty and Colors                     |<a href="os_390.html#zOS-PuTTY">zOS-PuTTY</a>|
+3. Motif Problems			|<a href="os_390.html#zOS-Motif">zOS-Motif</a>|
+4. Bugs					|<a href="os_390.html#zOS-Bugs">zOS-Bugs</a>|
+5. Limitations     			|<a href="os_390.html#zOS-limitations">zOS-limitations</a>|
+6. Open source on z/OS UNIX		|<a href="os_390.html#zOS-open-source">zOS-open-source</a>|
+
+<code class="section">Contributors: </code>
+The port to z/OS UNIX was done by Ralf Schandl for the Redbook mentioned
+below.
+
+Changes, bug-reports, or both by:
+
+	David Moore
+	Anthony Giorgio
+	and others
+
+</pre><hr/><pre>1. ASCII/EBCDIC dependent scripts	<b class="vimtag">*<a name="OS390-has-ebcdic">OS390-has-ebcdic</a>*</b> <b class="vimtag">*<a name="zOS-has-ebcdic">zOS-has-ebcdic</a>*</b>
+
+For the internal script language the feature "ebcdic" was added.  With this
+you can fix ASCII dependent scripts like this:
+
+<code class="example">    if has("ebcdic")</code>
+<code class="example">	let space = 64</code>
+<code class="example">    else</code>
+<code class="example">	let space = 32</code>
+<code class="example">    endif</code>
+
+
+</pre><hr/><pre>2. PuTTY and Colors			<b class="vimtag">*<a name="OS390-PuTTY">OS390-PuTTY</a>*</b> <b class="vimtag">*<a name="zOS-PuTTY">zOS-PuTTY</a>*</b>
+
+If you see problems with syntax highlighting or screen corruptions when you
+connect to z/OS using Putty, try the following:
+
+- Configure Putty as "vt220" terminal (Connection-&gt;Data)
+- Add the following 3 lines to your vimrc:
+
+
+<code class="example">    set t_AB=[4%p1%dm</code>
+<code class="example">    set t_AF=[3%p1%dm</code>
+<code class="example">    set t_CO=8</code>
+
+
+<code class="note">Note:</code>  is one character use <code class="special">&lt;C-V&gt;</code><code class="special">&lt;Esc&gt;</code> to enter it.
+
+</pre><hr/><pre>3. Motif Problems			<b class="vimtag">*<a name="OS390-Motif">OS390-Motif</a>*</b> <b class="vimtag">*<a name="zOS-Motif">zOS-Motif</a>*</b>
+
+<code class="note">Note:</code> Seen with Vim 6.*, never tested since.
+
+It seems that in porting the Motif library to z/OS, a translation from EBCDIC
+to ASCII for the accelerator characters of the pull-down menus was forgotten.
+Even after I tried to hand convert the menus, the accelerator keys continued
+to only work for the opening of menus (like <code class="special">&lt;Alt-F&gt;</code> to open the file menu).
+They still do not work for the menu items themselves (like <code class="special">&lt;Alt-F&gt;</code>O to open
+the file browser).
+
+There is no solution for this yet.
+
+</pre><hr/><pre>4. Bugs					<b class="vimtag">*<a name="OS390-bugs">OS390-bugs</a>*</b> <b class="vimtag">*<a name="zOS-Bugs">zOS-Bugs</a>*</b>
+
+- Vim will consistently hang when a large amount of text is selected in
+  visual block mode.  This may be due to a memory corruption issue.  <code class="note">Note</code> that
+  this occurs in both the terminal and gui versions.
+
+</pre><hr/><pre>5. Limitations     			<b class="vimtag">*<a name="OS390-limitations">OS390-limitations</a>*</b> <b class="vimtag">*<a name="zOS-limitations">zOS-limitations</a>*</b>
+
+- No binary search in tag files.
+  The program /bin/sort sorts by ASCII value by default.  This program is
+  normally used by ctags to sort the tags.  There might be a version of
+  ctags out there, that does it right, but we can't be sure.  So this seems to
+  be a permanent restriction.
+
+- The cscope interface (|<a href="if_cscop.html#cscope">cscope</a>|) doesn't work for the version of cscope that
+  we use on our mainframe.  We have a copy of version 15.0b12, and it causes
+  Vim to hang when using the "cscope add" command.  I'm guessing that the
+  binary format of the cscope database isn't quite what Vim is expecting.
+  I've tried to port the current version of cscope (15.3) to z/OS, without
+  much success.  If anyone is interested in trying, drop me a line if you
+  make any progress.
+
+- No glib/gtk support.  I have not been able to successfully compile glib on
+  z/OS UNIX.  This means you'll have to live without the pretty gtk toolbar.
+
+Disabled at compile time:
+    - Multibyte support         (|<a href="mbyte.html#multibyte">multibyte</a>|)
+    - Right-to-left mode        (|<a href="rileft.html#rileft">rileft</a>|)
+    - Farsi key map             (|<a href="farsi.html#Farsi">Farsi</a>|)
+    - Arabic language support   (|<a href="arabic.html#Arabic">Arabic</a>|)
+    - Spell checking            (|<a href="spell.html#spell">spell</a>|)
+
+Never tested:
+    - Perl interface		(|<a href="if_perl.html#perl">perl</a>|)
+    - Hangul input		(|<a href="hangulin.html#hangul">hangul</a>|)
+    - Encryption support	(|<a href="editing.html#encryption">encryption</a>|)
+    - Langmap			(|<a href="options.html#'langmap'">'langmap'</a>|)
+    - Python support		(|<a href="if_pyth.html#Python">Python</a>|)
+    - Right-to-left mode	(|<a href="options.html#'rightleft'">'rightleft'</a>|)
+    - TCL interface		(|<a href="if_tcl.html#tcl">tcl</a>|)
+    ...
+
+</pre><hr/><pre>6. Open source on z/OS UNIX		<b class="vimtag">*<a name="OS390-open-source">OS390-open-source</a>*</b> <b class="vimtag">*<a name="zOS-open-source">zOS-open-source</a>*</b>
+
+If you are interested in other Open Source Software on z/OS UNIX, have a
+look at the following Redbook:
+
+    Mike MacIsaac et al
+    "Open Source Software for z/OS and OS/390 UNIX"
+    IBM Form Number: SG24-5944-01
+    ISBN: 0738424633
+    http://www-03.ibm.com/systems/resources/servers_eserver_zseries_zos_unix_redbook_sg245944.pdf
+
+Also look at:
+    http://www.redbooks.ibm.com
+    http://www-03.ibm.com/systems/z/os/zos/features/unix/
+    http://www-03.ibm.com/systems/z/os/zos/features/unix/library/IBM+Redbooks/index.html
+
+
+
+</pre><hr/><pre> vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

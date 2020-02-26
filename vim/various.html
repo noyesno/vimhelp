@@ -1,0 +1,773 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: various</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>VARIOUS</h2>
+<pre>
+<b class="vimtag">*<a name="various.txt">various.txt</a>*</b>   For Vim version 8.2.  Last change: 2020 Feb 22
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Various commands					<b class="vimtag">*<a name="various">various</a>*</b>
+
+1. Various commands		|<a href="various.html#various-cmds">various-cmds</a>|
+2. Using Vim like less or more	|<a href="various.html#less">less</a>|
+
+</pre><hr/><pre>1. Various commands					<b class="vimtag">*<a name="various-cmds">various-cmds</a>*</b>
+
+							<b class="vimtag">*<a name="CTRL-L">CTRL-L</a>*</b>
+<code class="keystroke">CTRL-L</code>			Clear and redraw the screen.  The redraw may happen
+			later, after processing typeahead.
+
+							<b class="vimtag">*<a name=":redr">:redr</a>*</b> <b class="vimtag">*<a name=":redraw">:redraw</a>*</b>
+:redr[aw][!]		Redraw the screen right now.  When ! is included it is
+			cleared first.
+			Useful to update the screen halfway executing a script
+			or function.  Also when halfway a mapping and
+			'lazyredraw' is set.
+
+						<b class="vimtag">*<a name=":redraws">:redraws</a>*</b> <b class="vimtag">*<a name=":redrawstatus">:redrawstatus</a>*</b>
+:redraws[tatus][!]	Redraw the status line of the current window.  When !
+			is included all status lines are redrawn.
+			Useful to update the status line(s) when 'statusline'
+			includes an item that doesn't cause automatic
+			updating.
+
+						<b class="vimtag">*<a name=":redrawt">:redrawt</a>*</b> <b class="vimtag">*<a name=":redrawtabline">:redrawtabline</a>*</b>
+:redrawt[abline]	Redraw the tabline.  Useful to update the tabline when
+			'tabline' includes an item that doesn't trigger
+			automatic updating.
+
+							<b class="vimtag">*<a name="N%3CDel%3E">N&lt;Del&gt;</a>*</b>
+<code class="special">&lt;Del&gt;</code>			When entering a number: Remove the last digit.
+			<code class="note">Note:</code> if you like to use <code class="special">&lt;BS&gt;</code> for this, add this
+			mapping to your .vimrc:
+<code class="example">				:map <code class="keystroke">CTRL-V</code> <code class="special">&lt;BS&gt;</code>   <code class="keystroke">CTRL-V</code> <code class="special">&lt;Del&gt;</code></code>
+			See |<a href="options.html#:fixdel">:fixdel</a>| if your <code class="special">&lt;Del&gt;</code> key does not do what you
+			want.
+
+:as[cii]	or					<b class="vimtag">*<a name="ga">ga</a>*</b> <b class="vimtag">*<a name=":as">:as</a>*</b> <b class="vimtag">*<a name=":ascii">:ascii</a>*</b>
+ga			Print the ascii value of the character under the
+			cursor in decimal, hexadecimal and octal.
+			Mnemonic: Get Ascii value.
+
+			For example, when the cursor is on a 'R':
+<code class="section">				<code class="special">&lt;R&gt;</code>  82,  Hex 52,  Octal 122 </code>
+			When the character is a non-standard ASCII character,
+			but printable according to the 'isprint' option, the
+			non-printable version is also given.
+
+			When the character is larger than 127, the <code class="special">&lt;M-x&gt;</code> form
+			is also printed.  For example:
+<code class="section">				<code class="special">&lt;~A&gt;</code>  <code class="special">&lt;M-^A&gt;</code>  129,  Hex 81,  Octal 201 </code>
+<code class="section">				<code class="special">&lt;p&gt;</code>  <code class="special">&lt;|~&gt;</code>  <code class="special">&lt;M-~&gt;</code>  254,  Hex fe,  Octal 376 </code>
+			(where <code class="special">&lt;p&gt;</code> is a special character)
+
+			The <code class="special">&lt;Nul&gt;</code> character in a file is stored internally as
+			<code class="special">&lt;NL&gt;</code>, but it will be shown as:
+<code class="section">				<code class="special">&lt;^@&gt;</code>  0,  Hex 00,  Octal 000 </code>
+
+			If the character has composing characters these are
+			also shown.  The value of 'maxcombine' doesn't matter.
+
+			If the character can be inserted as a digraph, also
+			output the two characters that can be used to create
+			the character:
+<code class="section">			    <code class="special">&lt;ö&gt;</code> 246, Hex 00f6, Oct 366, Digr o: </code>
+			This shows you can type <code class="keystroke">CTRL-K</code> o : to insert ö.
+
+							<b class="vimtag">*<a name="g8">g8</a>*</b>
+g8			Print the hex values of the bytes used in the
+			character under the cursor, assuming it is in |<a href="mbyte.html#UTF-8">UTF-8</a>|
+			encoding.  This also shows composing characters.  The
+			value of 'maxcombine' doesn't matter.
+			Example of a character with two composing characters:
+<code class="section">				e0 b8 81 + e0 b8 b9 + e0 b9 89 </code>
+
+							<b class="vimtag">*<a name="8g8">8g8</a>*</b>
+8g8			Find an illegal UTF-8 byte sequence at or after the
+			cursor.  This works in two situations:
+			1. when 'encoding' is any 8-bit encoding
+			2. when 'encoding' is "utf-8" and 'fileencoding' is
+			   any 8-bit encoding
+			Thus it can be used when editing a file that was
+			supposed to be UTF-8 but was read as if it is an 8-bit
+			encoding because it contains illegal bytes.
+			Does not wrap around the end of the file.
+			<code class="note">Note</code> that when the cursor is on an illegal byte or the
+			cursor is halfway a multi-byte character the command
+			won't move the cursor.
+
+						<b class="vimtag">*<a name=":p">:p</a>*</b> <b class="vimtag">*<a name=":pr">:pr</a>*</b> <b class="vimtag">*<a name=":print">:print</a>*</b> <b class="vimtag">*<a name="E749">E749</a>*</b>
+:<code class="special">[range]</code>p[rint] [flags]
+			Print <code class="special">[range]</code> lines (default current line).
+			<code class="note">Note:</code> If you are looking for a way to print your text
+			on paper see |<a href="print.html#:hardcopy">:hardcopy</a>|.  In the GUI you can use the
+			File.Print menu entry.
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+			The |<a href="various.html#:filter">:filter</a>| command can be used to only show lines
+			matching a pattern.
+
+:<code class="special">[range]</code>p[rint] <code class="special">{count}</code> [flags]
+			Print <code class="special">{count}</code> lines, starting with <code class="special">[range]</code> (default
+			current line |<a href="cmdline.html#cmdline-ranges">cmdline-ranges</a>|).
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+
+							<b class="vimtag">*<a name=":P">:P</a>*</b> <b class="vimtag">*<a name=":Print">:Print</a>*</b>
+:<code class="special">[range]</code>P[rint] <code class="special">[count]</code> [flags]
+			Just as ":print".  Was apparently added to Vi for
+			people that keep the shift key pressed too long...
+			<code class="note">Note:</code> A user command can overrule this command.
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+
+							<b class="vimtag">*<a name=":l">:l</a>*</b> <b class="vimtag">*<a name=":list">:list</a>*</b>
+:<code class="special">[range]</code>l[ist] <code class="special">[count]</code> [flags]
+			Same as :print, but display unprintable characters
+			with '^' and put $ after the line.  This can be
+			further changed with the 'listchars' option.
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+
+							<b class="vimtag">*<a name=":nu">:nu</a>*</b> <b class="vimtag">*<a name=":number">:number</a>*</b>
+:<code class="special">[range]</code>nu[mber] <code class="special">[count]</code> [flags]
+			Same as :print, but precede each line with its line
+			number.  (See also 'highlight' and 'numberwidth'
+			option).
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+
+							<b class="vimtag">*<a name=":%23">:#</a>*</b>
+:<code class="special">[range]</code># <code class="special">[count]</code> [flags]
+			synonym for :number.
+
+							<b class="vimtag">*<a name=":%23!">:#!</a>*</b>
+:#!<code class="special">{anything}</code>		Ignored, so that you can start a Vim script with:
+<code class="example">				#!vim -S</code>
+<code class="example">				echo "this is a Vim script"</code>
+<code class="example">				quit</code>
+
+							<b class="vimtag">*<a name=":z">:z</a>*</b> <b class="vimtag">*<a name="E144">E144</a>*</b>
+:<code class="special">{range}</code>z[+-^.=]<code class="special">{count}</code>	Display several lines of text surrounding the line
+			specified with <code class="special">{range}</code>, or around the current line
+			if there is no <code class="special">{range}</code>.  If there is a <code class="special">{count}</code>, that's
+			how many lines you'll see; if there is only one window
+			then twice the value of the 'scroll' option is used,
+			otherwise the current window height minus 3 is used.
+
+			If there is a <code class="special">{count}</code> the 'window' option is set to
+			its value.
+
+			:z can be used either alone or followed by any of
+			several punctuation marks.  These have the following
+			effect:
+
+<code class="section">			mark   first line    last line      new cursor line </code>
+			----   ----------    ---------      ------------
+			+      current line  1 scr forward  1 scr forward
+			-      1 scr back    current line   current line
+			^      2 scr back    1 scr back     1 scr back
+			.      1/2 scr back  1/2 scr fwd    1/2 scr fwd
+			=      1/2 scr back  1/2 scr fwd    current line
+
+			Specifying no mark at all is the same as "+".
+			If the mark is "=", a line of dashes is printed
+			around the current line.
+
+:<code class="special">{range}</code>z#[+-^.=]<code class="special">{count}</code>				<b class="vimtag">*<a name=":z%23">:z#</a>*</b>
+			Like ":z", but number the lines.
+
+							<b class="vimtag">*<a name=":%20">:=</a>*</b>
+:= [flags]		Print the last line number.
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+
+:<code class="special">{range}</code>= [flags]	Prints the last line number in <code class="special">{range}</code>.  For example,
+			this prints the current line number:
+<code class="example">				:.=</code>
+			See |<a href="cmdline.html#ex-flags">ex-flags</a>| for [flags].
+
+:norm[al][!] <code class="special">{commands}</code>					<b class="vimtag">*<a name=":norm">:norm</a>*</b> <b class="vimtag">*<a name=":normal">:normal</a>*</b>
+			Execute Normal mode commands <code class="special">{commands}</code>.  This makes
+			it possible to execute Normal mode commands typed on
+			the command-line.  <code class="special">{commands}</code> are executed like they
+			are typed.  For undo all commands are undone together.
+			Execution stops when an error is encountered.
+
+			If the [!] is given, mappings will not be used.
+			Without it, when this command is called from a
+			non-remappable mapping (|<a href="map.html#:noremap">:noremap</a>|), the argument can
+			be mapped anyway.
+
+			<code class="special">{commands}</code> should be a complete command.  If
+			<code class="special">{commands}</code> does not finish a command, the last one
+			will be aborted as if <code class="special">&lt;Esc&gt;</code> or <code class="special">&lt;C-C&gt;</code> was typed.
+			This implies that an insert command must be completed
+			(to start Insert mode, see |<a href="insert.html#:startinsert">:startinsert</a>|).  A ":"
+			command must be completed as well.  And you can't use
+			"Q" or "gQ" to start Ex mode.
+
+			The display is not updated while ":normal" is busy.
+
+			<code class="special">{commands}</code> cannot start with a space.  Put a count of
+			1 (one) before it, "1 " is one space.
+
+			The 'insertmode' option is ignored for <code class="special">{commands}</code>.
+
+			This command cannot be followed by another command,
+			since any '|' is considered part of the command.
+
+			This command can be used recursively, but the depth is
+			limited by 'maxmapdepth'.
+
+			An alternative is to use |<a href="eval.html#:execute">:execute</a>|, which uses an
+			expression as argument.  This allows the use of
+			printable characters to represent special characters.
+
+			Example:
+<code class="example">				:exe "normal \<code class="special">&lt;c-w&gt;</code>\<code class="special">&lt;c-w&gt;</code>"</code>
+<code class="example"></code>
+:<code class="special">{range}</code>norm[al][!] <code class="special">{commands}</code>				<b class="vimtag">*<a name=":normal-range">:normal-range</a>*</b>
+			Execute Normal mode commands <code class="special">{commands}</code> for each line
+			in the <code class="special">{range}</code>.  Before executing the <code class="special">{commands}</code>, the
+			cursor is positioned in the first column of the range,
+			for each line.  Otherwise it's the same as the
+			":normal" command without a range.
+
+							<b class="vimtag">*<a name=":sh">:sh</a>*</b> <b class="vimtag">*<a name=":shell">:shell</a>*</b> <b class="vimtag">*<a name="E371">E371</a>*</b>
+:sh[ell]		This command starts a shell.  When the shell exits
+			(after the "exit" command) you return to Vim.  The
+			name for the shell command comes from 'shell' option.
+							<b class="vimtag">*<a name="E360">E360</a>*</b>
+			<code class="note">Note:</code> This doesn't work when Vim on the Amiga was
+			started in QuickFix mode from a compiler, because the
+			compiler will have set stdin to a non-interactive
+			mode.
+
+							<b class="vimtag">*<a name=":!cmd">:!cmd</a>*</b> <b class="vimtag">*<a name=":!">:!</a>*</b> <b class="vimtag">*<a name="E34">E34</a>*</b>
+:!<code class="special">{cmd}</code>			Execute <code class="special">{cmd}</code> with the shell.  See also the 'shell'
+			and 'shelltype' option.
+
+			Any '!' in <code class="special">{cmd}</code> is replaced with the previous
+			external command (see also 'cpoptions').  But not when
+			there is a backslash before the '!', then that
+			backslash is removed.  Example: ":!ls" followed by
+			":!echo ! \! \\!" executes "echo ls ! \!".
+
+			A '|' in <code class="special">{cmd}</code> is passed to the shell, you cannot use
+			it to append a Vim command.  See |<a href="cmdline.html#:bar">:bar</a>|.
+
+			If <code class="special">{cmd}</code> contains "%" it is expanded to the current
+			file name.  Special characters are not escaped, use
+			quotes to avoid their special meaning:
+<code class="example">				:!ls "%"</code>
+			If the file name contains a "$" single quotes might
+			work better (but a single quote causes trouble):
+<code class="example">				:!ls '%'</code>
+&lt;			This should always work, but it's more typing:
+<code class="example">				:exe "!ls " . shellescape(expand("%"))</code>
+
+			A newline character ends <code class="special">{cmd}</code>, what follows is
+			interpreted as a following ":" command.  However, if
+			there is a backslash before the newline it is removed
+			and <code class="special">{cmd}</code> continues.  It doesn't matter how many
+			backslashes are before the newline, only one is
+			removed.
+
+			On Unix the command normally runs in a non-interactive
+			shell.  If you want an interactive shell to be used
+			(to use aliases) set 'shellcmdflag' to "-ic".
+			For Win32 also see |<a href="os_win32.html#:!start">:!start</a>|.
+
+			After the command has been executed, the timestamp and
+			size of the current file is checked |<a href="editing.html#timestamp">timestamp</a>|.
+
+			Vim redraws the screen after the command is finished,
+			because it may have printed any text.  This requires a
+			hit-enter prompt, so that you can read any messages.
+			To avoid this use:
+<code class="example">				:silent !<code class="special">{cmd}</code></code>
+			The screen is not redrawn then, thus you have to use
+			<code class="keystroke">CTRL-L</code> or ":redraw!" if the command did display
+			something.
+			Also see |<a href="tips.html#shell-window">shell-window</a>|.
+
+							<b class="vimtag">*<a name=":!!">:!!</a>*</b>
+:!!			Repeat last ":!<code class="special">{cmd}</code>".
+
+							<b class="vimtag">*<a name=":ve">:ve</a>*</b> <b class="vimtag">*<a name=":ver">:ver</a>*</b> <b class="vimtag">*<a name=":version">:version</a>*</b>
+:ve[rsion]		Print the version number of the editor.  If the
+			compiler used understands "__DATE__" the compilation
+			date is mentioned.  Otherwise a fixed release-date is
+			shown.
+			The following lines contain information about which
+			features were enabled when Vim was compiled.  When
+			there is a preceding '+', the feature is included,
+			when there is a '-' it is excluded.  To change this,
+			you have to edit feature.h and recompile Vim.
+			To check for this in an expression, see |<a href="eval.html#has()">has()</a>|.
+			Here is an overview of the features.
+			The first column shows the smallest version in which
+			they are included:
+			   T	tiny (always)
+			   S	small
+			   N	normal
+			   B	big
+			   H	huge
+			   m	manually enabled or depends on other features
+			   -    never, feature was removed
+			 (none) system dependent
+			Thus if a feature is marked with "N", it is included
+			in the normal, big and huge versions of Vim.
+
+							<b class="vimtag">*<a name="+feature-list">+feature-list</a>*</b>
+   <b class="vimtag">*<a name="+acl">+acl</a>*</b>		|<a href="editing.html#ACL">ACL</a>| support included
+   <b class="vimtag">*<a name="+ARP">+ARP</a>*</b>		Amiga only: ARP support included
+B  <b class="vimtag">*<a name="+arabic">+arabic</a>*</b>		|<a href="arabic.html#Arabic">Arabic</a>| language support
+T  <b class="vimtag">*<a name="+autocmd">+autocmd</a>*</b>		|<a href="autocmd.html#:autocmd">:autocmd</a>|, automatic commands
+H  <b class="vimtag">*<a name="+autoservername">+autoservername</a>*</b>	Automatically enable |<a href="remote.html#clientserver">clientserver</a>|
+m  <b class="vimtag">*<a name="+balloon_eval">+balloon_eval</a>*</b>	|<a href="debugger.html#balloon-eval">balloon-eval</a>| support in the GUI. Included when
+			compiling with supported GUI (Motif, GTK, GUI) and
+			either Netbeans/Sun Workshop integration or |<a href="various.html#+eval">+eval</a>|
+			feature.
+H  <b class="vimtag">*<a name="+balloon_eval_term">+balloon_eval_term</a>*</b>	|<a href="debugger.html#balloon-eval">balloon-eval</a>| support in the terminal,
+			'balloonevalterm'
+N  <b class="vimtag">*<a name="+browse">+browse</a>*</b>		|<a href="editing.html#:browse">:browse</a>| command
+N  <b class="vimtag">*<a name="+builtin_terms">+builtin_terms</a>*</b>	some terminals builtin |<a href="term.html#builtin-terms">builtin-terms</a>|
+B  <b class="vimtag">*<a name="++builtin_terms">++builtin_terms</a>*</b>	maximal terminals builtin |<a href="term.html#builtin-terms">builtin-terms</a>|
+N  <b class="vimtag">*<a name="+byte_offset">+byte_offset</a>*</b>	support for 'o' flag in 'statusline' option, "go"
+			and ":goto" commands.
+m  <b class="vimtag">*<a name="+channel">+channel</a>*</b>		inter process communication |<a href="channel.html#channel">channel</a>|
+N  <b class="vimtag">*<a name="+cindent">+cindent</a>*</b>		|<a href="options.html#'cindent'">'cindent'</a>|, C indenting
+N  <b class="vimtag">*<a name="+clientserver">+clientserver</a>*</b>	Unix and Win32: Remote invocation |<a href="remote.html#clientserver">clientserver</a>|
+   <b class="vimtag">*<a name="+clipboard">+clipboard</a>*</b>		|<a href="gui.html#clipboard">clipboard</a>| support compiled-in
+   <b class="vimtag">*<a name="+clipboard_working">+clipboard_working</a>*</b>	|<a href="gui.html#clipboard">clipboard</a>| support compiled-in and working
+T  <b class="vimtag">*<a name="+cmdline_compl">+cmdline_compl</a>*</b>	command line completion |<a href="cmdline.html#cmdline-completion">cmdline-completion</a>|
+S  <b class="vimtag">*<a name="+cmdline_hist">+cmdline_hist</a>*</b>	command line history |<a href="cmdline.html#cmdline-history">cmdline-history</a>|
+N  <b class="vimtag">*<a name="+cmdline_info">+cmdline_info</a>*</b>	|<a href="options.html#'showcmd'">'showcmd'</a>| and |<a href="options.html#'ruler'">'ruler'</a>|
+T  <b class="vimtag">*<a name="+comments">+comments</a>*</b>		|<a href="options.html#'comments'">'comments'</a>| support
+B  <b class="vimtag">*<a name="+conceal">+conceal</a>*</b>		"conceal" support, see |<a href="syntax.html#conceal">conceal</a>| |<a href="syntax.html#:syn-conceal">:syn-conceal</a>| etc.
+N  <b class="vimtag">*<a name="+cryptv">+cryptv</a>*</b>		encryption support |<a href="editing.html#encryption">encryption</a>|
+B  <b class="vimtag">*<a name="+cscope">+cscope</a>*</b>		|<a href="if_cscop.html#cscope">cscope</a>| support
+T  <b class="vimtag">*<a name="+cursorbind">+cursorbind</a>*</b>	|<a href="options.html#'cursorbind'">'cursorbind'</a>| support
+m  <b class="vimtag">*<a name="+cursorshape">+cursorshape</a>*</b>	|<a href="term.html#termcap-cursor-shape">termcap-cursor-shape</a>| support
+m  <b class="vimtag">*<a name="+debug">+debug</a>*</b>		Compiled for debugging.
+N  <b class="vimtag">*<a name="+dialog_gui">+dialog_gui</a>*</b>	Support for |<a href="editing.html#:confirm">:confirm</a>| with GUI dialog.
+N  <b class="vimtag">*<a name="+dialog_con">+dialog_con</a>*</b>	Support for |<a href="editing.html#:confirm">:confirm</a>| with console dialog.
+N  <b class="vimtag">*<a name="+dialog_con_gui">+dialog_con_gui</a>*</b>	Support for |<a href="editing.html#:confirm">:confirm</a>| with GUI and console dialog.
+N  <b class="vimtag">*<a name="+diff">+diff</a>*</b>		|<a href="diff.html#vimdiff">vimdiff</a>| and 'diff'
+N  <b class="vimtag">*<a name="+digraphs">+digraphs</a>*</b>		|<a href="digraph.html#digraphs">digraphs</a>| <b class="vimtag">*<a name="E196">E196</a>*</b>
+   <b class="vimtag">*<a name="+directx">+directx</a>*</b>		Win32 GUI only: DirectX and |<a href="options.html#'renderoptions'">'renderoptions'</a>|
+   <b class="vimtag">*<a name="+dnd">+dnd</a>*</b>		Support for DnD into the "~ register |<a href="change.html#quote_%7E">quote_~</a>|.
+B  <b class="vimtag">*<a name="+emacs_tags">+emacs_tags</a>*</b>	|<a href="tagsrch.html#emacs-tags">emacs-tags</a>| files
+N  <b class="vimtag">*<a name="+eval">+eval</a>*</b>		expression evaluation |<a href="eval.html#eval.txt">eval</a>|
+N  <b class="vimtag">*<a name="+ex_extra">+ex_extra</a>*</b>		always on now, used to be for Vim's extra Ex commands
+N  <b class="vimtag">*<a name="+extra_search">+extra_search</a>*</b>	|<a href="options.html#'hlsearch'">'hlsearch'</a>| and |<a href="options.html#'incsearch'">'incsearch'</a>| options.
+-  <b class="vimtag">*<a name="+farsi">+farsi</a>*</b>		Removed: |<a href="farsi.html#farsi">farsi</a>| language
+N  <b class="vimtag">*<a name="+file_in_path">+file_in_path</a>*</b>	|<a href="editing.html#gf">gf</a>|, |<a href="windows.html#CTRL-W_f">CTRL-W_f</a>| and |<a href="cmdline.html#%3Ccfile%3E">&lt;cfile&gt;</a>|
+N  <b class="vimtag">*<a name="+find_in_path">+find_in_path</a>*</b>	include file searches: |<a href="tagsrch.html#[I">[I</a>|, |<a href="tagsrch.html#:isearch">:isearch</a>|,
+			|<a href="tagsrch.html#CTRL-W_CTRL-I">CTRL-W_CTRL-I</a>|, |<a href="tagsrch.html#:checkpath">:checkpath</a>|, etc.
+N  <b class="vimtag">*<a name="+folding">+folding</a>*</b>		|<a href="fold.html#folding">folding</a>|
+   <b class="vimtag">*<a name="+footer">+footer</a>*</b>		|<a href="debugger.html#gui-footer">gui-footer</a>|
+   <b class="vimtag">*<a name="+fork">+fork</a>*</b>		Unix only: |<a href="os_unix.html#fork">fork</a>| shell commands
+   <b class="vimtag">*<a name="+float">+float</a>*</b>		Floating point support
+N  <b class="vimtag">*<a name="+gettext">+gettext</a>*</b>		message translations |<a href="mlang.html#multi-lang">multi-lang</a>|
+   <b class="vimtag">*<a name="+GUI_Athena">+GUI_Athena</a>*</b>	Unix only: Athena |<a href="gui.html#GUI">GUI</a>|
+   <b class="vimtag">*<a name="+GUI_neXtaw">+GUI_neXtaw</a>*</b>	Unix only: neXtaw |<a href="gui.html#GUI">GUI</a>|
+   <b class="vimtag">*<a name="+GUI_GTK">+GUI_GTK</a>*</b>		Unix only: GTK+ |<a href="gui.html#GUI">GUI</a>|
+   <b class="vimtag">*<a name="+GUI_Motif">+GUI_Motif</a>*</b>		Unix only: Motif |<a href="gui.html#GUI">GUI</a>|
+   <b class="vimtag">*<a name="+GUI_Photon">+GUI_Photon</a>*</b>	QNX only:  Photon |<a href="gui.html#GUI">GUI</a>|
+m  <b class="vimtag">*<a name="+hangul_input">+hangul_input</a>*</b>	Hangul input support |<a href="hangulin.html#hangul">hangul</a>|
+   <b class="vimtag">*<a name="+iconv">+iconv</a>*</b>		Compiled with the |<a href="eval.html#iconv()">iconv()</a>| function
+   <b class="vimtag">*<a name="+iconv%2Fdyn">+iconv/dyn</a>*</b>		Likewise |<a href="mbyte.html#iconv-dynamic">iconv-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+T  <b class="vimtag">*<a name="+insert_expand">+insert_expand</a>*</b>	|<a href="insert.html#insert_expand">insert_expand</a>| Insert mode completion
+m  <b class="vimtag">*<a name="+job">+job</a>*</b>		starting and stopping jobs |<a href="channel.html#job">job</a>|
+S  <b class="vimtag">*<a name="+jumplist">+jumplist</a>*</b>		|<a href="motion.html#jumplist">jumplist</a>|
+B  <b class="vimtag">*<a name="+keymap">+keymap</a>*</b>		|<a href="options.html#'keymap'">'keymap'</a>|
+N  <b class="vimtag">*<a name="+lambda">+lambda</a>*</b>		|<a href="eval.html#lambda">lambda</a>| and |<a href="eval.html#closure">closure</a>|
+B  <b class="vimtag">*<a name="+langmap">+langmap</a>*</b>		|<a href="options.html#'langmap'">'langmap'</a>|
+N  <b class="vimtag">*<a name="+libcall">+libcall</a>*</b>		|<a href="eval.html#libcall()">libcall()</a>|
+N  <b class="vimtag">*<a name="+linebreak">+linebreak</a>*</b>		|<a href="options.html#'linebreak'">'linebreak'</a>|, |<a href="options.html#'breakat'">'breakat'</a>| and |<a href="options.html#'showbreak'">'showbreak'</a>|
+N  <b class="vimtag">*<a name="+lispindent">+lispindent</a>*</b>	|<a href="options.html#'lisp'">'lisp'</a>|
+T  <b class="vimtag">*<a name="+listcmds">+listcmds</a>*</b>		Vim commands for the list of buffers |<a href="windows.html#buffer-hidden">buffer-hidden</a>|
+			and argument list |<a href="editing.html#:argdelete">:argdelete</a>|
+T  <b class="vimtag">*<a name="+localmap">+localmap</a>*</b>		Support for mappings local to a buffer |<a href="map.html#:map-local">:map-local</a>|
+m  <b class="vimtag">*<a name="+lua">+lua</a>*</b>		|<a href="if_lua.html#Lua">Lua</a>| interface
+m  <b class="vimtag">*<a name="+lua%2Fdyn">+lua/dyn</a>*</b>		|<a href="if_lua.html#Lua">Lua</a>| interface |<a href="various.html#%2Fdyn">/dyn</a>|
+N  <b class="vimtag">*<a name="+menu">+menu</a>*</b>		|<a href="gui.html#:menu">:menu</a>|
+N  <b class="vimtag">*<a name="+mksession">+mksession</a>*</b>		|<a href="starting.html#:mksession">:mksession</a>|
+T  <b class="vimtag">*<a name="+modify_fname">+modify_fname</a>*</b>	|<a href="cmdline.html#filename-modifiers">filename-modifiers</a>|
+T  <b class="vimtag">*<a name="+mouse">+mouse</a>*</b>		Mouse handling |<a href="term.html#mouse-using">mouse-using</a>|
+N  <b class="vimtag">*<a name="+mouseshape">+mouseshape</a>*</b>	|<a href="options.html#'mouseshape'">'mouseshape'</a>|
+B  <b class="vimtag">*<a name="+mouse_dec">+mouse_dec</a>*</b>		Unix only: Dec terminal mouse handling |<a href="options.html#dec-mouse">dec-mouse</a>|
+N  <b class="vimtag">*<a name="+mouse_gpm">+mouse_gpm</a>*</b>		Unix only: Linux console mouse handling |<a href="term.html#gpm-mouse">gpm-mouse</a>|
+N  <b class="vimtag">*<a name="+mouse_jsbterm">+mouse_jsbterm</a>*</b>	JSB mouse handling |<a href="options.html#jsbterm-mouse">jsbterm-mouse</a>|
+B  <b class="vimtag">*<a name="+mouse_netterm">+mouse_netterm</a>*</b>	Unix only: netterm mouse handling |<a href="options.html#netterm-mouse">netterm-mouse</a>|
+N  <b class="vimtag">*<a name="+mouse_pterm">+mouse_pterm</a>*</b>	QNX only: pterm mouse handling |<a href="os_qnx.html#qnx-terminal">qnx-terminal</a>|
+N  <b class="vimtag">*<a name="+mouse_sysmouse">+mouse_sysmouse</a>*</b>	Unix only: *BSD console mouse handling |<a href="term.html#sysmouse">sysmouse</a>|
+B  <b class="vimtag">*<a name="+mouse_sgr">+mouse_sgr</a>*</b>		Unix only: sgr mouse handling |<a href="options.html#sgr-mouse">sgr-mouse</a>|
+B  <b class="vimtag">*<a name="+mouse_urxvt">+mouse_urxvt</a>*</b>	Unix only: urxvt mouse handling |<a href="options.html#urxvt-mouse">urxvt-mouse</a>|
+N  <b class="vimtag">*<a name="+mouse_xterm">+mouse_xterm</a>*</b>	Unix only: xterm mouse handling |<a href="options.html#xterm-mouse">xterm-mouse</a>|
+N  <b class="vimtag">*<a name="+multi_byte">+multi_byte</a>*</b>	16 and 32 bit characters |<a href="mbyte.html#multibyte">multibyte</a>|
+   <b class="vimtag">*<a name="+multi_byte_ime">+multi_byte_ime</a>*</b>	Win32 input method for multibyte chars |<a href="mbyte.html#multibyte-ime">multibyte-ime</a>|
+N  <b class="vimtag">*<a name="+multi_lang">+multi_lang</a>*</b>	non-English language support |<a href="mlang.html#multi-lang">multi-lang</a>|
+m  <b class="vimtag">*<a name="+mzscheme">+mzscheme</a>*</b>		Mzscheme interface |<a href="if_mzsch.html#mzscheme">mzscheme</a>|
+m  <b class="vimtag">*<a name="+mzscheme%2Fdyn">+mzscheme/dyn</a>*</b>	Mzscheme interface |<a href="if_mzsch.html#mzscheme-dynamic">mzscheme-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+m  <b class="vimtag">*<a name="+netbeans_intg">+netbeans_intg</a>*</b>	|<a href="netbeans.html#netbeans">netbeans</a>|
+   <b class="vimtag">*<a name="+num64">+num64</a>*</b>		64-bit Number support |<a href="eval.html#Number">Number</a>|
+   			Always enabled since 8.2.0271, use v:numbersize to
+			check the actual size of a Number.
+m  <b class="vimtag">*<a name="+ole">+ole</a>*</b>		Win32 GUI only: |<a href="if_ole.html#ole-interface">ole-interface</a>|
+N  <b class="vimtag">*<a name="+packages">+packages</a>*</b>		Loading |<a href="repeat.html#packages">packages</a>|
+N  <b class="vimtag">*<a name="+path_extra">+path_extra</a>*</b>	Up/downwards search in 'path' and 'tags'
+m  <b class="vimtag">*<a name="+perl">+perl</a>*</b>		Perl interface |<a href="if_perl.html#perl">perl</a>|
+m  <b class="vimtag">*<a name="+perl%2Fdyn">+perl/dyn</a>*</b>		Perl interface |<a href="if_perl.html#perl-dynamic">perl-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+N  <b class="vimtag">*<a name="+persistent_undo">+persistent_undo</a>*</b>	Persistent undo |<a href="undo.html#undo-persistence">undo-persistence</a>|
+N  <b class="vimtag">*<a name="+popupwin">+popupwin</a>*</b>		Popup windows |<a href="popup.html#popup-window">popup-window</a>|
+   <b class="vimtag">*<a name="+postscript">+postscript</a>*</b>	|<a href="print.html#:hardcopy">:hardcopy</a>| writes a PostScript file
+N  <b class="vimtag">*<a name="+printer">+printer</a>*</b>		|<a href="print.html#:hardcopy">:hardcopy</a>| command
+H  <b class="vimtag">*<a name="+profile">+profile</a>*</b>		|<a href="repeat.html#:profile">:profile</a>| command
+m  <b class="vimtag">*<a name="+python">+python</a>*</b>		Python 2 interface |<a href="if_pyth.html#python">python</a>|
+m  <b class="vimtag">*<a name="+python%2Fdyn">+python/dyn</a>*</b>	Python 2 interface |<a href="if_pyth.html#python-dynamic">python-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+m  <b class="vimtag">*<a name="+python3">+python3</a>*</b>		Python 3 interface |<a href="if_pyth.html#python">python</a>|
+m  <b class="vimtag">*<a name="+python3%2Fdyn">+python3/dyn</a>*</b>	Python 3 interface |<a href="if_pyth.html#python-dynamic">python-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+N  <b class="vimtag">*<a name="+quickfix">+quickfix</a>*</b>		|<a href="quickfix.html#:make">:make</a>| and |<a href="quickfix.html#quickfix">quickfix</a>| commands
+N  <b class="vimtag">*<a name="+reltime">+reltime</a>*</b>		|<a href="eval.html#reltime()">reltime()</a>| function, 'hlsearch'/'incsearch' timeout,
+			'redrawtime' option
+B  <b class="vimtag">*<a name="+rightleft">+rightleft</a>*</b>		Right to left typing |<a href="options.html#'rightleft'">'rightleft'</a>|
+m  <b class="vimtag">*<a name="+ruby">+ruby</a>*</b>		Ruby interface |<a href="if_ruby.html#ruby">ruby</a>|
+m  <b class="vimtag">*<a name="+ruby%2Fdyn">+ruby/dyn</a>*</b>		Ruby interface |<a href="if_ruby.html#ruby-dynamic">ruby-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+T  <b class="vimtag">*<a name="+scrollbind">+scrollbind</a>*</b>	|<a href="options.html#'scrollbind'">'scrollbind'</a>|
+B  <b class="vimtag">*<a name="+signs">+signs</a>*</b>		|<a href="sign.html#:sign">:sign</a>|
+N  <b class="vimtag">*<a name="+smartindent">+smartindent</a>*</b>	|<a href="options.html#'smartindent'">'smartindent'</a>|
+B  <b class="vimtag">*<a name="+sound">+sound</a>*</b>		|<a href="eval.html#sound_playevent()">sound_playevent()</a>|, |<a href="eval.html#sound_playfile()">sound_playfile()</a>| functions, etc.
+N  <b class="vimtag">*<a name="+spell">+spell</a>*</b>		spell checking support, see |<a href="spell.html#spell">spell</a>|
+N  <b class="vimtag">*<a name="+startuptime">+startuptime</a>*</b>	|<a href="starting.html#--startuptime">--startuptime</a>| argument
+N  <b class="vimtag">*<a name="+statusline">+statusline</a>*</b>	Options 'statusline', 'rulerformat' and special
+			formats of 'titlestring' and 'iconstring'
+-  <b class="vimtag">*<a name="+sun_workshop">+sun_workshop</a>*</b>	Removed: |<a href="workshop.html#workshop">workshop</a>|
+N  <b class="vimtag">*<a name="+syntax">+syntax</a>*</b>		Syntax highlighting |<a href="syntax.html#syntax">syntax</a>|
+   <b class="vimtag">*<a name="+system()">+system()</a>*</b>		Unix only: opposite of |<a href="various.html#+fork">+fork</a>|
+T  <b class="vimtag">*<a name="+tag_binary">+tag_binary</a>*</b>	binary searching in tags file |<a href="tagsrch.html#tag-binary-search">tag-binary-search</a>|
+-  <b class="vimtag">*<a name="+tag_old_static">+tag_old_static</a>*</b>	Removed; method for static tags |<a href="tagsrch.html#tag-old-static">tag-old-static</a>|
+-  <b class="vimtag">*<a name="+tag_any_white">+tag_any_white</a>*</b>	Removed; was to allow any white space in tags files
+m  <b class="vimtag">*<a name="+tcl">+tcl</a>*</b>		Tcl interface |<a href="if_tcl.html#tcl">tcl</a>|
+m  <b class="vimtag">*<a name="+tcl%2Fdyn">+tcl/dyn</a>*</b>		Tcl interface |<a href="if_tcl.html#tcl-dynamic">tcl-dynamic</a>| |<a href="various.html#%2Fdyn">/dyn</a>|
+m  <b class="vimtag">*<a name="+terminal">+terminal</a>*</b>		Support for terminal window |<a href="terminal.html#terminal">terminal</a>|
+   <b class="vimtag">*<a name="+terminfo">+terminfo</a>*</b>		uses |<a href="term.html#terminfo">terminfo</a>| instead of termcap
+N  <b class="vimtag">*<a name="+termresponse">+termresponse</a>*</b>	support for |<a href="term.html#t_RV">t_RV</a>| and |<a href="eval.html#v:termresponse">v:termresponse</a>|
+B  <b class="vimtag">*<a name="+termguicolors">+termguicolors</a>*</b>	24-bit color in xterm-compatible terminals support
+N  <b class="vimtag">*<a name="+textobjects">+textobjects</a>*</b>	|<a href="motion.html#text-objects">text-objects</a>| selection
+N  <b class="vimtag">*<a name="+textprop">+textprop</a>*</b>		|<a href="textprop.html#text-properties">text-properties</a>|
+   <b class="vimtag">*<a name="+tgetent">+tgetent</a>*</b>		non-Unix only: able to use external termcap
+N  <b class="vimtag">*<a name="+timers">+timers</a>*</b>		the |<a href="eval.html#timer_start()">timer_start()</a>| function
+N  <b class="vimtag">*<a name="+title">+title</a>*</b>		Setting the window 'title' and 'icon'
+N  <b class="vimtag">*<a name="+toolbar">+toolbar</a>*</b>		|<a href="gui.html#gui-toolbar">gui-toolbar</a>|
+T  <b class="vimtag">*<a name="+user_commands">+user_commands</a>*</b>	User-defined commands. |<a href="map.html#user-commands">user-commands</a>|
+			Always enabled since 8.1.1210.
+B  <b class="vimtag">*<a name="+vartabs">+vartabs</a>*</b>		Variable-width tabstops. |<a href="options.html#'vartabstop'">'vartabstop'</a>|
+N  <b class="vimtag">*<a name="+viminfo">+viminfo</a>*</b>		|<a href="options.html#'viminfo'">'viminfo'</a>|
+   <b class="vimtag">*<a name="+vertsplit">+vertsplit</a>*</b>		Vertically split windows |<a href="windows.html#:vsplit">:vsplit</a>|; Always enabled
+			since 8.0.1118.
+N  <b class="vimtag">*<a name="+virtualedit">+virtualedit</a>*</b>	|<a href="options.html#'virtualedit'">'virtualedit'</a>|
+T  <b class="vimtag">*<a name="+visual">+visual</a>*</b>		Visual mode |<a href="visual.html#Visual-mode">Visual-mode</a>| Always enabled since 7.4.200.
+T  <b class="vimtag">*<a name="+visualextra">+visualextra</a>*</b>	extra Visual mode commands |<a href="visual.html#blockwise-operators">blockwise-operators</a>|
+T  <b class="vimtag">*<a name="+vreplace">+vreplace</a>*</b>		|<a href="change.html#gR">gR</a>| and |<a href="change.html#gr">gr</a>|
+   <b class="vimtag">*<a name="+vtp">+vtp</a>*</b>		on MS-Windows console: support for 'termguicolors'
+N  <b class="vimtag">*<a name="+wildignore">+wildignore</a>*</b>	|<a href="options.html#'wildignore'">'wildignore'</a>|
+N  <b class="vimtag">*<a name="+wildmenu">+wildmenu</a>*</b>		|<a href="options.html#'wildmenu'">'wildmenu'</a>|
+T  <b class="vimtag">*<a name="+windows">+windows</a>*</b>		more than one window; Always enabled since 8.0.1118.
+m  <b class="vimtag">*<a name="+writebackup">+writebackup</a>*</b>	|<a href="options.html#'writebackup'">'writebackup'</a>| is default on
+m  <b class="vimtag">*<a name="+xim">+xim</a>*</b>		X input method |<a href="mbyte.html#xim">xim</a>|
+   <b class="vimtag">*<a name="+xfontset">+xfontset</a>*</b>		X fontset support |<a href="mbyte.html#xfontset">xfontset</a>|
+   <b class="vimtag">*<a name="+xpm">+xpm</a>*</b>		pixmap support
+m  <b class="vimtag">*<a name="+xpm_w32">+xpm_w32</a>*</b>		Win32 GUI only: pixmap support |<a href="gui_w32.html#w32-xpm-support">w32-xpm-support</a>|
+   <b class="vimtag">*<a name="+xsmp">+xsmp</a>*</b>		XSMP (X session management) support
+   <b class="vimtag">*<a name="+xsmp_interact">+xsmp_interact</a>*</b>	interactive XSMP (X session management) support
+N  <b class="vimtag">*<a name="+xterm_clipboard">+xterm_clipboard</a>*</b>	Unix only: xterm clipboard handling
+m  <b class="vimtag">*<a name="+xterm_save">+xterm_save</a>*</b>	save and restore xterm screen |<a href="tips.html#xterm-screens">xterm-screens</a>|
+N  <b class="vimtag">*<a name="+X11">+X11</a>*</b>		Unix only: can restore window title |<a href="options.html#X11">X11</a>|
+
+							<b class="vimtag">*<a name="%2Fdyn">/dyn</a>*</b> <b class="vimtag">*<a name="E370">E370</a>*</b> <b class="vimtag">*<a name="E448">E448</a>*</b>
+			To some of the features "/dyn" is added when the
+			feature is only available when the related library can
+			be dynamically loaded.
+
+:ve[rsion] <code class="special">{nr}</code>		Is now ignored.  This was previously used to check the
+			version number of a .vimrc file.  It was removed,
+			because you can now use the ":if" command for
+			version-dependent behavior.
+
+							<b class="vimtag">*<a name=":redi">:redi</a>*</b> <b class="vimtag">*<a name=":redir">:redir</a>*</b>
+:redi[r][!] &gt; <code class="special">{file}</code>	Redirect messages to file <code class="special">{file}</code>.  The messages which
+			are the output of commands are written to that file,
+			until redirection ends.  The messages are also still
+			shown on the screen.  When [!] is included, an
+			existing file is overwritten.  When [!] is omitted,
+			and <code class="special">{file}</code> exists, this command fails.
+
+			Only one ":redir" can be active at a time.  Calls to
+			":redir" will close any active redirection before
+			starting redirection to the new target.  For recursive
+			use check out |<a href="eval.html#execute()">execute()</a>|.
+
+			To stop the messages and commands from being echoed to
+			the screen, put the commands in a function and call it
+			with ":silent call Function()".
+			An alternative is to use the 'verbosefile' option,
+			this can be used in combination with ":redir".
+
+:redi[r] &gt;&gt; <code class="special">{file}</code>	Redirect messages to file <code class="special">{file}</code>.  Append if <code class="special">{file}</code>
+			already exists.
+
+:redi[r] @<code class="special">{a-zA-Z}</code>
+:redi[r] @<code class="special">{a-zA-Z}</code>&gt;	Redirect messages to register <code class="special">{a-z}</code>.  Append to the
+			contents of the register if its name is given
+			uppercase <code class="special">{A-Z}</code>.  The "&gt;" after the register name is
+			optional.
+:redi[r] @<code class="special">{a-z}</code>&gt;&gt;	Append messages to register <code class="special">{a-z}</code>.
+
+:redi[r] @*&gt;
+:redi[r] @+&gt;		Redirect messages to the selection or clipboard. For
+			backward compatibility, the "&gt;" after the register
+			name can be omitted. See |<a href="gui.html#quotestar">quotestar</a>| and |<a href="gui_x11.html#quoteplus">quoteplus</a>|.
+:redi[r] @*&gt;&gt;
+:redi[r] @+&gt;&gt;		Append messages to the selection or clipboard.
+
+:redi[r] @"&gt;		Redirect messages to the unnamed register. For
+			backward compatibility, the "&gt;" after the register
+			name can be omitted.
+:redi[r] @"&gt;&gt;		Append messages to the unnamed register.
+
+:redi[r] =&gt; <code class="special">{var}</code>	Redirect messages to a variable.  If the variable
+			doesn't exist, then it is created.  If the variable
+			exists, then it is initialized to an empty string.
+			The variable will remain empty until redirection ends.
+			Only string variables can be used.  After the
+			redirection starts, if the variable is removed or
+			locked or the variable type is changed, then further
+			command output messages will cause errors.
+			To get the output of one command the |<a href="eval.html#execute()">execute()</a>|
+			function can be used.
+
+:redi[r] =&gt;&gt; <code class="special">{var}</code>	Append messages to an existing variable.  Only string
+			variables can be used.
+
+:redi[r] END		End redirecting messages.
+
+							<b class="vimtag">*<a name=":filt">:filt</a>*</b> <b class="vimtag">*<a name=":filter">:filter</a>*</b>
+:filt[er][!] <code class="special">{pat}</code> <code class="special">{command}</code>
+:filt[er][!] /<code class="special">{pat}</code>/ <code class="special">{command}</code>
+			Restrict the output of <code class="special">{command}</code> to lines matching
+			with <code class="special">{pat}</code>.  For example, to list only xml files:
+<code class="example">				:filter /\.xml$/ oldfiles</code>
+			If the [!] is given, restrict the output of <code class="special">{command}</code>
+			to lines that do NOT match <code class="special">{pat}</code>.
+
+			<code class="special">{pat}</code> is a Vim search pattern.  Instead of enclosing
+			it in / any non-ID character (see |<a href="options.html#'isident'">'isident'</a>|) can be
+			used, so long as it does not appear in <code class="special">{pat}</code>.  Without
+			the enclosing character the pattern cannot include the
+			bar character.
+
+			The pattern is matched against the relevant part of
+			the output, not necessarily the whole line. Only some
+			commands support filtering, try it out to check if it
+			works. Some of the commands that support filtering:
+			   |<a href="various.html#:%23">:#</a>|          - filter whole line
+			   |<a href="quickfix.html#:clist">:clist</a>|      - filter by file name or module name
+			   |<a href="map.html#:command">:command</a>|    - filter by command name
+			   |<a href="windows.html#:files">:files</a>|      - filter by file name
+			   |<a href="syntax.html#:highlight">:highlight</a>|  - filter by highlight group
+			   |<a href="motion.html#:jumps">:jumps</a>|      - filter by file name
+			   |<a href="eval.html#:let">:let</a>|        - filter by variable name
+			   |<a href="various.html#:list">:list</a>|       - filter whole line
+			   |<a href="quickfix.html#:llist">:llist</a>|      - filter by file name or module name
+			   |<a href="motion.html#:marks">:marks</a>|      - filter by text in the current file,
+					   or file name for other files
+			   |<a href="starting.html#:oldfiles">:oldfiles</a>|   - filter by file name
+			   |<a href="change.html#:registers">:registers</a>|  - filter by register contents
+					   (does not work multi-line)
+			   |<a href="options.html#:set">:set</a>|        - filter by variable name
+
+			Only normal messages are filtered, error messages are
+			not.
+
+						<b class="vimtag">*<a name=":sil">:sil</a>*</b> <b class="vimtag">*<a name=":silent">:silent</a>*</b> <b class="vimtag">*<a name=":silent!">:silent!</a>*</b>
+:sil[ent][!] <code class="special">{command}</code>	Execute <code class="special">{command}</code> silently.  Normal messages will not
+			be given or added to the message history.
+			When [!] is added, error messages will also be
+			skipped, and commands and mappings will not be aborted
+			when an error is detected.  |<a href="eval.html#v:errmsg">v:errmsg</a>| is still set.
+			When [!] is not used, an error message will cause
+			further messages to be displayed normally.
+			Redirection, started with |<a href="various.html#:redir">:redir</a>|, will continue as
+			usual, although there might be small differences.
+			This will allow redirecting the output of a command
+			without seeing it on the screen.  Example:
+<code class="example">			    :redir &gt;/tmp/foobar</code>
+<code class="example">			    :silent g/Aap/p</code>
+<code class="example">			    :redir END</code>
+			To execute a Normal mode command silently, use the
+			|<a href="various.html#:normal">:normal</a>| command.  For example, to search for a
+			string without messages:
+<code class="example">			    :silent exe "normal /path\<code class="special">&lt;CR&gt;</code>"</code>
+			":silent!" is useful to execute a command that may
+			fail, but the failure is to be ignored.  Example:
+<code class="example">			    :let v:errmsg = ""</code>
+<code class="example">			    :silent! /^begin</code>
+<code class="example">			    :if v:errmsg != ""</code>
+<code class="example">			    : ... pattern was not found</code>
+			":silent" will also avoid the hit-enter prompt.  When
+			using this for an external command, this may cause the
+			screen to be messed up.  Use |<a href="various.html#CTRL-L">CTRL-L</a>| to clean it up
+			then.
+			":silent menu ..." defines a menu that will not echo a
+			Command-line command.  The command will still produce
+			messages though.  Use ":silent" in the command itself
+			to avoid that: ":silent menu .... :silent command".
+
+						<b class="vimtag">*<a name=":uns">:uns</a>*</b> <b class="vimtag">*<a name=":unsilent">:unsilent</a>*</b>
+:uns[ilent] <code class="special">{command}</code>	Execute <code class="special">{command}</code> not silently.  Only makes a
+			difference when |<a href="various.html#:silent">:silent</a>| was used to get to this
+			command.
+			Use this for giving a message even when |<a href="various.html#:silent">:silent</a>| was
+			used.  In this example |<a href="various.html#:silent">:silent</a>| is used to avoid the
+			message about reading the file and |<a href="various.html#:unsilent">:unsilent</a>| to be
+			able to list the first line of each file.
+<code class="example">    		:silent argdo unsilent echo expand('%') . ": " . getline(1)</code>
+
+
+						<b class="vimtag">*<a name=":verb">:verb</a>*</b> <b class="vimtag">*<a name=":verbose">:verbose</a>*</b>
+:<code class="special">[count]</code>verb[ose] <code class="special">{command}</code>
+			Execute <code class="special">{command}</code> with 'verbose' set to <code class="special">[count]</code>.  If
+			<code class="special">[count]</code> is omitted one is used. ":0verbose" can be
+			used to set 'verbose' to zero.
+			The additional use of ":silent" makes messages
+			generated but not displayed.
+			The combination of ":silent" and ":verbose" can be
+			used to generate messages and check them with
+			|<a href="eval.html#v:statusmsg">v:statusmsg</a>| and friends.  For example:
+<code class="example">				:let v:statusmsg = ""</code>
+<code class="example">				:silent verbose runtime foobar.vim</code>
+<code class="example">				:if v:statusmsg != ""</code>
+<code class="example">				:  " foobar.vim could not be found</code>
+<code class="example">				:endif</code>
+			When concatenating another command, the ":verbose"
+			only applies to the first one:
+<code class="example">				:4verbose set verbose | set verbose</code>
+<code class="section">				  verbose=4 </code>
+<code class="section">				  verbose=0 </code>
+			For logging verbose messages in a file use the
+			'verbosefile' option.
+
+							<b class="vimtag">*<a name=":verbose-cmd">:verbose-cmd</a>*</b>
+When 'verbose' is non-zero, listing the value of a Vim option or a key map or
+an abbreviation or a user-defined function or a command or a highlight group
+or an autocommand will also display where it was last defined.  If it was
+defined manually then there will be no "Last set" message.  When it was
+defined while executing a function, user command or autocommand, the script in
+which it was defined is reported.
+{not available when compiled without the |<a href="various.html#+eval">+eval</a>| feature}
+
+							<b class="vimtag">*<a name="K">K</a>*</b>
+K			Run a program to lookup the keyword under the
+			cursor.  The name of the program is given with the
+			'keywordprg' (kp) option (default is "man").  The
+			keyword is formed of letters, numbers and the
+			characters in 'iskeyword'.  The keyword under or
+			right of the cursor is used.  The same can be done
+			with the command
+<code class="example">				:!<code class="special">{program}</code> <code class="special">{keyword}</code></code>
+			There is an example of a program to use in the tools
+			directory of Vim.  It is called "ref" and does a
+			simple spelling check.
+			Special cases:
+			- If 'keywordprg' begins with ":" it is invoked as
+			  a Vim Ex command with <code class="special">[count]</code>.
+			- If 'keywordprg' is empty, the ":help" command is
+			  used.  It's a good idea to include more characters
+			  in 'iskeyword' then, to be able to find more help.
+			- When 'keywordprg' is equal to "man" or starts with
+			  ":", a <code class="special">[count]</code> before "K" is inserted after
+			  keywordprg and before the keyword.  For example,
+			  using "2K" while the cursor is on "mkdir", results
+			  in:
+<code class="example">				!man 2 mkdir</code>
+			- When 'keywordprg' is equal to "man -s", a count
+			  before "K" is inserted after the "-s".  If there is
+			  no count, the "-s" is removed.
+
+							<b class="vimtag">*<a name="v_K">v_K</a>*</b>
+<code class="special">{Visual}</code>K		Like "K", but use the visually highlighted text for
+			the keyword.  Only works when the highlighted text is
+			not more than one line.
+
+[N]gs							<b class="vimtag">*<a name="gs">gs</a>*</b> <b class="vimtag">*<a name=":sl">:sl</a>*</b> <b class="vimtag">*<a name=":sleep">:sleep</a>*</b>
+:[N]sl[eep] [N]	[m]	Do nothing for [N] seconds.  When [m] is included,
+			sleep for [N] milliseconds.  The count for "gs" always
+			uses seconds.  The default is one second.
+<code class="example">			     :sleep	     "sleep for one second</code>
+<code class="example">			     :5sleep	     "sleep for five seconds</code>
+<code class="example">			     :sleep 100m     "sleep for a hundred milliseconds</code>
+<code class="example">			     10gs	     "sleep for ten seconds</code>
+			Can be interrupted with <code class="keystroke">CTRL-C</code> (<code class="keystroke">CTRL-Break</code> on
+			MS-Windows).  "gs" stands for "goto sleep".
+			While sleeping the cursor is positioned in the text,
+			if at a visible position.
+			Also process the received netbeans messages. {only
+			available when compiled with the |<a href="various.html#+netbeans_intg">+netbeans_intg</a>|
+			feature}
+
+							<b class="vimtag">*<a name=":xrestore">:xrestore</a>*</b> <b class="vimtag">*<a name=":xr">:xr</a>*</b>
+:xr[estore] [display]	Reinitializes the connection to the X11 server. Useful
+			after the X server restarts, e.g. when running Vim for
+			long time inside screen/tmux and connecting from
+			different machines.
+			[display] should be in the format of the $DISPLAY
+			environment variable (e.g. "localhost:10.0")
+			If [display] is	omitted, then it reinitializes the
+			connection to the X11 server using the same value as
+			was used for the previous execution of this command.
+			If the value was never specified, then it uses the
+			value of $DISPLAY environment variable as it was when
+			Vim was started.
+			{only available when compiled with the |<a href="various.html#+clipboard">+clipboard</a>|
+			feature}
+
+							<b class="vimtag">*<a name="g_CTRL-A">g_CTRL-A</a>*</b>
+g <code class="keystroke">CTRL-A</code>		Only when Vim was compiled with MEM_PROFILING defined
+			(which is very rare): print memory usage statistics.
+			Only useful for debugging Vim.
+			For incrementing in Visual mode see |<a href="change.html#v_g_CTRL-A">v_g_CTRL-A</a>|.
+
+</pre><hr/><pre>2. Using Vim like less or more					<b class="vimtag">*<a name="less">less</a>*</b>
+
+If you use the less or more program to view a file, you don't get syntax
+highlighting.  Thus you would like to use Vim instead.  You can do this by
+using the shell script "$VIMRUNTIME/macros/less.sh".
+
+This shell script uses the Vim script "$VIMRUNTIME/macros/less.vim".  It sets
+up mappings to simulate the commands that less supports.  Otherwise, you can
+still use the Vim commands.
+
+This isn't perfect.  For example, when viewing a short file Vim will still use
+the whole screen.  But it works good enough for most uses, and you get syntax
+highlighting.
+
+The "h" key will give you a short overview of the available commands.
+
+If you want to set options differently when using less, define the
+LessInitFunc in your vimrc, for example:
+<code class="example"></code>
+<code class="example">	func LessInitFunc()</code>
+<code class="example">	  set nocursorcolumn nocursorline</code>
+<code class="example">	endfunc</code>
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

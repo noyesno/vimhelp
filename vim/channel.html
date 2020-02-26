@@ -1,0 +1,1267 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: channel</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>CHANNEL</h2>
+<pre>
+<b class="vimtag">*<a name="channel.txt">channel.txt</a>*</b>      For Vim version 8.2.  Last change: 2019 Dec 07
+
+
+		  VIM REFERENCE MANUAL	  by Bram Moolenaar
+
+
+		      Inter-process communication		<b class="vimtag">*<a name="channel">channel</a>*</b>
+
+Vim uses channels to communicate with other processes.
+A channel uses a socket or pipes.			<b class="vimtag">*<a name="socket-interface">socket-interface</a>*</b>
+Jobs can be used to start processes and communicate with them.
+The Netbeans interface also uses a channel. |<a href="netbeans.html#netbeans">netbeans</a>|
+
+1. Overview				|<a href="channel.html#job-channel-overview">job-channel-overview</a>|
+2. Channel demo				|<a href="channel.html#channel-demo">channel-demo</a>|
+3. Opening a channel			|<a href="channel.html#channel-open">channel-open</a>|
+4. Using a JSON or JS channel		|<a href="channel.html#channel-use">channel-use</a>|
+5. Channel commands			|<a href="channel.html#channel-commands">channel-commands</a>|
+6. Using a RAW or NL channel		|<a href="channel.html#channel-raw">channel-raw</a>|
+7. More channel functions		|<a href="channel.html#channel-more">channel-more</a>|
+8. Channel functions details		|<a href="channel.html#channel-functions-details">channel-functions-details</a>|
+9. Starting a job with a channel	|<a href="channel.html#job-start">job-start</a>|
+10. Starting a job without a channel	|<a href="channel.html#job-start-nochannel">job-start-nochannel</a>|
+11. Job functions			|<a href="channel.html#job-functions-details">job-functions-details</a>|
+12. Job options				|<a href="channel.html#job-options">job-options</a>|
+13. Controlling a job			|<a href="channel.html#job-control">job-control</a>|
+14. Using a prompt buffer		|<a href="channel.html#prompt-buffer">prompt-buffer</a>|
+
+{only when compiled with the |<a href="various.html#+channel">+channel</a>| feature for channel stuff}
+	You can check this with: `has('channel')`
+{only when compiled with the |<a href="various.html#+job">+job</a>| feature for job stuff}
+	You can check this with: `has('job')`
+
+</pre><hr/><pre>1. Overview						<b class="vimtag">*<a name="job-channel-overview">job-channel-overview</a>*</b>
+
+There are four main types of jobs:
+1. A daemon, serving several Vim instances.
+   Vim connects to it with a socket.
+2. One job working with one Vim instance, asynchronously.
+   Uses a socket or pipes.
+3. A job performing some work for a short time, asynchronously.
+   Uses a socket or pipes.
+4. Running a filter, synchronously.
+   Uses pipes.
+
+For when using sockets See |<a href="channel.html#job-start">job-start</a>|, |<a href="channel.html#job-start-nochannel">job-start-nochannel</a>| and
+|<a href="channel.html#channel-open">channel-open</a>|.  For 2 and 3, one or more jobs using pipes, see |<a href="channel.html#job-start">job-start</a>|.
+For 4 use the ":<code class="special">{range}</code>!cmd" command, see |<a href="change.html#filter">filter</a>|.
+
+Over the socket and pipes these protocols are available:
+RAW	nothing known, Vim cannot tell where a message ends
+NL	every message ends in a NL (newline) character
+JSON	JSON encoding |<a href="eval.html#json_encode()">json_encode()</a>|
+JS	JavaScript style JSON-like encoding |<a href="eval.html#js_encode()">js_encode()</a>|
+
+Common combination are:
+- Using a job connected through pipes in NL mode.  E.g., to run a style
+  checker and receive errors and warnings.
+- Using a daemon, connecting over a socket in JSON mode.  E.g. to lookup
+  cross-references in a database.
+
+</pre><hr/><pre>2. Channel demo				<b class="vimtag">*<a name="channel-demo">channel-demo</a>*</b> <b class="vimtag">*<a name="demoserver.py">demoserver.py</a>*</b>
+
+This requires Python.  The demo program can be found in
+$VIMRUNTIME/tools/demoserver.py
+Run it in one terminal.  We will call this T1.
+
+Run Vim in another terminal.  Connect to the demo server with:
+<code class="example">	let channel = ch_open('localhost:8765')</code>
+<code class="example"></code>
+In T1 you should see:
+<code class="section">	=== socket opened === </code>
+
+You can now send a message to the server:
+<code class="example">	echo ch_evalexpr(channel, 'hello!')</code>
+<code class="example"></code>
+The message is received in T1 and a response is sent back to Vim.
+You can see the raw messages in T1.  What Vim sends is:
+<code class="section">	[1,"hello!"] </code>
+And the response is:
+<code class="section">	[1,"got it"] </code>
+The number will increase every time you send a message.
+
+The server can send a command to Vim.  Type this on T1 (literally, including
+the quotes):
+<code class="section">	["ex","echo 'hi there'"] </code>
+And you should see the message in Vim. You can move the cursor a word forward:
+<code class="section">	["normal","w"] </code>
+
+To handle asynchronous communication a callback needs to be used:
+<code class="example">	func MyHandler(channel, msg)</code>
+<code class="example">	  echo "from the handler: " . a:msg</code>
+<code class="example">	endfunc</code>
+<code class="example">	call ch_sendexpr(channel, 'hello!', <code class="special">{'callback': "MyHandler"}</code>)</code>
+Vim will not wait for a response.  Now the server can send the response later
+and MyHandler will be invoked.
+
+Instead of giving a callback with every send call, it can also be specified
+when opening the channel:
+<code class="example">	call ch_close(channel)</code>
+<code class="example">	let channel = ch_open('localhost:8765', <code class="special">{'callback': "MyHandler"}</code>)</code>
+<code class="example">	call ch_sendexpr(channel, 'hello!')</code>
+<code class="example"></code>
+When trying out channels it's useful to see what is going on.  You can tell
+Vim to write lines in log file:
+<code class="example">	call ch_logfile('channellog', 'w')</code>
+See |<a href="channel.html#ch_logfile()">ch_logfile()</a>|.
+
+</pre><hr/><pre>3. Opening a channel					<b class="vimtag">*<a name="channel-open">channel-open</a>*</b>
+
+To open a channel:
+<code class="example">    let channel = ch_open(<code class="special">{address}</code> [, <code class="special">{options}</code>])</code>
+<code class="example">    if ch_status(channel) == "open"</code>
+<code class="example">      " use the channel</code>
+<code class="example"></code>
+Use |<a href="channel.html#ch_status()">ch_status()</a>| to see if the channel could be opened.
+
+<code class="special">{address}</code> has the form "hostname:port".  E.g., "localhost:8765".
+
+<code class="special">{options}</code> is a dictionary with optional entries:	<b class="vimtag">*<a name="channel-open-options">channel-open-options</a>*</b>
+
+"mode" can be:						<b class="vimtag">*<a name="channel-mode">channel-mode</a>*</b>
+	"json" - Use JSON, see below; most convenient way. Default.
+	"js"   - Use JS (JavaScript) encoding, more efficient than JSON.
+	"nl"   - Use messages that end in a NL character
+	"raw"  - Use raw messages
+						<b class="vimtag">*<a name="channel-callback">channel-callback</a>*</b> <b class="vimtag">*<a name="E921">E921</a>*</b>
+"callback"	A function that is called when a message is received that is
+		not handled otherwise.  It gets two arguments: the channel
+		and the received message. Example:
+<code class="example">	func Handle(channel, msg)</code>
+<code class="example">	  echo 'Received: ' . a:msg</code>
+<code class="example">	endfunc</code>
+<code class="example">	let channel = ch_open("localhost:8765", <code class="special">{"callback": "Handle"}</code>)</code>
+
+		When "mode" is "json" or "js" the "msg" argument is the body
+		of the received message, converted to Vim types.
+		When "mode" is "nl" the "msg" argument is one message,
+		excluding the NL.
+		When "mode" is "raw" the "msg" argument is the whole message
+		as a string.
+
+		For all callbacks: Use |<a href="eval.html#function()">function()</a>| to bind it to arguments
+		and/or a Dictionary.  Or use the form "dict.function" to bind
+		the Dictionary.
+
+		Callbacks are only called at a "safe" moment, usually when Vim
+		is waiting for the user to type a character.  Vim does not use
+		multi-threading.
+
+							<b class="vimtag">*<a name="close_cb">close_cb</a>*</b>
+"close_cb"	A function that is called when the channel gets closed, other
+		than by calling ch_close().  It should be defined like this:
+<code class="example">	func MyCloseHandler(channel)</code>
+		Vim will invoke callbacks that handle data before invoking
+		close_cb, thus when this function is called no more data will
+		be passed to the callbacks.  However, if a callback causes Vim
+		to check for messages, the close_cb may be invoked while still
+		in the callback.  The plugin must handle this somehow, it can
+		be useful to know that no more data is coming.
+							<b class="vimtag">*<a name="channel-drop">channel-drop</a>*</b>
+"drop"		Specifies when to drop messages:
+		    "auto"	When there is no callback to handle a message.
+				The "close_cb" is also considered for this.
+		    "never"	All messages will be kept.
+
+							<b class="vimtag">*<a name="channel-noblock">channel-noblock</a>*</b>
+"noblock"	Same effect as |<a href="channel.html#job-noblock">job-noblock</a>|.  Only matters for writing.
+
+							<b class="vimtag">*<a name="waittime">waittime</a>*</b>
+"waittime"	The time to wait for the connection to be made in
+		milliseconds.  A negative number waits forever.
+
+		The default is zero, don't wait, which is useful if a local
+		server is supposed to be running already.  On Unix Vim
+		actually uses a 1 msec timeout, that is required on many
+		systems.  Use a larger value for a remote server, e.g.  10
+		msec at least.
+							<b class="vimtag">*<a name="channel-timeout">channel-timeout</a>*</b>
+"timeout"	The time to wait for a request when blocking, E.g. when using
+		ch_evalexpr().  In milliseconds.  The default is 2000 (2
+		seconds).
+
+When "mode" is "json" or "js" the "callback" is optional.  When omitted it is
+only possible to receive a message after sending one.
+
+To change the channel options after opening it use |<a href="channel.html#ch_setoptions()">ch_setoptions()</a>|.  The
+arguments are similar to what is passed to |<a href="channel.html#ch_open()">ch_open()</a>|, but "waittime" cannot
+be given, since that only applies to opening the channel.
+
+For example, the handler can be added or changed:
+<code class="example">    call ch_setoptions(channel, <code class="special">{'callback': callback}</code>)</code>
+When "callback" is empty (zero or an empty string) the handler is removed.
+
+After a callback has been invoked Vim will update the screen and put the
+cursor back where it belongs.  Thus the callback should not need to do
+`:redraw`.
+
+The timeout can be changed:
+<code class="example">    call ch_setoptions(channel, <code class="special">{'timeout': msec}</code>)</code>
+
+							  <b class="vimtag">*<a name="channel-close">channel-close</a>*</b> <b class="vimtag">*<a name="E906">E906</a>*</b>
+Once done with the channel, disconnect it like this:
+<code class="example">    call ch_close(channel)</code>
+When a socket is used this will close the socket for both directions.  When
+pipes are used (stdin/stdout/stderr) they are all closed.  This might not be
+what you want!  Stopping the job with job_stop() might be better.
+All readahead is discarded, callbacks will no longer be invoked.
+
+<code class="note">Note</code> that a channel is closed in three stages:
+  - The I/O ends, log message: "Closing channel". There can still be queued
+    messages to read or callbacks to invoke.
+  - The readahead is cleared, log message: "Clearing channel".  Some variables
+    may still reference the channel.
+  - The channel is freed, log message: "Freeing channel".
+
+When the channel can't be opened you will get an error message.  There is a
+difference between MS-Windows and Unix: On Unix when the port doesn't exist
+ch_open() fails quickly.  On MS-Windows "waittime" applies.
+<b class="vimtag">*<a name="E898">E898</a>*</b> <b class="vimtag">*<a name="E901">E901</a>*</b> <b class="vimtag">*<a name="E902">E902</a>*</b>
+
+If there is an error reading or writing a channel it will be closed.
+<b class="vimtag">*<a name="E630">E630</a>*</b> <b class="vimtag">*<a name="E631">E631</a>*</b>
+
+</pre><hr/><pre>4. Using a JSON or JS channel					<b class="vimtag">*<a name="channel-use">channel-use</a>*</b>
+
+If mode is JSON then a message can be sent synchronously like this:
+<code class="example">    let response = ch_evalexpr(channel, <code class="special">{expr}</code>)</code>
+This awaits a response from the other side.
+
+When mode is JS this works the same, except that the messages use
+JavaScript encoding.  See |<a href="eval.html#js_encode()">js_encode()</a>| for the difference.
+
+To send a message, without handling a response or letting the channel callback
+handle the response:
+<code class="example">    call ch_sendexpr(channel, <code class="special">{expr}</code>)</code>
+<code class="example"></code>
+To send a message and letting the response handled by a specific function,
+asynchronously:
+<code class="example">    call ch_sendexpr(channel, <code class="special">{expr}</code>, <code class="special">{'callback': Handler}</code>)</code>
+<code class="example"></code>
+Vim will match the response with the request using the message ID.  Once the
+response is received the callback will be invoked.  Further responses with the
+same ID will be ignored.  If your server sends back multiple responses you
+need to send them with ID zero, they will be passed to the channel callback.
+
+The <code class="special">{expr}</code> is converted to JSON and wrapped in an array.  An example of the
+message that the receiver will get when <code class="special">{expr}</code> is the string "hello":
+<code class="section">	[12,"hello"] </code>
+
+The format of the JSON sent is:
+    [<code class="special">{number}</code>,<code class="special">{expr}</code>]
+
+In which <code class="special">{number}</code> is different every time.  It must be used in the response
+(if any):
+
+    [<code class="special">{number}</code>,<code class="special">{response}</code>]
+
+This way Vim knows which sent message matches with which received message and
+can call the right handler.  Also when the messages arrive out of order.
+
+A newline character is terminating the JSON text.  This can be used to
+separate the read text.  For example, in Python:
+	splitidx = read_text.find('\n')
+	message = read_text[:splitidx]
+	rest = read_text[splitidx + 1:]
+
+The sender must always send valid JSON to Vim.  Vim can check for the end of
+the message by parsing the JSON.  It will only accept the message if the end
+was received.  A newline after the message is optional.
+
+When the process wants to send a message to Vim without first receiving a
+message, it must use the number zero:
+    [0,<code class="special">{response}</code>]
+
+Then channel handler will then get <code class="special">{response}</code> converted to Vim types.  If the
+channel does not have a handler the message is dropped.
+
+It is also possible to use ch_sendraw() and ch_evalraw() on a JSON or JS
+channel.  The caller is then completely responsible for correct encoding and
+decoding.
+
+</pre><hr/><pre>5. Channel commands					<b class="vimtag">*<a name="channel-commands">channel-commands</a>*</b>
+
+With a JSON channel the process can send commands to Vim that will be
+handled by Vim internally, it does not require a handler for the channel.
+
+Possible commands are:				<b class="vimtag">*<a name="E903">E903</a>*</b> <b class="vimtag">*<a name="E904">E904</a>*</b> <b class="vimtag">*<a name="E905">E905</a>*</b>
+    ["redraw", <code class="special">{forced}</code>]
+    ["ex",     <code class="special">{Ex command}</code>]
+    ["normal", <code class="special">{Normal mode command}</code>]
+    ["expr",   <code class="special">{expression}</code>, <code class="special">{number}</code>]
+    ["expr",   <code class="special">{expression}</code>]
+    ["call",   <code class="special">{func name}</code>, <code class="special">{argument list}</code>, <code class="special">{number}</code>]
+    ["call",   <code class="special">{func name}</code>, <code class="special">{argument list}</code>]
+
+With all of these: Be careful what these commands do!  You can easily
+interfere with what the user is doing.  To avoid trouble use |<a href="eval.html#mode()">mode()</a>| to check
+that the editor is in the expected state.  E.g., to send keys that must be
+inserted as text, not executed as a command:
+    ["ex","if mode() == 'i' |<code class="badlink"> call feedkeys('ClassName') </code>|<code class="section"> endif"] </code>
+
+Errors in these commands are normally not reported to avoid them messing up
+the display.  If you do want to see them, set the 'verbose' option to 3 or
+higher.
+
+
+<code class="section">Command "redraw" </code>
+
+The other commands do not explicitly update the screen, so that you can send a
+sequence of commands without the cursor moving around.  A redraw can happen as
+a side effect of some commands.  You must end with the "redraw" command to
+show any changed text and show the cursor where it belongs.
+
+The argument is normally an empty string:
+<code class="section">	["redraw", ""] </code>
+To first clear the screen pass "force":
+<code class="section">	["redraw", "force"] </code>
+
+
+<code class="section">Command "ex" </code>
+
+The "ex" command is executed as any Ex command.  There is no response for
+completion or error.  You could use functions in an |<a href="eval.html#autoload">autoload</a>| script:
+	["ex","call myscript#MyFunc(arg)"]
+
+You can also use "call |<a href="eval.html#feedkeys()">feedkeys()</a>|" to insert any key sequence.
+
+When there is an error a message is written to the channel log, if it exists,
+and v:errmsg is set to the error.
+
+
+<code class="section">Command "normal" </code>
+
+The "normal" command is executed like with ":normal!", commands are not
+mapped.  Example to open the folds under the cursor:
+	["normal" "zO"]
+
+
+<code class="section">Command "expr"  with response </code>
+
+The "expr" command can be used to get the result of an expression.  For
+example, to get the number of lines in the current buffer:
+<code class="section">	["expr","line('$')", -2] </code>
+
+It will send back the result of the expression:
+<code class="section">	[-2, "last line"] </code>
+The format is:
+	[<code class="special">{number}</code>, <code class="special">{result}</code>]
+
+Here <code class="special">{number}</code> is the same as what was in the request.  Use a negative number
+to avoid confusion with message that Vim sends.  Use a different number on
+every request to be able to match the request with the response.
+
+<code class="special">{result}</code> is the result of the evaluation and is JSON encoded.  If the
+evaluation fails or the result can't be encoded in JSON it is the string
+"ERROR".
+
+
+<code class="section">Command "expr" without a response </code>
+
+This command is similar to "expr" above, but does not send back any response.
+Example:
+<code class="section">	["expr","setline('$', ['one', 'two', 'three'])"] </code>
+There is no third argument in the request.
+
+
+<code class="section">Command "call" </code>
+
+This is similar to "expr", but instead of passing the whole expression as a
+string this passes the name of a function and a list of arguments.  This
+avoids the conversion of the arguments to a string and escaping and
+concatenating them.  Example:
+<code class="section">	["call", "line", ["$"], -2] </code>
+
+Leave out the fourth argument if no response is to be sent:
+<code class="section">	["call", "setline", ["$", ["one", "two", "three"]]] </code>
+
+</pre><hr/><pre>6. Using a RAW or NL channel				<b class="vimtag">*<a name="channel-raw">channel-raw</a>*</b>
+
+If mode is RAW or NL then a message can be sent like this:
+<code class="example">    let response = ch_evalraw(channel, <code class="special">{string}</code>)</code>
+<code class="example"></code>
+The <code class="special">{string}</code> is sent as-is.  The response will be what can be read from the
+channel right away.  Since Vim doesn't know how to recognize the end of the
+message you need to take care of it yourself.  The timeout applies for reading
+the first byte, after that it will not wait for anything more.
+
+If mode is "nl" you can send a message in a similar way.  You are expected
+to put in the NL after each message.  Thus you can also send several messages
+ending in a NL at once.  The response will be the text up to and including the
+first NL.  This can also be just the NL for an empty response.
+If no NL was read before the channel timeout an empty string is returned.
+
+To send a message, without expecting a response:
+<code class="example">    call ch_sendraw(channel, <code class="special">{string}</code>)</code>
+The process can send back a response, the channel handler will be called with
+it.
+
+To send a message and letting the response handled by a specific function,
+asynchronously:
+<code class="example">    call ch_sendraw(channel, <code class="special">{string}</code>, <code class="special">{'callback': 'MyHandler'}</code>)</code>
+<code class="example"></code>
+This <code class="special">{string}</code> can also be JSON, use |<a href="eval.html#json_encode()">json_encode()</a>| to create it and
+|<a href="eval.html#json_decode()">json_decode()</a>| to handle a received JSON message.
+
+It is not possible to use |<a href="channel.html#ch_evalexpr()">ch_evalexpr()</a>| or |<a href="channel.html#ch_sendexpr()">ch_sendexpr()</a>| on a raw channel.
+
+A String in Vim cannot contain NUL bytes.  To send or receive NUL bytes read
+or write from a buffer.  See |<a href="channel.html#in_io-buffer">in_io-buffer</a>| and |<a href="channel.html#out_io-buffer">out_io-buffer</a>|.
+
+</pre><hr/><pre>7. More channel functions				<b class="vimtag">*<a name="channel-more">channel-more</a>*</b>
+
+To obtain the status of a channel: ch_status(channel).  The possible results
+are:
+	"fail"		Failed to open the channel.
+	"open"		The channel can be used.
+	"buffered"	The channel was closed but there is data to read.
+	"closed"	The channel was closed.
+
+To obtain the job associated with a channel: ch_getjob(channel)
+
+To read one message from a channel:
+<code class="example">	let output = ch_read(channel)</code>
+This uses the channel timeout.  To read without a timeout, just get any
+message that is available:
+<code class="example">	let output = ch_read(channel, <code class="special">{'timeout': 0}</code>)</code>
+When no message was available then the result is v:none for a JSON or JS mode
+channels, an empty string for a RAW or NL channel.  You can use |<a href="channel.html#ch_canread()">ch_canread()</a>|
+to check if there is something to read.
+
+<code class="note">Note</code> that when there is no callback, messages are dropped.  To avoid that add
+a close callback to the channel.
+
+To read all output from a RAW channel that is available:
+<code class="example">	let output = ch_readraw(channel)</code>
+To read the error output:
+<code class="example">	let output = ch_readraw(channel, <code class="special">{"part": "err"}</code>)</code>
+<code class="example"></code>
+ch_read() and ch_readraw() use the channel timeout.  When there is nothing to
+read within that time an empty string is returned.  To specify a different
+timeout in msec use the "timeout" option:
+<code class="section">	<code class="special">{"timeout": 123}</code> </code>
+To read from the error output use the "part" option:
+<code class="section">	<code class="special">{"part": "err"}</code> </code>
+To read a message with a specific ID, on a JS or JSON channel:
+<code class="section">	<code class="special">{"id": 99}</code> </code>
+When no ID is specified or the ID is -1, the first message is returned. This
+overrules any callback waiting for this message.
+
+For a RAW channel this returns whatever is available, since Vim does not know
+where a message ends.
+For a NL channel this returns one message.
+For a JS or JSON channel this returns one decoded message.
+This includes any sequence number.
+
+</pre><hr/><pre>8. Channel functions details			<b class="vimtag">*<a name="channel-functions-details">channel-functions-details</a>*</b>
+
+ch_canread(<code class="special">{handle}</code>)						<b class="vimtag">*<a name="ch_canread()">ch_canread()</a>*</b>
+		Return non-zero when there is something to read from <code class="special">{handle}</code>.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+
+		This is useful to read from a channel at a convenient time,
+		e.g. from a timer.
+
+		<code class="note">Note</code> that messages are dropped when the channel does not have
+		a callback.  Add a close callback to avoid that.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_canread()</code>
+<code class="example"></code>
+ch_close(<code class="special">{handle}</code>)						<b class="vimtag">*<a name="ch_close()">ch_close()</a>*</b>
+		Close <code class="special">{handle}</code>.  See |<a href="channel.html#channel-close">channel-close</a>|.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+		A close callback is not invoked.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_close()</code>
+<code class="example"></code>
+ch_close_in(<code class="special">{handle}</code>)						<b class="vimtag">*<a name="ch_close_in()">ch_close_in()</a>*</b>
+		Close the "in" part of <code class="special">{handle}</code>.  See |<a href="channel.html#channel-close-in">channel-close-in</a>|.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+		A close callback is not invoked.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_close_in()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_evalexpr(<code class="special">{handle}</code>, <code class="special">{expr}</code> [, <code class="special">{options}</code>])			<b class="vimtag">*<a name="ch_evalexpr()">ch_evalexpr()</a>*</b>
+		Send <code class="special">{expr}</code> over <code class="special">{handle}</code>.  The <code class="special">{expr}</code> is encoded
+		according to the type of channel.  The function cannot be used
+		with a raw channel.  See |<a href="channel.html#channel-use">channel-use</a>|.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+								<b class="vimtag">*<a name="E917">E917</a>*</b>
+		<code class="special">{options}</code> must be a Dictionary.  It must not have a "callback"
+		entry.  It can have a "timeout" entry to specify the timeout
+		for this specific request.
+
+		ch_evalexpr() waits for a response and returns the decoded
+		expression.  When there is an error or timeout it returns an
+		empty string.
+
+		<code class="note">Note</code> that while waiting for the response, Vim handles other
+		messages.  You need to make sure this doesn't cause trouble.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_evalexpr(expr)</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_evalraw(<code class="special">{handle}</code>, <code class="special">{string}</code> [, <code class="special">{options}</code>])		<b class="vimtag">*<a name="ch_evalraw()">ch_evalraw()</a>*</b>
+		Send <code class="special">{string}</code> over <code class="special">{handle}</code>.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+
+		Works like |<a href="channel.html#ch_evalexpr()">ch_evalexpr()</a>|, but does not encode the request or
+		decode the response.  The caller is responsible for the
+		correct contents.  Also does not add a newline for a channel
+		in NL mode, the caller must do that.  The NL in the response
+		is removed.
+		<code class="note">Note</code> that Vim does not know when the text received on a raw
+		channel is complete, it may only return the first part and you
+		need to use |<a href="channel.html#ch_readraw()">ch_readraw()</a>| to fetch the rest.
+		See |<a href="channel.html#channel-use">channel-use</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_evalraw(rawstring)</code>
+<code class="example"></code>
+ch_getbufnr(<code class="special">{handle}</code>, <code class="special">{what}</code>)				 <b class="vimtag">*<a name="ch_getbufnr()">ch_getbufnr()</a>*</b>
+		Get the buffer number that <code class="special">{handle}</code> is using for <code class="special">{what}</code>.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+		<code class="special">{what}</code> can be "err" for stderr, "out" for stdout or empty for
+		socket output.
+		Returns -1 when there is no buffer.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_getbufnr(what)</code>
+<code class="example"></code>
+ch_getjob(<code class="special">{channel}</code>)						<b class="vimtag">*<a name="ch_getjob()">ch_getjob()</a>*</b>
+		Get the Job associated with <code class="special">{channel}</code>.
+		If there is no job calling |<a href="channel.html#job_status()">job_status()</a>| on the returned Job
+		will result in "fail".
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_getjob()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_info(<code class="special">{handle}</code>)						<b class="vimtag">*<a name="ch_info()">ch_info()</a>*</b>
+		Returns a Dictionary with information about <code class="special">{handle}</code>.  The
+		items are:
+		   "id"		  number of the channel
+		   "status"	  "open", "buffered" or "closed", like
+				  ch_status()
+		When opened with ch_open():
+		   "hostname"	  the hostname of the address
+		   "port"	  the port of the address
+		   "sock_status"  "open" or "closed"
+		   "sock_mode"	  "NL", "RAW", "JSON" or "JS"
+		   "sock_io"	  "socket"
+		   "sock_timeout" timeout in msec
+		When opened with job_start():
+		   "out_status"	  "open", "buffered" or "closed"
+		   "out_mode"	  "NL", "RAW", "JSON" or "JS"
+		   "out_io"	  "null", "pipe", "file" or "buffer"
+		   "out_timeout"  timeout in msec
+		   "err_status"	  "open", "buffered" or "closed"
+		   "err_mode"	  "NL", "RAW", "JSON" or "JS"
+		   "err_io"	  "out", "null", "pipe", "file" or "buffer"
+		   "err_timeout"  timeout in msec
+		   "in_status"	  "open" or "closed"
+		   "in_mode"	  "NL", "RAW", "JSON" or "JS"
+		   "in_io"	  "null", "pipe", "file" or "buffer"
+		   "in_timeout"	  timeout in msec
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_info()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_log(<code class="special">{msg}</code> [, <code class="special">{handle}</code>])					<b class="vimtag">*<a name="ch_log()">ch_log()</a>*</b>
+		Write <code class="special">{msg}</code> in the channel log file, if it was opened with
+		|<a href="channel.html#ch_logfile()">ch_logfile()</a>|.
+		When <code class="special">{handle}</code> is passed the channel number is used for the
+		message.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.  The
+		Channel must be open for the channel number to be used.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			'did something'-&gt;ch_log()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_logfile(<code class="special">{fname}</code> [, <code class="special">{mode}</code>])					<b class="vimtag">*<a name="ch_logfile()">ch_logfile()</a>*</b>
+		Start logging channel activity to <code class="special">{fname}</code>.
+		When <code class="special">{fname}</code> is an empty string: stop logging.
+
+		When <code class="special">{mode}</code> is omitted or "a" append to the file.
+		When <code class="special">{mode}</code> is "w" start with an empty file.
+
+		Use |<a href="channel.html#ch_log()">ch_log()</a>| to write log messages.  The file is flushed
+		after every message, on Unix you can use "tail -f" to see what
+		is going on in real time.
+
+		This function is not available in the |<a href="eval.html#sandbox">sandbox</a>|.
+		<code class="note">NOTE:</code> the channel communication is stored in the file, be
+		aware that this may contain confidential and privacy sensitive
+		information, e.g. a password you type in a terminal window.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			'logfile'-&gt;ch_logfile('w')</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_open(<code class="special">{address}</code> [, <code class="special">{options}</code>])				<b class="vimtag">*<a name="ch_open()">ch_open()</a>*</b>
+		Open a channel to <code class="special">{address}</code>.  See |<a href="channel.html#channel">channel</a>|.
+		Returns a Channel.  Use |<a href="channel.html#ch_status()">ch_status()</a>| to check for failure.
+
+		<code class="special">{address}</code> has the form "hostname:port", e.g.,
+		"localhost:8765".
+
+		If <code class="special">{options}</code> is given it must be a |<a href="eval.html#Dictionary">Dictionary</a>|.
+		See |<a href="channel.html#channel-open-options">channel-open-options</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetAddress()-&gt;ch_open()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_read(<code class="special">{handle}</code> [, <code class="special">{options}</code>])					<b class="vimtag">*<a name="ch_read()">ch_read()</a>*</b>
+		Read from <code class="special">{handle}</code> and return the received message.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+		For a NL channel this waits for a NL to arrive, except when
+		there is nothing more to read (channel was closed).
+		See |<a href="channel.html#channel-more">channel-more</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_read()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_readblob(<code class="special">{handle}</code> [, <code class="special">{options}</code>])			<b class="vimtag">*<a name="ch_readblob()">ch_readblob()</a>*</b>
+		Like ch_read() but reads binary data and returns a |<a href="eval.html#Blob">Blob</a>|.
+		See |<a href="channel.html#channel-more">channel-more</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_readblob()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_readraw(<code class="special">{handle}</code> [, <code class="special">{options}</code>])			<b class="vimtag">*<a name="ch_readraw()">ch_readraw()</a>*</b>
+		Like ch_read() but for a JS and JSON channel does not decode
+		the message.  For a NL channel it does not block waiting for
+		the NL to arrive, but otherwise works like ch_read().
+		See |<a href="channel.html#channel-more">channel-more</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_readraw()</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_sendexpr(<code class="special">{handle}</code>, <code class="special">{expr}</code> [, <code class="special">{options}</code>])			<b class="vimtag">*<a name="ch_sendexpr()">ch_sendexpr()</a>*</b>
+		Send <code class="special">{expr}</code> over <code class="special">{handle}</code>.  The <code class="special">{expr}</code> is encoded
+		according to the type of channel.  The function cannot be used
+		with a raw channel.
+		See |<a href="channel.html#channel-use">channel-use</a>|.				<b class="vimtag">*<a name="E912">E912</a>*</b>
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_sendexpr(expr)</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_sendraw(<code class="special">{handle}</code>, <code class="special">{expr}</code> [, <code class="special">{options}</code>])		<b class="vimtag">*<a name="ch_sendraw()">ch_sendraw()</a>*</b>
+		Send |<a href="eval.html#String">String</a>| or |<a href="eval.html#Blob">Blob</a>| <code class="special">{expr}</code> over <code class="special">{handle}</code>.
+		Works like |<a href="channel.html#ch_sendexpr()">ch_sendexpr()</a>|, but does not encode the request or
+		decode the response.  The caller is responsible for the
+		correct contents.  Also does not add a newline for a channel
+		in NL mode, the caller must do that.  The NL in the response
+		is removed.
+		See |<a href="channel.html#channel-use">channel-use</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_sendraw(rawexpr)</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_setoptions(<code class="special">{handle}</code>, <code class="special">{options}</code>)			<b class="vimtag">*<a name="ch_setoptions()">ch_setoptions()</a>*</b>
+		Set options on <code class="special">{handle}</code>:
+			"callback"	the channel callback
+			"timeout"	default read timeout in msec
+			"mode"		mode for the whole channel
+		See |<a href="channel.html#ch_open()">ch_open()</a>| for more explanation.
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+
+		<code class="note">Note</code> that changing the mode may cause queued messages to be
+		lost.
+
+		These options cannot be changed:
+			"waittime"	only applies to |<a href="channel.html#ch_open()">ch_open()</a>|
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_setoptions(options)</code>
+<code class="example"></code>
+<code class="example"></code>
+ch_status(<code class="special">{handle}</code> [, <code class="special">{options}</code>])				<b class="vimtag">*<a name="ch_status()">ch_status()</a>*</b>
+		Return the status of <code class="special">{handle}</code>:
+			"fail"		failed to open the channel
+			"open"		channel can be used
+			"buffered"	channel can be read, not written to
+			"closed"	channel can not be used
+		<code class="special">{handle}</code> can be a Channel or a Job that has a Channel.
+		"buffered" is used when the channel was closed but there is
+		still data that can be obtained with |<a href="channel.html#ch_read()">ch_read()</a>|.
+
+		If <code class="special">{options}</code> is given it can contain a "part" entry to specify
+		the part of the channel to return the status for: "out" or
+		"err".  For example, to get the error status:
+<code class="example">			ch_status(job, <code class="special">{"part": "err"}</code>)</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetChannel()-&gt;ch_status()</code>
+<code class="example"></code>
+</pre><hr/><pre>9. Starting a job with a channel			<b class="vimtag">*<a name="job-start">job-start</a>*</b> <b class="vimtag">*<a name="job">job</a>*</b>
+
+To start a job and open a channel for stdin/stdout/stderr:
+<code class="example">    let job = job_start(command, <code class="special">{options}</code>)</code>
+<code class="example"></code>
+You can get the channel with:
+<code class="example">    let channel = job_getchannel(job)</code>
+<code class="example"></code>
+The channel will use NL mode.  If you want another mode it's best to specify
+this in <code class="special">{options}</code>.  When changing the mode later some text may have already
+been received and not parsed correctly.
+
+If the command produces a line of output that you want to deal with, specify
+a handler for stdout:
+<code class="example">    let job = job_start(command, <code class="special">{"out_cb": "MyHandler"}</code>)</code>
+The function will be called with the channel and a message. You would define
+it like this:
+<code class="example">    func MyHandler(channel, msg)</code>
+<code class="example"></code>
+Without the handler you need to read the output with |<a href="channel.html#ch_read()">ch_read()</a>| or
+|<a href="channel.html#ch_readraw()">ch_readraw()</a>|. You can do this in the close callback, see |<a href="channel.html#read-in-close-cb">read-in-close-cb</a>|.
+
+<code class="note">Note</code> that if the job exits before you read the output, the output may be lost.
+This depends on the system (on Unix this happens because closing the write end
+of a pipe causes the read end to get EOF).  To avoid this make the job sleep
+for a short while before it exits.
+
+The handler defined for "out_cb" will not receive stderr.  If you want to
+handle that separately, add an "err_cb" handler:
+<code class="example">    let job = job_start(command, {"out_cb": "MyHandler",</code>
+<code class="example">	    \			  "err_cb": "ErrHandler"})</code>
+<code class="example"></code>
+If you want to handle both stderr and stdout with one handler use the
+"callback" option:
+<code class="example">    let job = job_start(command, <code class="special">{"callback": "MyHandler"}</code>)</code>
+<code class="example"></code>
+Depending on the system, starting a job can put Vim in the background, the
+started job gets the focus.  To avoid that, use the `foreground()` function.
+This might not always work when called early, put in the callback handler or
+use a timer to call it after the job has started.
+
+You can send a message to the command with ch_evalraw().  If the channel is in
+JSON or JS mode you can use ch_evalexpr().
+
+There are several options you can use, see |<a href="channel.html#job-options">job-options</a>|.
+For example, to start a job and write its output in buffer "dummy":
+<code class="example">	let logjob = job_start("tail -f /tmp/log",</code>
+<code class="example">			     \ <code class="special">{'out_io': 'buffer', 'out_name': 'dummy'}</code>)</code>
+<code class="example">	sbuf dummy</code>
+<code class="example"></code>
+<code class="example"></code>
+<code class="section">Job input from a buffer </code>
+							<b class="vimtag">*<a name="in_io-buffer">in_io-buffer</a>*</b>
+To run a job that reads from a buffer:
+<code class="example">	let job = job_start(<code class="special">{command}</code>,</code>
+<code class="example">	    \ <code class="special">{'in_io': 'buffer', 'in_name': 'mybuffer'}</code>)</code>
+
+							<b class="vimtag">*<a name="E915">E915</a>*</b> <b class="vimtag">*<a name="E918">E918</a>*</b>
+The buffer is found by name, similar to |<a href="eval.html#bufnr()">bufnr()</a>|. The buffer must exist and
+be loaded when job_start() is called.
+
+By default this reads the whole buffer.  This can be changed with the "in_top"
+and "in_bot" options.
+
+A special mode is when "in_top" is set to zero and "in_bot" is not set: Every
+time a line is added to the buffer, the last-but-one line will be sent to the
+job stdin.  This allows for editing the last line and sending it when pressing
+Enter.
+							<b class="vimtag">*<a name="channel-close-in">channel-close-in</a>*</b>
+When not using the special mode the pipe or socket will be closed after the
+last line has been written.  This signals the reading end that the input
+finished.  You can also use |<a href="channel.html#ch_close_in()">ch_close_in()</a>| to close it sooner.
+
+NUL bytes in the text will be passed to the job (internally Vim stores these
+as NL bytes).
+
+
+<code class="section">Reading job output in the close callback </code>
+							<b class="vimtag">*<a name="read-in-close-cb">read-in-close-cb</a>*</b>
+If the job can take some time and you don't need intermediate results, you can
+add a close callback and read the output there:
+<code class="example"></code>
+<code class="example">	func! CloseHandler(channel)</code>
+<code class="example">	  while ch_status(a:channel, <code class="special">{'part': 'out'}</code>) == 'buffered'</code>
+<code class="example">	    echomsg ch_read(a:channel)</code>
+<code class="example">	  endwhile</code>
+<code class="example">	endfunc</code>
+<code class="example">	let job = job_start(command, <code class="special">{'close_cb': 'CloseHandler'}</code>)</code>
+<code class="example"></code>
+You will want to do something more useful than "echomsg".
+
+</pre><hr/><pre>10. Starting a job without a channel			<b class="vimtag">*<a name="job-start-nochannel">job-start-nochannel</a>*</b>
+
+To start another process without creating a channel:
+<code class="example">    let job = job_start(command,</code>
+<code class="example">	\ <code class="special">{"in_io": "null", "out_io": "null", "err_io": "null"}</code>)</code>
+<code class="example"></code>
+This starts <code class="special">{command}</code> in the background, Vim does not wait for it to finish.
+
+When Vim sees that neither stdin, stdout or stderr are connected, no channel
+will be created.  Often you will want to include redirection in the command to
+avoid it getting stuck.
+
+There are several options you can use, see |<a href="channel.html#job-options">job-options</a>|.
+
+							<b class="vimtag">*<a name="job-start-if-needed">job-start-if-needed</a>*</b>
+To start a job only when connecting to an address does not work, do something
+like this:
+<code class="example">	let channel = ch_open(address, <code class="special">{"waittime": 0}</code>)</code>
+<code class="example">	if ch_status(channel) == "fail"</code>
+<code class="example">	  let job = job_start(command)</code>
+<code class="example">	  let channel = ch_open(address, <code class="special">{"waittime": 1000}</code>)</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+<code class="note">Note</code> that the waittime for ch_open() gives the job one second to make the port
+available.
+
+</pre><hr/><pre>11. Job functions					<b class="vimtag">*<a name="job-functions-details">job-functions-details</a>*</b>
+
+job_getchannel(<code class="special">{job}</code>)					 <b class="vimtag">*<a name="job_getchannel()">job_getchannel()</a>*</b>
+		Get the channel handle that <code class="special">{job}</code> is using.
+		To check if the job has no channel:
+<code class="example">			if string(job_getchannel()) == 'channel fail'</code>
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetJob()-&gt;job_getchannel()</code>
+<code class="example"></code>
+job_info([<code class="special">{job}</code>])					<b class="vimtag">*<a name="job_info()">job_info()</a>*</b>
+		Returns a Dictionary with information about <code class="special">{job}</code>:
+		   "status"	what |<a href="channel.html#job_status()">job_status()</a>| returns
+		   "channel"	what |<a href="channel.html#job_getchannel()">job_getchannel()</a>| returns
+		   "cmd"	List of command arguments used to start the job
+		   "process"	process ID
+		   "tty_in"	terminal input name, empty when none
+		   "tty_out"	terminal output name, empty when none
+		   "exitval"	only valid when "status" is "dead"
+		   "exit_cb"	function to be called on exit
+		   "stoponexit"	|<a href="channel.html#job-stoponexit">job-stoponexit</a>|
+
+		   Only in Unix:
+		   "termsig"	the signal which terminated the process
+				(See |<a href="channel.html#job_stop()">job_stop()</a>| for the values)
+				only valid when "status" is "dead"
+
+		   Only in MS-Windows:
+		   "tty_type"	Type of virtual console in use.
+				Values are "winpty" or "conpty".
+				See 'termwintype'.
+
+		Without any arguments, returns a List with all Job objects.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetJob()-&gt;job_info()</code>
+<code class="example"></code>
+<code class="example"></code>
+job_setoptions(<code class="special">{job}</code>, <code class="special">{options}</code>)			<b class="vimtag">*<a name="job_setoptions()">job_setoptions()</a>*</b>
+		Change options for <code class="special">{job}</code>.  Supported are:
+		   "stoponexit"	|<a href="channel.html#job-stoponexit">job-stoponexit</a>|
+		   "exit_cb"	|<a href="channel.html#job-exit_cb">job-exit_cb</a>|
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetJob()-&gt;job_setoptions(options)</code>
+<code class="example"></code>
+<code class="example"></code>
+job_start(<code class="special">{command}</code> [, <code class="special">{options}</code>])			<b class="vimtag">*<a name="job_start()">job_start()</a>*</b>
+		Start a job and return a Job object.  Unlike |<a href="eval.html#system()">system()</a>| and
+		|<a href="various.html#:!cmd">:!cmd</a>| this does not wait for the job to finish.
+		To start a job in a terminal window see |<a href="terminal.html#term_start()">term_start()</a>|.
+
+		If the job fails to start then |<a href="channel.html#job_status()">job_status()</a>| on the returned
+		Job object results in "fail" and none of the callbacks will be
+		invoked.
+
+		<code class="special">{command}</code> can be a String.  This works best on MS-Windows.  On
+		Unix it is split up in white-separated parts to be passed to
+		execvp().  Arguments in double quotes can contain white space.
+
+		<code class="special">{command}</code> can be a List, where the first item is the executable
+		and further items are the arguments.  All items are converted
+		to String.  This works best on Unix.
+
+		On MS-Windows, job_start() makes a GUI application hidden. If
+		want to show it, Use |<a href="os_win32.html#:!start">:!start</a>| instead.
+
+		The command is executed directly, not through a shell, the
+		'shell' option is not used.  To use the shell:
+<code class="example">	let job = job_start(["/bin/sh", "-c", "echo hello"])</code>
+&lt;		Or:
+<code class="example">	let job = job_start('/bin/sh -c "echo hello"')</code>
+		<code class="note">Note</code> that this will start two processes, the shell and the
+		command it executes.  If you don't want this use the "exec"
+		shell command.
+
+		On Unix $PATH is used to search for the executable only when
+		the command does not contain a slash.
+
+		The job will use the same terminal as Vim.  If it reads from
+		stdin the job and Vim will be fighting over input, that
+		doesn't work.  Redirect stdin and stdout to avoid problems:
+<code class="example">	let job = job_start(['sh', '-c', "myserver <code class="special">&lt;/dev/null &gt;</code>/dev/null"])</code>
+
+		The returned Job object can be used to get the status with
+		|<a href="channel.html#job_status()">job_status()</a>| and stop the job with |<a href="channel.html#job_stop()">job_stop()</a>|.
+
+		<code class="note">Note</code> that the job object will be deleted if there are no
+		references to it.  This closes the stdin and stderr, which may
+		cause the job to fail with an error.  To avoid this keep a
+		reference to the job.  Thus instead of:
+<code class="example">	call job_start('my-command')</code>
+&lt;		use:
+<code class="example">	let myjob = job_start('my-command')</code>
+		and unlet "myjob" once the job is not needed or is past the
+		point where it would fail (e.g. when it prints a message on
+		startup).  Keep in mind that variables local to a function
+		will cease to exist if the function returns.  Use a
+		script-local variable if needed:
+<code class="example">	let s:myjob = job_start('my-command')</code>
+
+		<code class="special">{options}</code> must be a Dictionary.  It can contain many optional
+		items, see |<a href="channel.html#job-options">job-options</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			BuildCommand()-&gt;job_start()</code>
+<code class="example"></code>
+<code class="example"></code>
+job_status(<code class="special">{job}</code>)					<b class="vimtag">*<a name="job_status()">job_status()</a>*</b> <b class="vimtag">*<a name="E916">E916</a>*</b>
+		Returns a String with the status of <code class="special">{job}</code>:
+			"run"	job is running
+			"fail"	job failed to start
+			"dead"	job died or was stopped after running
+
+		On Unix a non-existing command results in "dead" instead of
+		"fail", because a fork happens before the failure can be
+		detected.
+
+		If an exit callback was set with the "exit_cb" option and the
+		job is now detected to be "dead" the callback will be invoked.
+
+		For more information see |<a href="channel.html#job_info()">job_info()</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetJob()-&gt;job_status()</code>
+<code class="example"></code>
+<code class="example"></code>
+job_stop(<code class="special">{job}</code> [, <code class="special">{how}</code>])					<b class="vimtag">*<a name="job_stop()">job_stop()</a>*</b>
+		Stop the <code class="special">{job}</code>.  This can also be used to signal the job.
+
+		When <code class="special">{how}</code> is omitted or is "term" the job will be terminated.
+		For Unix SIGTERM is sent.  On MS-Windows the job will be
+		terminated forcedly (there is no "gentle" way).
+		This goes to the process group, thus children may also be
+		affected.
+
+		Effect for Unix:
+			"term"	 SIGTERM (default)
+			"hup"	 SIGHUP
+			"quit"	 SIGQUIT
+			"int"	 SIGINT
+			"kill"	 SIGKILL (strongest way to stop)
+			number	 signal with that number
+
+		Effect for MS-Windows:
+			"term"	 terminate process forcedly (default)
+			"hup"	 CTRL_BREAK
+			"quit"	 CTRL_BREAK
+			"int"	 CTRL_C
+			"kill"	 terminate process forcedly
+			Others	 CTRL_BREAK
+
+		On Unix the signal is sent to the process group.  This means
+		that when the job is "sh -c command" it affects both the shell
+		and the command.
+
+		The result is a Number: 1 if the operation could be executed,
+		0 if "how" is not supported on the system.
+		<code class="note">Note</code> that even when the operation was executed, whether the
+		job was actually stopped needs to be checked with
+		|<a href="channel.html#job_status()">job_status()</a>|.
+
+		If the status of the job is "dead", the signal will not be
+		sent.  This is to avoid to stop the wrong job (esp. on Unix,
+		where process numbers are recycled).
+
+		When using "kill" Vim will assume the job will die and close
+		the channel.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetJob()-&gt;job_stop()</code>
+<code class="example"></code>
+<code class="example"></code>
+</pre><hr/><pre>12. Job options						<b class="vimtag">*<a name="job-options">job-options</a>*</b>
+
+The <code class="special">{options}</code> argument in job_start() is a dictionary.  All entries are
+optional.  Some options can be used after the job has started, using
+job_setoptions(job, <code class="special">{options}</code>).  Many options can be used with the channel
+related to the job, using ch_setoptions(channel, <code class="special">{options}</code>).
+See |<a href="channel.html#job_setoptions()">job_setoptions()</a>| and |<a href="channel.html#ch_setoptions()">ch_setoptions()</a>|.
+
+						<b class="vimtag">*<a name="in_mode">in_mode</a>*</b> <b class="vimtag">*<a name="out_mode">out_mode</a>*</b> <b class="vimtag">*<a name="err_mode">err_mode</a>*</b>
+"in_mode"		mode specifically for stdin, only when using pipes
+"out_mode"		mode specifically for stdout, only when using pipes
+"err_mode"		mode specifically for stderr, only when using pipes
+			See |<a href="channel.html#channel-mode">channel-mode</a>| for the values.
+
+			<code class="note">Note:</code> when setting "mode" the part specific mode is
+			overwritten.  Therefore set "mode" first and the part
+			specific mode later.
+
+			<code class="note">Note:</code> when writing to a file or buffer and when
+			reading from a buffer NL mode is used by default.
+
+						<b class="vimtag">*<a name="job-noblock">job-noblock</a>*</b>
+"noblock": 1		When writing use a non-blocking write call.  This
+			avoids getting stuck if Vim should handle other
+			messages in between, e.g. when a job sends back data
+			to Vim.  It implies that when `ch_sendraw()` returns
+			not all data may have been written yet.
+			This option was added in patch 8.1.0350, test with:
+<code class="example">				if has("patch-8.1.350")</code>
+<code class="example">				  let options['noblock'] = 1</code>
+<code class="example">				endif</code>
+
+						<b class="vimtag">*<a name="job-callback">job-callback</a>*</b>
+"callback": handler	Callback for something to read on any part of the
+			channel.
+						<b class="vimtag">*<a name="job-out_cb">job-out_cb</a>*</b> <b class="vimtag">*<a name="out_cb">out_cb</a>*</b>
+"out_cb": handler	Callback for when there is something to read on
+			stdout.  Only for when the channel uses pipes.  When
+			"out_cb" wasn't set the channel callback is used.
+			The two arguments are the channel and the message.
+
+						<b class="vimtag">*<a name="job-err_cb">job-err_cb</a>*</b> <b class="vimtag">*<a name="err_cb">err_cb</a>*</b>
+"err_cb": handler	Callback for when there is something to read on
+			stderr.  Only for when the channel uses pipes.  When
+			"err_cb" wasn't set the channel callback is used.
+			The two arguments are the channel and the message.
+						<b class="vimtag">*<a name="job-close_cb">job-close_cb</a>*</b>
+"close_cb": handler	Callback for when the channel is closed.  Same as
+			"close_cb" on |<a href="channel.html#ch_open()">ch_open()</a>|, see |<a href="channel.html#close_cb">close_cb</a>|.
+						<b class="vimtag">*<a name="job-drop">job-drop</a>*</b>
+"drop": when		Specifies when to drop messages.  Same as "drop" on
+			|<a href="channel.html#ch_open()">ch_open()</a>|, see |<a href="channel.html#channel-drop">channel-drop</a>|.  For "auto" the
+			exit_cb is not considered.
+						<b class="vimtag">*<a name="job-exit_cb">job-exit_cb</a>*</b>
+"exit_cb": handler	Callback for when the job ends.  The arguments are the
+			job and the exit status.
+			Vim checks up to 10 times per second for jobs that
+			ended.  The check can also be triggered by calling
+			|<a href="channel.html#job_status()">job_status()</a>|, which may then invoke the exit_cb
+			handler.
+			<code class="note">Note</code> that data can be buffered, callbacks may still be
+			called after the process ends.
+							<b class="vimtag">*<a name="job-timeout">job-timeout</a>*</b>
+"timeout": time		The time to wait for a request when blocking, E.g.
+			when using ch_evalexpr().  In milliseconds.  The
+			default is 2000 (2 seconds).
+						<b class="vimtag">*<a name="out_timeout">out_timeout</a>*</b> <b class="vimtag">*<a name="err_timeout">err_timeout</a>*</b>
+"out_timeout": time	Timeout for stdout.  Only when using pipes.
+"err_timeout": time	Timeout for stderr.  Only when using pipes.
+			<code class="note">Note:</code> when setting "timeout" the part specific mode is
+			overwritten.  Therefore set "timeout" first and the
+			part specific mode later.
+
+						<b class="vimtag">*<a name="job-stoponexit">job-stoponexit</a>*</b>
+"stoponexit": <code class="special">{signal}</code>	Send <code class="special">{signal}</code> to the job when Vim exits.  See
+			|<a href="channel.html#job_stop()">job_stop()</a>| for possible values.
+"stoponexit": ""	Do not stop the job when Vim exits.
+			The default is "term".
+
+						<b class="vimtag">*<a name="job-term">job-term</a>*</b>
+"term": "open"		Start a terminal in a new window and connect the job
+			stdin/stdout/stderr to it.  Similar to using
+			`:terminal`.
+			<code class="note">NOTE:</code> Not implemented yet!
+
+"channel": <code class="special">{channel}</code>	Use an existing channel instead of creating a new one.
+			The parts of the channel that get used for the new job
+			will be disconnected from what they were used before.
+			If the channel was still used by another job this may
+			cause I/O errors.
+			Existing callbacks and other settings remain.
+
+"pty": 1		Use a pty (pseudo-tty) instead of a pipe when
+			possible.  This is most useful in combination with a
+			terminal window, see |<a href="terminal.html#terminal">terminal</a>|.
+			<code class="special">{only on Unix and Unix-like systems}</code>
+
+				<b class="vimtag">*<a name="job-in_io">job-in_io</a>*</b> <b class="vimtag">*<a name="in_top">in_top</a>*</b> <b class="vimtag">*<a name="in_bot">in_bot</a>*</b> <b class="vimtag">*<a name="in_name">in_name</a>*</b> <b class="vimtag">*<a name="in_buf">in_buf</a>*</b>
+"in_io": "null"		disconnect stdin (read from /dev/null)
+"in_io": "pipe"		stdin is connected to the channel (default)
+"in_io": "file"		stdin reads from a file
+"in_io": "buffer"	stdin reads from a buffer
+"in_top": number	when using "buffer": first line to send (default: 1)
+"in_bot": number	when using "buffer": last line to send (default: last)
+"in_name": "/path/file"	the name of the file or buffer to read from
+"in_buf": number	the number of the buffer to read from
+
+				<b class="vimtag">*<a name="job-out_io">job-out_io</a>*</b> <b class="vimtag">*<a name="out_name">out_name</a>*</b> <b class="vimtag">*<a name="out_buf">out_buf</a>*</b>
+"out_io": "null"	disconnect stdout (goes to /dev/null)
+"out_io": "pipe"	stdout is connected to the channel (default)
+"out_io": "file"	stdout writes to a file
+"out_io": "buffer"	stdout appends to a buffer (see below)
+"out_name": "/path/file" the name of the file or buffer to write to
+"out_buf": number	the number of the buffer to write to
+"out_modifiable": 0	when writing to a buffer, 'modifiable' will be off
+			(see below)
+"out_msg": 0		when writing to a new buffer, the first line will be
+			set to "Reading from channel output..."
+
+				<b class="vimtag">*<a name="job-err_io">job-err_io</a>*</b> <b class="vimtag">*<a name="err_name">err_name</a>*</b> <b class="vimtag">*<a name="err_buf">err_buf</a>*</b>
+"err_io": "out"		stderr messages to go to stdout
+"err_io": "null"	disconnect stderr  (goes to /dev/null)
+"err_io": "pipe"	stderr is connected to the channel (default)
+"err_io": "file"	stderr writes to a file
+"err_io": "buffer"	stderr appends to a buffer (see below)
+"err_name": "/path/file" the name of the file or buffer to write to
+"err_buf": number	the number of the buffer to write to
+"err_modifiable": 0	when writing to a buffer, 'modifiable' will be off
+			(see below)
+"err_msg": 0		when writing to a new buffer, the first line will be
+			set to "Reading from channel error..."
+
+"block_write": number	only for testing: pretend every other write to stdin
+			will block
+
+"env": dict		environment variables for the new process
+"cwd": "/path/to/dir"	current working directory for the new process;
+			if the directory does not exist an error is given
+
+
+<code class="section">Writing to a buffer </code>
+							<b class="vimtag">*<a name="out_io-buffer">out_io-buffer</a>*</b>
+When the out_io or err_io mode is "buffer" and there is a callback, the text
+is appended to the buffer before invoking the callback.
+
+When a buffer is used both for input and output, the output lines are put
+above the last line, since the last line is what is written to the channel
+input.  Otherwise lines are appended below the last line.
+
+When using JS or JSON mode with "buffer", only messages with zero or negative
+ID will be added to the buffer, after decoding + encoding.  Messages with a
+positive number will be handled by a callback, commands are handled as usual.
+
+The name of the buffer from "out_name" or "err_name" is compared the full name
+of existing buffers, also after expanding the name for the current directory.
+E.g., when a buffer was created with ":edit somename" and the buffer name is
+"somename" it will use that buffer.
+
+If there is no matching buffer a new buffer is created.  Use an empty name to
+always create a new buffer.  |<a href="channel.html#ch_getbufnr()">ch_getbufnr()</a>| can then be used to get the
+buffer number.
+
+For a new buffer 'buftype' is set to "nofile" and 'bufhidden' to "hide".  If
+you prefer other settings, create the buffer first and pass the buffer number.
+					<b class="vimtag">*<a name="out_modifiable">out_modifiable</a>*</b> <b class="vimtag">*<a name="err_modifiable">err_modifiable</a>*</b>
+The "out_modifiable" and "err_modifiable" options can be used to set the
+'modifiable' option off, or write to a buffer that has 'modifiable' off.  That
+means that lines will be appended to the buffer, but the user can't easily
+change the buffer.
+					<b class="vimtag">*<a name="out_msg">out_msg</a>*</b> <b class="vimtag">*<a name="err_msg">err_msg</a>*</b>
+The "out_msg" option can be used to specify whether a new buffer will have the
+first line set to "Reading from channel output...".  The default is to add the
+message.  "err_msg" does the same for channel error.
+
+When an existing buffer is to be written where 'modifiable' is off and the
+"out_modifiable" or "err_modifiable" options is not zero, an error is given
+and the buffer will not be written to.
+
+When the buffer written to is displayed in a window and the cursor is in the
+first column of the last line, the cursor will be moved to the newly added
+line and the window is scrolled up to show the cursor if needed.
+
+Undo is synced for every added line.  NUL bytes are accepted (internally Vim
+stores these as NL bytes).
+
+
+<code class="section">Writing to a file </code>
+							<b class="vimtag">*<a name="E920">E920</a>*</b>
+The file is created with permissions 600 (read-write for the user, not
+accessible for others).  Use |<a href="eval.html#setfperm()">setfperm()</a>| to change this.
+
+If the file already exists it is truncated.
+
+</pre><hr/><pre>13. Controlling a job					<b class="vimtag">*<a name="job-control">job-control</a>*</b>
+
+To get the status of a job:
+<code class="example">	echo job_status(job)</code>
+<code class="example"></code>
+To make a job stop running:
+<code class="example">	job_stop(job)</code>
+<code class="example"></code>
+This is the normal way to end a job. On Unix it sends a SIGTERM to the job.
+It is possible to use other ways to stop the job, or even send arbitrary
+signals.  E.g. to force a job to stop, "kill it":
+<code class="example">	job_stop(job, "kill")</code>
+<code class="example"></code>
+For more options see |<a href="channel.html#job_stop()">job_stop()</a>|.
+
+</pre><hr/><pre>14. Using a prompt buffer				<b class="vimtag">*<a name="prompt-buffer">prompt-buffer</a>*</b>
+
+If you want to type input for the job in a Vim window you have a few options:
+- Use a normal buffer and handle all possible commands yourself.
+  This will be complicated, since there are so many possible commands.
+- Use a terminal window.  This works well if what you type goes directly to
+  the job and the job output is directly displayed in the window.
+  See |<a href="terminal.html#terminal-window">terminal-window</a>|.
+- Use a prompt window. This works well when entering a line for the job in Vim
+  while displaying (possibly filtered) output from the job.
+
+A prompt buffer is created by setting 'buftype' to "prompt". You would
+normally only do that in a newly created buffer.
+
+The user can edit and enter one line of text at the very last line of the
+buffer.  When pressing Enter in the prompt line the callback set with
+|<a href="eval.html#prompt_setcallback()">prompt_setcallback()</a>| is invoked.  It would normally send the line to a job.
+Another callback would receive the output from the job and display it in the
+buffer, below the prompt (and above the next prompt).
+
+Only the text in the last line, after the prompt, is editable. The rest of the
+buffer is not modifiable with Normal mode commands.  It can be modified by
+calling functions, such as |<a href="eval.html#append()">append()</a>|.  Using other commands may mess up the
+buffer.
+
+After setting 'buftype' to "prompt" Vim does not automatically start Insert
+mode, use `:startinsert` if you want to enter Insert mode, so that the user
+can start typing a line.
+
+The text of the prompt can be set with the |<a href="eval.html#prompt_setprompt()">prompt_setprompt()</a>| function.
+
+The user can go to Normal mode and navigate through the buffer.  This can be
+useful see older output or copy text.
+
+The <code class="keystroke">CTRL-W</code> key can be used to start a window command, such as <code class="keystroke">CTRL-W</code> w to
+switch to the next window.  This also works in Insert mode (use Shift-<code class="keystroke">CTRL-W</code>
+to delete a word). When leaving the window Insert mode will be stopped.  When
+coming back to the prompt window Insert mode will be restored.
+
+Any command that starts Insert mode, such as "a", "i", "A" and "I", will move
+the cursor to the last line.  "A" will move to the end of the line, "I" to the
+start of the line.
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

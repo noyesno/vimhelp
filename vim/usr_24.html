@@ -1,0 +1,608 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_24</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_24</h2>
+<pre>
+<b class="vimtag">*<a name="usr_24.txt">usr_24.txt</a>*</b>	For Vim version 8.2.  Last change: 2018 Mar 18
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			     Inserting quickly
+
+
+When entering text, Vim offers various ways to reduce the number of keystrokes
+and avoid typing mistakes.  Use Insert mode completion to repeat previously
+typed words.  Abbreviate long words to short ones.  Type characters that
+aren't on your keyboard.
+
+|<a href="usr_24.html#24.1">24.1</a>|	Making corrections
+|<a href="usr_24.html#24.2">24.2</a>|	Showing matches
+|<a href="usr_24.html#24.3">24.3</a>|	Completion
+|<a href="usr_24.html#24.4">24.4</a>|	Repeating an insert
+|<a href="usr_24.html#24.5">24.5</a>|	Copying from another line
+|<a href="usr_24.html#24.6">24.6</a>|	Inserting a register
+|<a href="usr_24.html#24.7">24.7</a>|	Abbreviations
+|<a href="usr_24.html#24.8">24.8</a>|	Entering special characters
+|<a href="usr_24.html#24.9">24.9</a>|	Digraphs
+|<a href="usr_24.html#24.10">24.10</a>|	Normal mode commands
+
+     Next chapter: |<a href="usr_25.html#usr_25.txt">usr_25</a>|  Editing formatted text
+ Previous chapter: |<a href="usr_23.html#usr_23.txt">usr_23</a>|  Editing other files
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.1">24.1</a>*</b>	Making corrections
+
+The <code class="special">&lt;BS&gt;</code> key was already mentioned.  It deletes the character just before the
+cursor.  The <code class="special">&lt;Del&gt;</code> key does the same for the character under (after) the
+cursor.
+   When you typed a whole word wrong, use <code class="keystroke">CTRL-W</code>:
+
+<code class="section">	The horse had fallen to the sky </code>
+				       <code class="keystroke">CTRL-W</code>
+<code class="section">	The horse had fallen to the </code>
+
+If you really messed up a line and want to start over, use <code class="keystroke">CTRL-U</code> to delete
+it.  This keeps the text after the cursor and the indent.  Only the text from
+the first non-blank to the cursor is deleted.  With the cursor on the "f" of
+"fallen" in the next line pressing <code class="keystroke">CTRL-U</code> does this:
+
+<code class="section">	The horse had fallen to the </code>
+		      <code class="keystroke">CTRL-U</code>
+<code class="section">	fallen to the </code>
+
+When you spot a mistake a few words back, you need to move the cursor there to
+correct it.  For example, you typed this:
+
+<code class="section">	The horse had follen to the ground </code>
+
+You need to change "follen" to "fallen".  With the cursor at the end, you
+would type this to correct it:
+<code class="example"></code>
+<code class="example">					<code class="special">&lt;Esc&gt;</code>4blraA</code>
+<code class="example"></code>
+	get out of Insert mode		<code class="special">&lt;Esc&gt;</code>
+	four words back			     4b
+	move on top of the "o"		       l
+	replace with "a"			ra
+	restart Insert mode			  A
+
+Another way to do this:
+<code class="example"></code>
+<code class="example">		<code class="special">&lt;C-Left&gt;</code><code class="special">&lt;C-Left&gt;</code><code class="special">&lt;C-Left&gt;</code><code class="special">&lt;C-Left&gt;</code><code class="special">&lt;Right&gt;</code><code class="special">&lt;Del&gt;</code>a<code class="special">&lt;End&gt;</code></code>
+<code class="example"></code>
+	four words back		     <code class="special">&lt;C-Left&gt;</code><code class="special">&lt;C-Left&gt;</code><code class="special">&lt;C-Left&gt;</code><code class="special">&lt;C-Left&gt;</code>
+	move on top of the "o"			<code class="special">&lt;Right&gt;</code>
+	delete the "o"				       <code class="special">&lt;Del&gt;</code>
+	insert an "a"					    a
+	go to end of the line				     <code class="special">&lt;End&gt;</code>
+
+This uses special keys to move around, while remaining in Insert mode.  This
+resembles what you would do in a modeless editor.  It's easier to remember,
+but takes more time (you have to move your hand from the letters to the cursor
+keys, and the <code class="special">&lt;End&gt;</code> key is hard to press without looking at the keyboard).
+   These special keys are most useful when writing a mapping that doesn't
+leave Insert mode.  The extra typing doesn't matter then.
+   An overview of the keys you can use in Insert mode:
+
+	<code class="special">&lt;C-Home&gt;</code>	to start of the file
+	<code class="special">&lt;PageUp&gt;</code>	a whole screenful up
+	<code class="special">&lt;Home&gt;</code>		to start of line
+	<code class="special">&lt;S-Left&gt;</code>	one word left
+	<code class="special">&lt;C-Left&gt;</code>	one word left
+	<code class="special">&lt;S-Right&gt;</code>	one word right
+	<code class="special">&lt;C-Right&gt;</code>	one word right
+	<code class="special">&lt;End&gt;</code>		to end of the line
+	<code class="special">&lt;PageDown&gt;</code>	a whole screenful down
+	<code class="special">&lt;C-End&gt;</code>		to end of the file
+
+There are a few more, see |<a href="insert.html#ins-special-special">ins-special-special</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.2">24.2</a>*</b>	Showing matches
+
+When you type a ) it would be nice to see with which ( it matches.  To make
+Vim do that use this command:
+<code class="example"></code>
+<code class="example">	:set showmatch</code>
+<code class="example"></code>
+When you now type a text like "(example)", as soon as you type the ) Vim will
+briefly move the cursor to the matching (, keep it there for half a second,
+and move back to where you were typing.
+   In case there is no matching (, Vim will beep.  Then you know that you
+might have forgotten the ( somewhere, or typed a ) too many.
+   The match will also be shown for [] and <code class="special">{}</code> pairs.  You don't have to wait
+with typing the next character, as soon as Vim sees it the cursor will move
+back and inserting continues as before.
+   You can change the time Vim waits with the 'matchtime' option.  For
+example, to make Vim wait one and a half second:
+<code class="example"></code>
+<code class="example">	:set matchtime=15</code>
+<code class="example"></code>
+The time is specified in tenths of a second.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.3">24.3</a>*</b>	Completion
+
+Vim can automatically complete words on insertion.  You type the first part of
+a word, press <code class="keystroke">CTRL-P</code>, and Vim guesses the rest.
+   Suppose, for example, that you are creating a C program and want to type in
+the following:
+
+<code class="section">	total = ch_array[0] + ch_array[1] + ch_array[2]; </code>
+
+You start by entering the following:
+
+<code class="section">	total = ch_array[0] + ch_ </code>
+
+At this point, you tell Vim to complete the word using the command <code class="keystroke">CTRL-P</code>.
+Vim searches for a word that starts with what's in front of the cursor.  In
+this case, it is "ch_", which matches with the word ch_array.  So typing
+<code class="keystroke">CTRL-P</code> gives you the following:
+
+<code class="section">	total = ch_array[0] + ch_array </code>
+
+After a little more typing, you get this (ending in a space):
+
+<code class="section">	total = ch_array[0] + ch_array[1] +  </code>
+
+If you now type <code class="keystroke">CTRL-P</code> Vim will search again for a word that completes the
+word before the cursor.  Since there is nothing in front of the cursor, it
+finds the first word backwards, which is "ch_array".  Typing <code class="keystroke">CTRL-P</code> again
+gives you the next word that matches, in this case "total".  A third <code class="keystroke">CTRL-P</code>
+searches further back.  If there is nothing else, it causes the editor to run
+out of words, so it returns to the original text, which is nothing.  A fourth
+<code class="keystroke">CTRL-P</code> causes the editor to start over again with "ch_array".
+
+To search forward, use <code class="keystroke">CTRL-N</code>.  Since the search wraps around the end of the
+file, <code class="keystroke">CTRL-N</code> and <code class="keystroke">CTRL-P</code> will find the same matches, but in a different
+sequence.  Hint: <code class="keystroke">CTRL-N</code> is Next-match and <code class="keystroke">CTRL-P</code> is Previous-match.
+
+The Vim editor goes through a lot of effort to find words to complete.  By
+default, it searches the following places:
+
+	1. Current file
+	2. Files in other windows
+	3. Other loaded files (hidden buffers)
+	4. Files which are not loaded (inactive buffers)
+	5. Tag files
+	6. All files #included by the current file
+
+
+OPTIONS
+
+You can customize the search order with the 'complete' option.
+
+The 'ignorecase' option is used.  When it is set, case differences are ignored
+when searching for matches.
+
+A special option for completion is 'infercase'.  This is useful to find
+matches while ignoring case ('ignorecase' must be set) but still using the
+case of the word typed so far.  Thus if you type "For" and Vim finds a match
+"fortunately", it will result in "Fortunately".
+
+
+COMPLETING SPECIFIC ITEMS
+
+If you know what you are looking for, you can use these commands to complete
+with a certain type of item:
+
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-F</code>		file names
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-L</code>		whole lines
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-D</code>		macro definitions (also in included files)
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-I</code>		current and included files
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-K</code>		words from a dictionary
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-T</code>		words from a thesaurus
+	<code class="keystroke">CTRL-X</code> CTRL-]		tags
+	<code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-V</code>		Vim command line
+
+After each of them <code class="keystroke">CTRL-N</code> can be used to find the next match, <code class="keystroke">CTRL-P</code> to find
+the previous match.
+   More information for each of these commands here: |<a href="insert.html#ins-completion">ins-completion</a>|.
+
+
+COMPLETING FILE NAMES
+
+Let's take <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-F</code> as an example.  This will find file names.  It scans
+the current directory for files and displays each one that matches the word in
+front of the cursor.
+   Suppose, for example, that you have the following files in the current
+directory:
+
+	main.c  sub_count.c  sub_done.c  sub_exit.c
+
+Now enter Insert mode and start typing:
+
+<code class="section">	The exit code is in the file sub </code>
+
+At this point, you enter the command <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-F</code>.  Vim now completes the
+current word "sub" by looking at the files in the current directory.  The
+first match is sub_count.c.  This is not the one you want, so you match the
+next file by typing <code class="keystroke">CTRL-N</code>.  This match is sub_done.c.  Typing <code class="keystroke">CTRL-N</code> again
+takes you to sub_exit.c.  The results:
+
+<code class="section">	The exit code is in the file sub_exit.c </code>
+
+If the file name starts with / (Unix) or C:\ (MS-Windows) you can find all
+files in the file system.  For example, type "/u" and <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-F</code>.  This
+will match "/usr" (this is on Unix):
+
+<code class="section">	the file is found in /usr/ </code>
+
+If you now press <code class="keystroke">CTRL-N</code> you go back to "/u".  Instead, to accept the "/usr/"
+and go one directory level deeper, use <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-F</code> again:
+
+<code class="section">	the file is found in /usr/X11R6/ </code>
+
+The results depend on what is found in your file system, of course.  The
+matches are sorted alphabetically.
+
+
+COMPLETING IN SOURCE CODE
+
+Source code files are well structured.  That makes it possible to do
+completion in an intelligent way.  In Vim this is called Omni completion.  In
+some other editors it's called intellisense, but that is a trademark.
+
+The key to Omni completion is <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-O</code>.  Obviously the O stands for Omni
+here, so that you can remember it easier.  Let's use an example for editing C
+source:
+
+<code class="section">	{ </code>
+<code class="section">	    struct foo *p; </code>
+<code class="section">	    p-&gt; </code>
+
+The cursor is after "p-&gt;".  Now type <code class="keystroke">CTRL-X</code> <code class="keystroke">CTRL-O</code>.  Vim will offer you a list
+of alternatives, which are the items that "struct foo" contains.  That is
+quite different from using <code class="keystroke">CTRL-P</code>, which would complete any word, while only
+members of "struct foo" are valid here.
+
+For Omni completion to work you may need to do some setup.  At least make sure
+filetype plugins are enabled.  Your vimrc file should contain a line like
+this:
+<code class="example">	filetype plugin on</code>
+Or:
+<code class="example">	filetype plugin indent on</code>
+<code class="example"></code>
+For C code you need to create a tags file and set the 'tags' option.  That is
+explained |<a href="insert.html#ft-c-omni">ft-c-omni</a>|.  For other filetypes you may need to do something
+similar, look below |<a href="insert.html#compl-omni-filetypes">compl-omni-filetypes</a>|.  It only works for specific
+filetypes.  Check the value of the 'omnifunc' option to find out if it would
+work.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.4">24.4</a>*</b>	Repeating an insert
+
+If you press <code class="keystroke">CTRL-A</code>, the editor inserts the text you typed the last time you
+were in Insert mode.
+   Assume, for example, that you have a file that begins with the following:
+
+<code class="section">	"file.h" </code>
+	/<b class="vimtag">*<a name=" Main program begins "> Main program begins </a>*</b><code class="section">/ </code>
+
+You edit this file by inserting "#include " at the beginning of the first
+line:
+
+<code class="section">	#include "file.h" </code>
+	/<b class="vimtag">*<a name=" Main program begins "> Main program begins </a>*</b><code class="section">/ </code>
+
+You go down to the beginning of the next line using the commands "j^".  You
+now start to insert a new "#include" line.  So you type:
+<code class="example"></code>
+<code class="example">	i <code class="keystroke">CTRL-A</code></code>
+<code class="example"></code>
+The result is as follows:
+
+<code class="section">	#include "file.h" </code>
+	#include /<b class="vimtag">*<a name=" Main program begins "> Main program begins </a>*</b><code class="section">/ </code>
+
+The "#include " was inserted because <code class="keystroke">CTRL-A</code> inserts the text of the previous
+insert.  Now you type  "main.h"<code class="special">&lt;Enter&gt;</code>  to finish the line:
+
+
+<code class="section">	#include "file.h" </code>
+<code class="section">	#include "main.h" </code>
+	/<b class="vimtag">*<a name=" Main program begins "> Main program begins </a>*</b><code class="section">/ </code>
+
+The CTRL-@ command does a <code class="keystroke">CTRL-A</code> and then exits Insert mode.  That's a quick
+way of doing exactly the same insertion again.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.5">24.5</a>*</b>	Copying from another line
+
+The <code class="keystroke">CTRL-Y</code> command inserts the character above the cursor.  This is useful
+when you are duplicating a previous line.  For example, you have this line of
+C code:
+
+<code class="section">	b_array[i]-&gt;s_next = a_array[i]-&gt;s_next; </code>
+
+Now you need to type the same line, but with "s_prev" instead of "s_next".
+Start the new line, and press <code class="keystroke">CTRL-Y</code> 14 times, until you are at the "n" of
+"next":
+
+<code class="section">	b_array[i]-&gt;s_next = a_array[i]-&gt;s_next; </code>
+<code class="section">	b_array[i]-&gt;s_ </code>
+
+Now you type "prev":
+
+<code class="section">	b_array[i]-&gt;s_next = a_array[i]-&gt;s_next; </code>
+<code class="section">	b_array[i]-&gt;s_prev </code>
+
+Continue pressing <code class="keystroke">CTRL-Y</code> until the following "next":
+
+<code class="section">	b_array[i]-&gt;s_next = a_array[i]-&gt;s_next; </code>
+<code class="section">	b_array[i]-&gt;s_prev = a_array[i]-&gt;s_ </code>
+
+Now type "prev;" to finish it off.
+
+The <code class="keystroke">CTRL-E</code> command acts like <code class="keystroke">CTRL-Y</code> except it inserts the character below the
+cursor.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.6">24.6</a>*</b>	Inserting a register
+
+The command <code class="keystroke">CTRL-R</code> <code class="special">{register}</code> inserts the contents of the register.  This is
+useful to avoid having to type a long word.  For example, you need to type
+this:
+
+<code class="section">	r = VeryLongFunction(a) + VeryLongFunction(b) + VeryLongFunction(c) </code>
+
+The function name is defined in a different file.  Edit that file and move the
+cursor on top of the function name there, and yank it into register v:
+<code class="example"></code>
+<code class="example">	"vyiw</code>
+<code class="example"></code>
+"v is the register specification, "yiw" is yank-inner-word.  Now edit the file
+where the new line is to be inserted, and type the first letters:
+
+<code class="section">	r = </code>
+
+Now use <code class="keystroke">CTRL-R</code> v to insert the function name:
+
+<code class="section">	r = VeryLongFunction </code>
+
+You continue to type the characters in between the function name, and use
+<code class="keystroke">CTRL-R</code> v two times more.
+   You could have done the same with completion.  Using a register is useful
+when there are many words that start with the same characters.
+
+If the register contains characters such as <code class="special">&lt;BS&gt;</code> or other special characters,
+they are interpreted as if they had been typed from the keyboard.  If you do
+not want this to happen (you really want the <code class="special">&lt;BS&gt;</code> to be inserted in the text),
+use the command <code class="keystroke">CTRL-R</code> <code class="keystroke">CTRL-R</code> <code class="special">{register}</code>.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.7">24.7</a>*</b>	Abbreviations
+
+An abbreviation is a short word that takes the place of a long one.  For
+example, "ad" stands for "advertisement".  Vim enables you to type an
+abbreviation and then will automatically expand it for you.
+   To tell Vim to expand "ad" into "advertisement" every time you insert it,
+use the following command:
+<code class="example"></code>
+<code class="example">	:iabbrev ad advertisement</code>
+<code class="example"></code>
+Now, when you type "ad", the whole word "advertisement" will be inserted into
+the text.  This is triggered by typing a character that can't be part of a
+word, for example a space:
+
+	What Is Entered		What You See
+<code class="section">	I saw the a		I saw the a </code>
+<code class="section">	I saw the ad		I saw the ad </code>
+<code class="section">	I saw the ad<code class="special">&lt;Space&gt;</code>	I saw the advertisement<code class="special">&lt;Space&gt;</code> </code>
+
+The expansion doesn't happen when typing just "ad".  That allows you to type a
+word like "add", which will not get expanded.  Only whole words are checked
+for abbreviations.
+
+
+ABBREVIATING SEVERAL WORDS
+
+It is possible to define an abbreviation that results in multiple words.  For
+example, to define "JB" as "Jack Benny", use the following command:
+<code class="example"></code>
+<code class="example">	:iabbrev JB Jack Benny</code>
+<code class="example"></code>
+As a programmer, I use two rather unusual abbreviations:
+<code class="example"></code>
+<code class="example">	:iabbrev #b /****************************************</code>
+<code class="example">	:iabbrev #e <code class="special">&lt;Space&gt;</code>****************************************/</code>
+<code class="example"></code>
+These are used for creating boxed comments.  The comment starts with #b, which
+draws the top line.  I then type the comment text and use #e to draw the
+bottom line.
+   Notice that the #e abbreviation begins with a space.  In other words, the
+first two characters are space-star.  Usually Vim ignores spaces between the
+abbreviation and the expansion.  To avoid that problem, I spell space as seven
+characters: <code class="special">&lt;, S, p, a, c, e, &gt;</code>.
+
+	<code class="note">Note:</code>
+	":iabbrev" is a long word to type.  ":iab" works just as well.
+	That's abbreviating the abbreviate command!
+
+
+FIXING TYPING MISTAKES
+
+It's very common to make the same typing mistake every time.  For example,
+typing "teh" instead of "the".  You can fix this with an abbreviation:
+<code class="example"></code>
+<code class="example">	:abbreviate teh the</code>
+<code class="example"></code>
+You can add a whole list of these.  Add one each time you discover a common
+mistake.
+
+
+LISTING ABBREVIATIONS
+
+The ":abbreviate" command lists the abbreviations:
+
+	:abbreviate
+	i  #e		  ****************************************/
+	i  #b		 /****************************************
+	i  JB		 Jack Benny
+	i  ad		 advertisement
+	!  teh		 the
+
+The "i" in the first column indicates Insert mode.  These abbreviations are
+only active in Insert mode.  Other possible characters are:
+
+	c	Command-line mode			:cabbrev
+	!	both Insert and Command-line mode	:abbreviate
+
+Since abbreviations are not often useful in Command-line mode, you will mostly
+use the ":iabbrev" command.  That avoids, for example, that "ad" gets expanded
+when typing a command like:
+<code class="example"></code>
+<code class="example">	:edit ad</code>
+<code class="example"></code>
+<code class="example"></code>
+DELETING ABBREVIATIONS
+
+To get rid of an abbreviation, use the ":unabbreviate" command.  Suppose you
+have the following abbreviation:
+<code class="example"></code>
+<code class="example">	:abbreviate @f fresh</code>
+<code class="example"></code>
+You can remove it with this command:
+<code class="example"></code>
+<code class="example">	:unabbreviate @f</code>
+<code class="example"></code>
+While you type this, you will notice that @f is expanded to "fresh".  Don't
+worry about this, Vim understands it anyway (except when you have an
+abbreviation for "fresh", but that's very unlikely).
+   To remove all the abbreviations:
+<code class="example"></code>
+<code class="example">	:abclear</code>
+<code class="example"></code>
+":unabbreviate" and ":abclear" also come in the variants for Insert mode
+(":iunabbreviate and ":iabclear") and Command-line mode (":cunabbreviate" and
+":cabclear").
+
+
+REMAPPING ABBREVIATIONS
+
+There is one thing to watch out for when defining an abbreviation: The
+resulting string should not be mapped.  For example:
+<code class="example"></code>
+<code class="example">	:abbreviate @a adder</code>
+<code class="example">	:imap dd disk-door</code>
+<code class="example"></code>
+When you now type @a, you will get "adisk-doorer".  That's not what you want.
+To avoid this, use the ":noreabbrev" command.  It does the same as
+":abbreviate", but avoids that the resulting string is used for mappings:
+<code class="example"></code>
+<code class="example">	:noreabbrev @a adder</code>
+<code class="example"></code>
+Fortunately, it's unlikely that the result of an abbreviation is mapped.
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.8">24.8</a>*</b>	Entering special characters
+
+The <code class="keystroke">CTRL-V</code> command is used to insert the next character literally.  In other
+words, any special meaning the character has, it will be ignored.  For
+example:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-V</code> <code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+Inserts an escape character.  Thus you don't leave Insert mode.  (Don't type
+the space after <code class="keystroke">CTRL-V</code>, it's only to make this easier to read).
+
+	<code class="note">Note:</code>
+	On MS-Windows <code class="keystroke">CTRL-V</code> is used to paste text.  Use <code class="keystroke">CTRL-Q</code> instead of
+	<code class="keystroke">CTRL-V</code>.  On Unix, on the other hand, <code class="keystroke">CTRL-Q</code> does not work on some
+	terminals, because it has a special meaning.
+
+You can also use the command <code class="keystroke">CTRL-V</code> <code class="special">{digits}</code> to insert a character with the
+decimal number <code class="special">{digits}</code>.  For example, the character number 127 is the <code class="special">&lt;Del&gt;</code>
+character (but not necessarily the <code class="special">&lt;Del&gt;</code> key!).  To insert <code class="special">&lt;Del&gt;</code> type:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-V</code> 127</code>
+<code class="example"></code>
+You can enter characters up to 255 this way.  When you type fewer than two
+digits, a non-digit will terminate the command.  To avoid the need of typing a
+non-digit, prepend one or two zeros to make three digits.
+   All the next commands insert a <code class="special">&lt;Tab&gt;</code> and then a dot:
+
+	<code class="keystroke">CTRL-V</code> 9.
+	<code class="keystroke">CTRL-V</code> 09.
+	<code class="keystroke">CTRL-V</code> 009.
+
+To enter a character in hexadecimal, use an "x" after the <code class="keystroke">CTRL-V</code>:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-V</code> x7f</code>
+<code class="example"></code>
+This also goes up to character 255 (<code class="keystroke">CTRL-V</code> xff).  You can use "o" to type a
+character as an octal number and two more methods allow you to type up to
+a 16 bit and a 32 bit number (e.g., for a Unicode character):
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-V</code> o123</code>
+<code class="example">	<code class="keystroke">CTRL-V</code> u1234</code>
+<code class="example">	<code class="keystroke">CTRL-V</code> U12345678</code>
+<code class="example"></code>
+</pre><hr/><pre><b class="vimtag">*<a name="24.9">24.9</a>*</b>	Digraphs
+
+Some characters are not on the keyboard.  For example, the copyright character
+(©).  To type these characters in Vim, you use digraphs, where two characters
+represent one.  To enter a ©, for example, you press three keys:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-K</code> Co</code>
+<code class="example"></code>
+To find out what digraphs are available, use the following command:
+<code class="example"></code>
+<code class="example">	:digraphs</code>
+<code class="example"></code>
+Vim will display the digraph table.  Here are three lines of it:
+
+<code class="section">  AC ~_ 159  NS |  160  !I ¡  161  Ct ¢  162  Pd £  163  Cu ¤  164  Ye ¥  165 </code>
+<code class="section">  BB ¦  166  SE §  167  ': ¨  168  Co ©  169  -a ª  170  &lt;&lt; «  171  NO ¬  172 </code>
+<code class="section">  -- ­  173  Rg ®  174  'm ¯  175  DG °  176  +- ±  177  2S ²  178  3S ³  179 </code>
+
+This shows, for example, that the digraph you get by typing <code class="keystroke">CTRL-K</code> Pd is the
+character (£).  This is character number 163 (decimal).
+   Pd is short for Pound.  Most digraphs are selected to give you a hint about
+the character they will produce.  If you look through the list you will
+understand the logic.
+   You can exchange the first and second character, if there is no digraph for
+that combination.  Thus <code class="keystroke">CTRL-K</code> dP also works.  Since there is no digraph for
+"dP" Vim will also search for a "Pd" digraph.
+
+	<code class="note">Note:</code>
+	The digraphs depend on the character set that Vim assumes you are
+	using.  Always use ":digraphs" to find out which digraphs are currently
+	available.
+
+You can define your own digraphs.  Example:
+<code class="example"></code>
+<code class="example">	:digraph a" ä</code>
+<code class="example"></code>
+This defines that <code class="keystroke">CTRL-K</code> a" inserts an ä character.  You can also specify the
+character with a decimal number.  This defines the same digraph:
+<code class="example"></code>
+<code class="example">	:digraph a" 228</code>
+<code class="example"></code>
+More information about digraphs here: |<a href="digraph.html#digraphs">digraphs</a>|
+   Another way to insert special characters is with a keymap.  More about that
+here: |<a href="usr_45.html#45.5">45.5</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="24.10">24.10</a>*</b>	Normal mode commands
+
+Insert mode offers a limited number of commands.  In Normal mode you have many
+more.  When you want to use one, you usually leave Insert mode with <code class="special">&lt;Esc&gt;</code>,
+execute the Normal mode command, and re-enter Insert mode with "i" or "a".
+   There is a quicker way.  With <code class="keystroke">CTRL-O</code> <code class="special">{command}</code> you can execute any Normal
+mode command from Insert mode.  For example, to delete from the cursor to the
+end of the line:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-O</code> D</code>
+<code class="example"></code>
+You can execute only one Normal mode command this way.  But you can specify a
+register or a count.  A more complicated example:
+<code class="example"></code>
+<code class="example">	<code class="keystroke">CTRL-O</code> "g3dw</code>
+<code class="example"></code>
+This deletes up to the third word into register g.
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_25.html#usr_25.txt">usr_25</a>|  Editing formatted text
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

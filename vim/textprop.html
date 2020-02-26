@@ -1,0 +1,354 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: textprop</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>TEXTPROP</h2>
+<pre>
+<b class="vimtag">*<a name="textprop.txt">textprop.txt</a>*</b>  For Vim version 8.2.  Last change: 2020 Jan 10
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Displaying text with properties attached.	<b class="vimtag">*<a name="textprop">textprop</a>*</b> <b class="vimtag">*<a name="text-properties">text-properties</a>*</b>
+
+
+1. Introduction			|<a href="textprop.html#text-prop-intro">text-prop-intro</a>|
+2. Functions			|<a href="textprop.html#text-prop-functions">text-prop-functions</a>|
+3. When text changes		|<a href="textprop.html#text-prop-changes">text-prop-changes</a>|
+
+
+{not able to use text properties when the |<a href="various.html#+textprop">+textprop</a>| feature was
+disabled at compile time}
+
+</pre><hr/><pre>1. Introduction						<b class="vimtag">*<a name="text-prop-intro">text-prop-intro</a>*</b>
+
+Text properties can be attached to text in a buffer.  They will move with the
+text: If lines are deleted or inserted the properties move with the text they
+are attached to.  Also when inserting/deleting text in the line before the
+text property.  And when inserting/deleting text inside the text property, it
+will increase/decrease in size.
+
+The main use for text properties is to highlight text.  This can be seen as a
+replacement for syntax highlighting.  Instead of defining patterns to match
+the text, the highlighting is set by a script, possibly using the output of an
+external parser.  This only needs to be done once, not every time when
+redrawing the screen, thus can be much faster, after the initial cost of
+attaching the text properties.
+
+Text properties can also be used for other purposes to identify text.  For
+example, add a text property on a function name, so that a search can be
+defined to jump to the next/previous function.
+
+A text property is attached at a specific line and column, and has a specified
+length.  The property can span multiple lines.
+
+A text property has these fields:
+	"id"		a number to be used as desired
+	"type"		the name of a property type
+
+
+<code class="section">Property Types </code>
+							<b class="vimtag">*<a name="E971">E971</a>*</b>
+A text property normally has the name of a property type, which defines
+how to highlight the text.  The property type can have these entries:
+	"highlight"	name of the highlight group to use
+	"combine"	when omitted or TRUE the text property highlighting is
+			combined with any syntax highlighting; when FALSE the
+			text property highlighting replaces the syntax
+			highlighting
+	"priority"	when properties overlap, the one with the highest
+			priority will be used.
+	"start_incl"	when TRUE inserts at the start position will be
+			included in the text property
+	"end_incl"    	when TRUE inserts at the end position will be
+			included in the text property
+
+
+<code class="section">Example </code>
+
+Suppose line 11 in a buffer has this text (excluding the indent):
+
+	The number 123 is smaller than 4567.
+
+To highlight the numbers in this text:
+<code class="example">	call prop_type_add('number', <code class="special">{'highlight': 'Constant'}</code>)</code>
+<code class="example">	call prop_add(11, 12, <code class="special">{'length': 3, 'type': 'number'}</code>)</code>
+<code class="example">	call prop_add(11, 32, <code class="special">{'length': 4, 'type': 'number'}</code>)</code>
+<code class="example"></code>
+Try inserting or deleting lines above the text, you will see that the text
+properties stick to the text, thus the line number is adjusted as needed.
+
+Setting "start_incl" and "end_incl" is useful when white space surrounds the
+text, e.g. for a function name.  Using false is useful when the text starts
+and/or ends with a specific character, such as the quote surrounding a string.
+
+<code class="section">	func FuncName(arg) </code>
+	     ^^^^^^^^        property with start_incl and end_incl set
+
+<code class="section">	var = "text"; </code>
+	      ^^^^^^	     property with start_incl and end_incl not set
+
+Nevertheless, when text is inserted or deleted the text may need to be parsed
+and the text properties updated.  But this can be done asynchronously.
+
+
+Internal error <b class="vimtag">*<a name="E967">E967</a>*</b>
+
+If you see E967, please report the bug.  You can do this at Github:
+https://github.com/vim/vim/issues/new
+
+</pre><hr/><pre>2. Functions						<b class="vimtag">*<a name="text-prop-functions">text-prop-functions</a>*</b>
+
+Manipulating text property types:
+
+prop_type_add(<code class="special">{name}</code>, <code class="special">{props}</code>)		define a new property type
+prop_type_change(<code class="special">{name}</code>, <code class="special">{props}</code>)	change an existing property type
+prop_type_delete(<code class="special">{name}</code> [, <code class="special">{props}</code>])	delete a property type
+prop_type_get([<code class="special">{name}</code> [, <code class="special">{props}</code>])	get property type values
+prop_type_list([<code class="special">{props}</code>])		get list of property types
+
+
+Manipulating text properties:
+
+prop_add(<code class="special">{lnum}</code>, <code class="special">{col}</code>, <code class="special">{props}</code>)  	add a text property
+prop_clear(<code class="special">{lnum}</code> [, <code class="special">{lnum-end}</code> [, <code class="special">{bufnr}</code>]])
+					remove all text properties
+prop_find(<code class="special">{props}</code> [, <code class="special">{direction}</code>])	search for a text property
+prop_list(<code class="special">{lnum}</code> [, <code class="special">{props}</code>)  		text properties in <code class="special">{lnum}</code>
+prop_remove(<code class="special">{props}</code> [, <code class="special">{lnum}</code> [, <code class="special">{lnum-end}</code>]])
+					remove a text property
+
+						<b class="vimtag">*<a name="prop_add()">prop_add()</a>*</b> <b class="vimtag">*<a name="E965">E965</a>*</b>
+prop_add(<code class="special">{lnum}</code>, <code class="special">{col}</code>, <code class="special">{props}</code>)
+		Attach a text property at position <code class="special">{lnum}</code>, <code class="special">{col}</code>.  <code class="special">{col}</code> is
+		counted in bytes, use one for the first column.
+		If <code class="special">{lnum}</code> is invalid an error is given. <b class="vimtag">*<a name="E966">E966</a>*</b>
+		If <code class="special">{col}</code> is invalid an error is given. <b class="vimtag">*<a name="E964">E964</a>*</b>
+
+		<code class="special">{props}</code> is a dictionary with these fields:
+		   length	length of text in bytes, can only be used
+				for a property that does not continue in
+				another line; can be zero
+		   end_lnum	line number for the end of text
+		   end_col	column just after the text; not used when
+				"length" is present; when <code class="special">{col}</code> and "end_col"
+				are equal, and "end_lnum" is omitted or equal
+				to <code class="special">{lnum}</code>, this is a zero-width text property
+		   bufnr	buffer to add the property to; when omitted
+				the current buffer is used
+		   id		user defined ID for the property; when omitted
+				zero is used
+		   type		name of the text property type
+		All fields except "type" are optional.
+
+		It is an error when both "length" and "end_lnum" or "end_col"
+		are given.  Either use "length" or "end_col" for a property
+		within one line, or use "end_lnum" and "end_col" for a
+		property that spans more than one line.
+		When neither "length" nor "end_col" are given the property
+		will be zero-width.  That means it will not be highlighted but
+		will move with the text, as a kind of mark.
+		The property can end exactly at the last character of the
+		text, or just after it.  In the last case, if text is appended
+		to the line, the text property size will increase, also when
+		the property type does not have "end_incl" set.
+
+		"type" will first be looked up in the buffer the property is
+		added to. When not found, the global property types are used.
+		If not found an error is given.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetLnum()-&gt;prop_add(col, props)</code>
+<code class="example"></code>
+<code class="example"></code>
+prop_clear(<code class="special">{lnum}</code> [, <code class="special">{lnum-end}</code> [, <code class="special">{props}</code>]])		<b class="vimtag">*<a name="prop_clear()">prop_clear()</a>*</b>
+		Remove all text properties from line <code class="special">{lnum}</code>.
+		When <code class="special">{lnum-end}</code> is given, remove all text properties from line
+		<code class="special">{lnum}</code> to <code class="special">{lnum-end}</code> (inclusive).
+
+		When <code class="special">{props}</code> contains a "bufnr" item use this buffer,
+		otherwise use the current buffer.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetLnum()-&gt;prop_clear()</code>
+
+							<b class="vimtag">*<a name="prop_find()">prop_find()</a>*</b>
+prop_find(<code class="special">{props}</code> [, <code class="special">{direction}</code>])
+		Search for a text property as specified with <code class="special">{props}</code>:
+		   id		property with this ID
+		   type		property with this type name
+		   bufnr	buffer to search in; when present a
+				start position with "lnum" and "col"
+				must be given; when omitted the
+				current buffer is used
+		   lnum		start in this line (when omitted start
+				at the cursor)
+		   col		start at this column (when omitted
+				and "lnum" is given: use column 1,
+				otherwise start at the cursor)
+		   skipstart	do not look for a match at the start
+				position
+
+		<code class="special">{direction}</code> can be "f" for forward and "b" for backward.  When
+		omitted forward search is performed.
+
+		If a match is found then a Dict is returned with the entries
+		as with prop_list(), and additionally an "lnum" entry.
+		If no match is found then an empty Dict is returned.
+
+
+prop_list(<code class="special">{lnum}</code> [, <code class="special">{props}</code>])				<b class="vimtag">*<a name="prop_list()">prop_list()</a>*</b>
+		Return a List with all text properties in line <code class="special">{lnum}</code>.
+
+		When <code class="special">{props}</code> contains a "bufnr" item, use this buffer instead
+		of the current buffer.
+
+		The properties are ordered by starting column and priority.
+		Each property is a Dict with these entries:
+		   col		starting column
+		   length	length in bytes, one more if line break is
+				included
+		   id		property ID
+		   type		name of the property type, omitted if
+				the type was deleted
+		   start	when TRUE property starts in this line
+		   end		when TRUE property ends in this line
+
+		When "start" is zero the property started in a previous line,
+		the current one is a continuation.
+		When "end" is zero the property continues in the next line.
+		The line break after this line is included.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetLnum()-&gt;prop_list()</code>
+
+						<b class="vimtag">*<a name="prop_remove()">prop_remove()</a>*</b> <b class="vimtag">*<a name="E968">E968</a>*</b>
+prop_remove(<code class="special">{props}</code> [, <code class="special">{lnum}</code> [, <code class="special">{lnum-end}</code>]])
+		Remove a matching text property from line <code class="special">{lnum}</code>.  When
+		<code class="special">{lnum-end}</code> is given, remove matching text properties from line
+		<code class="special">{lnum}</code> to <code class="special">{lnum-end}</code> (inclusive).
+		When <code class="special">{lnum}</code> is omitted remove matching text properties from
+		all lines.
+
+		<code class="special">{props}</code> is a dictionary with these fields:
+		   id		remove text properties with this ID
+		   type		remove text properties with this type name
+		   bufnr	use this buffer instead of the current one
+		   all		when TRUE remove all matching text properties,
+				not just the first one
+		A property matches when either "id" or "type" matches.
+		If buffer "bufnr" does not exist you get an error message.
+		If buffer "bufnr" is not loaded then nothing happens.
+
+		Returns the number of properties that were removed.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetProps()-&gt;prop_remove()</code>
+<code class="example"></code>
+<code class="example"></code>
+prop_type_add(<code class="special">{name}</code>, <code class="special">{props}</code>)		<b class="vimtag">*<a name="prop_type_add()">prop_type_add()</a>*</b> <b class="vimtag">*<a name="E969">E969</a>*</b> <b class="vimtag">*<a name="E970">E970</a>*</b>
+		Add a text property type <code class="special">{name}</code>.  If a property type with this
+		name already exists an error is given.  Nothing is returned.
+		<code class="special">{props}</code> is a dictionary with these optional fields:
+		   bufnr	define the property only for this buffer; this
+				avoids name collisions and automatically
+				clears the property types when the buffer is
+				deleted.
+		   highlight	name of highlight group to use
+		   priority	when a character has multiple text
+				properties the one with the highest priority
+				will be used; negative values can be used, the
+				default priority is zero
+		   combine	when TRUE combine the highlight with any
+				syntax highlight; when omitted or FALSE syntax
+				highlight will not be used
+		   start_incl	when TRUE inserts at the start position will
+				be included in the text property
+		   end_incl	when TRUE inserts at the end position will be
+				included in the text property
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPropName()-&gt;prop_type_add(props)</code>
+<code class="example"></code>
+prop_type_change(<code class="special">{name}</code>, <code class="special">{props}</code>)			<b class="vimtag">*<a name="prop_type_change()">prop_type_change()</a>*</b>
+		Change properties of an existing text property type.  If a
+		property with this name does not exist an error is given.
+		The <code class="special">{props}</code> argument is just like |<a href="textprop.html#prop_type_add()">prop_type_add()</a>|.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPropName()-&gt;prop_type_change(props)</code>
+<code class="example"></code>
+prop_type_delete(<code class="special">{name}</code> [, <code class="special">{props}</code>])			<b class="vimtag">*<a name="prop_type_delete()">prop_type_delete()</a>*</b>
+		Remove the text property type <code class="special">{name}</code>.  When text properties
+		using the type <code class="special">{name}</code> are still in place, they will not have
+		an effect and can no longer be removed by name.
+
+		<code class="special">{props}</code> can contain a "bufnr" item.  When it is given, delete
+		a property type from this buffer instead of from the global
+		property types.
+
+		When text property type <code class="special">{name}</code> is not found there is no error.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPropName()-&gt;prop_type_delete()</code>
+<code class="example"></code>
+prop_type_get([<code class="special">{name}</code> [, <code class="special">{props}</code>])			<b class="vimtag">*<a name="prop_type_get()">prop_type_get()</a>*</b>
+		Returns the properties of property type <code class="special">{name}</code>.  This is a
+		dictionary with the same fields as was given to
+		prop_type_add().
+		When the property type <code class="special">{name}</code> does not exist, an empty
+		dictionary is returned.
+
+		<code class="special">{props}</code> can contain a "bufnr" item.  When it is given, use
+		this buffer instead of the global property types.
+
+		Can also be used as a |<a href="eval.html#method">method</a>|:
+<code class="example">			GetPropName()-&gt;prop_type_get()</code>
+<code class="example"></code>
+prop_type_list([<code class="special">{props}</code>])				<b class="vimtag">*<a name="prop_type_list()">prop_type_list()</a>*</b>
+		Returns a list with all property type names.
+
+		<code class="special">{props}</code> can contain a "bufnr" item.  When it is given, use
+		this buffer instead of the global property types.
+
+
+</pre><hr/><pre>3. When text changes				<b class="vimtag">*<a name="text-prop-changes">text-prop-changes</a>*</b>
+
+Vim will do its best to keep the text properties on the text where it was
+attached.  When inserting or deleting text the properties after the change
+will move accordingly.
+
+When text is deleted and a text property no longer includes any text, it is
+deleted.  However, a text property that was defined as zero-width will remain,
+unless the whole line is deleted.
+								<b class="vimtag">*<a name="E275">E275</a>*</b>
+When a buffer is unloaded, all the text properties are gone.  There is no way
+to store the properties in a file.  You can only re-create them.  When a
+buffer is hidden the text is preserved and so are the text properties.  It is
+not possible to add text properties to an unloaded buffer.
+
+When using replace mode, the text properties stay on the same character
+positions, even though the characters themselves change.
+
+To update text properties after the text was changed, install a callback with
+`listener_add()`.  E.g, if your plugin does spell checking, you can have the
+callback update spelling mistakes in the changed text.  Vim will move the
+properties below the changed text, so that they still highlight the same text,
+thus you don't need to update these.
+
+
+<code class="section">Text property columns are not updated: </code>
+
+- When setting the line with |<a href="eval.html#setline()">setline()</a>| or through an interface, such as Lua,
+  Tcl or Python.  Vim does not know what text got inserted or deleted.
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

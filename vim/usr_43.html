@@ -1,0 +1,189 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_43</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_43</h2>
+<pre>
+<b class="vimtag">*<a name="usr_43.txt">usr_43.txt</a>*</b>	For Vim version 8.2.  Last change: 2015 Oct 23
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			       Using filetypes
+
+
+When you are editing a file of a certain type, for example a C program or a
+shell script, you often use the same option settings and mappings.  You
+quickly get tired of manually setting these each time.  This chapter explains
+how to do it automatically.
+
+|<a href="usr_43.html#43.1">43.1</a>|	Plugins for a filetype
+|<a href="usr_43.html#43.2">43.2</a>|	Adding a filetype
+
+     Next chapter: |<a href="usr_44.html#usr_44.txt">usr_44</a>|  Your own syntax highlighted
+ Previous chapter: |<a href="usr_42.html#usr_42.txt">usr_42</a>|  Add new menus
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="43.1">43.1</a>*</b>	Plugins for a filetype				<b class="vimtag">*<a name="filetype-plugin">filetype-plugin</a>*</b>
+
+How to start using filetype plugins has already been discussed here:
+|<a href="usr_05.html#add-filetype-plugin">add-filetype-plugin</a>|.  But you probably are not satisfied with the default
+settings, because they have been kept minimal.  Suppose that for C files you
+want to set the 'softtabstop' option to 4 and define a mapping to insert a
+three-line comment.  You do this with only two steps:
+
+							<b class="vimtag">*<a name="your-runtime-dir">your-runtime-dir</a>*</b>
+1. Create your own runtime directory.  On Unix this usually is "~/.vim".  In
+   this directory create the "ftplugin" directory:
+<code class="example"></code>
+<code class="example">	mkdir ~/.vim</code>
+<code class="example">	mkdir ~/.vim/ftplugin</code>
+
+   When you are not on Unix, check the value of the 'runtimepath' option to
+   see where Vim will look for the "ftplugin" directory:
+<code class="example"></code>
+<code class="example">	set runtimepath</code>
+<code class="example"></code>
+  You would normally use the first directory name (before the first comma).
+   You might want to prepend a directory name to the 'runtimepath' option in
+   your |<a href="starting.html#vimrc">vimrc</a>| file if you don't like the default value.
+
+2. Create the file "~/.vim/ftplugin/c.vim", with the contents:
+<code class="example"></code>
+<code class="example">	setlocal softtabstop=4</code>
+<code class="example">	noremap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;LocalLeader&gt;</code>c o/**************<code class="special">&lt;CR&gt;</code><code class="special">&lt;CR&gt;</code>/<code class="special">&lt;Esc&gt;</code></code>
+<code class="example">	let b:undo_ftplugin = "setl softtabstop<code class="special">&lt; | unmap &lt;buffer&gt;</code> <code class="special">&lt;LocalLeader&gt;</code>c"</code>
+<code class="example"></code>
+Try editing a C file.  You should notice that the 'softtabstop' option is set
+to 4.  But when you edit another file it's reset to the default zero.  That is
+because the ":setlocal" command was used.  This sets the 'softtabstop' option
+only locally to the buffer.  As soon as you edit another buffer, it will be
+set to the value set for that buffer.  For a new buffer it will get the
+default value or the value from the last ":set" command.
+
+Likewise, the mapping for "\c" will disappear when editing another buffer.
+The ":map <code class="special">&lt;buffer&gt;</code>" command creates a mapping that is local to the current
+buffer.  This works with any mapping command: ":map!", ":vmap", etc.  The
+|<a href="map.html#%3CLocalLeader%3E">&lt;LocalLeader&gt;</a>| in the mapping is replaced with the value of the
+"maplocalleader" variable.
+
+The line to set b:undo_ftplugin is for when the filetype is set to another
+value.  In that case you will want to undo your preferences.  The
+b:undo_ftplugin variable is executed as a command. Watch out for characters
+with a special meaning inside a string, such as a backslash.
+
+You can find examples for filetype plugins in this directory:
+<code class="example"></code>
+<code class="example">	$VIMRUNTIME/ftplugin/</code>
+<code class="example"></code>
+More details about writing a filetype plugin can be found here:
+|<a href="usr_41.html#write-plugin">write-plugin</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="43.2">43.2</a>*</b>	Adding a filetype
+
+If you are using a type of file that is not recognized by Vim, this is how to
+get it recognized.  You need a runtime directory of your own.  See
+|<a href="usr_43.html#your-runtime-dir">your-runtime-dir</a>| above.
+
+Create a file "filetype.vim" which contains an autocommand for your filetype.
+(Autocommands were explained in section |<a href="usr_40.html#40.3">40.3</a>|.)  Example:
+<code class="example"></code>
+<code class="example">	augroup filetypedetect</code>
+<code class="example">	au BufNewFile,BufRead *.xyz	setf xyz</code>
+<code class="example">	augroup END</code>
+<code class="example"></code>
+This will recognize all files that end in ".xyz" as the "xyz" filetype.  The
+":augroup" commands put this autocommand in the "filetypedetect" group.  This
+allows removing all autocommands for filetype detection when doing ":filetype
+off".  The "setf" command will set the 'filetype' option to its argument,
+unless it was set already.  This will make sure that 'filetype' isn't set
+twice.
+
+You can use many different patterns to match the name of your file.  Directory
+names can also be included.  See |<a href="autocmd.html#autocmd-patterns">autocmd-patterns</a>|.  For example, the files
+under "/usr/share/scripts/" are all "ruby" files, but don't have the expected
+file name extension.  Adding this to the example above:
+<code class="example"></code>
+<code class="example">	augroup filetypedetect</code>
+<code class="example">	au BufNewFile,BufRead *.xyz			setf xyz</code>
+<code class="example">	au BufNewFile,BufRead /usr/share/scripts/*	setf ruby</code>
+<code class="example">	augroup END</code>
+<code class="example"></code>
+However, if you now edit a file /usr/share/scripts/README.txt, this is not a
+ruby file.  The danger of a pattern ending in "*" is that it quickly matches
+too many files.  To avoid trouble with this, put the filetype.vim file in
+another directory, one that is at the end of 'runtimepath'.  For Unix for
+example, you could use "~/.vim/after/filetype.vim".
+   You now put the detection of text files in ~/.vim/filetype.vim:
+<code class="example"></code>
+<code class="example">	augroup filetypedetect</code>
+<code class="example">	au BufNewFile,BufRead *.txt			setf text</code>
+<code class="example">	augroup END</code>
+<code class="example"></code>
+That file is found in 'runtimepath' first.  Then use this in
+~/.vim/after/filetype.vim, which is found last:
+<code class="example"></code>
+<code class="example">	augroup filetypedetect</code>
+<code class="example">	au BufNewFile,BufRead /usr/share/scripts/*	setf ruby</code>
+<code class="example">	augroup END</code>
+<code class="example"></code>
+What will happen now is that Vim searches for "filetype.vim" files in each
+directory in 'runtimepath'.  First ~/.vim/filetype.vim is found.  The
+autocommand to catch *.txt files is defined there.  Then Vim finds the
+filetype.vim file in $VIMRUNTIME, which is halfway 'runtimepath'.  Finally
+~/.vim/after/filetype.vim is found and the autocommand for detecting ruby
+files in /usr/share/scripts is added.
+   When you now edit /usr/share/scripts/README.txt, the autocommands are
+checked in the order in which they were defined.  The *.txt pattern matches,
+thus "setf text" is executed to set the filetype to "text".  The pattern for
+ruby matches too, and the "setf ruby" is executed.  But since 'filetype' was
+already set to "text", nothing happens here.
+   When you edit the file /usr/share/scripts/foobar the same autocommands are
+checked.  Only the one for ruby matches and "setf ruby" sets 'filetype' to
+ruby.
+
+
+RECOGNIZING BY CONTENTS
+
+If your file cannot be recognized by its file name, you might be able to
+recognize it by its contents.  For example, many script files start with a
+line like:
+
+<code class="section">	#!/bin/xyz </code>
+
+To recognize this script create a file "scripts.vim" in your runtime directory
+(same place where filetype.vim goes).  It might look like this:
+<code class="example"></code>
+<code class="example">	if did_filetype()</code>
+<code class="example">	  finish</code>
+<code class="example">	endif</code>
+<code class="example">	if getline(1) =~ '^#!.*[/\\]xyz\&gt;'</code>
+<code class="example">	  setf xyz</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+The first check with did_filetype() is to avoid that you will check the
+contents of files for which the filetype was already detected by the file
+name.  That avoids wasting time on checking the file when the "setf" command
+won't do anything.
+   The scripts.vim file is sourced by an autocommand in the default
+filetype.vim file.  Therefore, the order of checks is:
+
+	1. filetype.vim files before $VIMRUNTIME in 'runtimepath'
+	2. first part of $VIMRUNTIME/filetype.vim
+	3. all scripts.vim files in 'runtimepath'
+	4. remainder of $VIMRUNTIME/filetype.vim
+	5. filetype.vim files after $VIMRUNTIME in 'runtimepath'
+
+If this is not sufficient for you, add an autocommand that matches all files
+and sources a script or executes a function to check the contents of the file.
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_44.html#usr_44.txt">usr_44</a>|  Your own syntax highlighted
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

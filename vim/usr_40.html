@@ -1,0 +1,666 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_40</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_40</h2>
+<pre>
+<b class="vimtag">*<a name="usr_40.txt">usr_40.txt</a>*</b>	For Vim version 8.2.  Last change: 2013 Aug 05
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			      Make new commands
+
+
+Vim is an extensible editor.  You can take a sequence of commands you use
+often and turn it into a new command.  Or redefine an existing command.
+Autocommands make it possible to execute commands automatically.
+
+|<a href="usr_40.html#40.1">40.1</a>|	Key mapping
+|<a href="usr_40.html#40.2">40.2</a>|	Defining command-line commands
+|<a href="usr_40.html#40.3">40.3</a>|	Autocommands
+
+     Next chapter: |<a href="usr_41.html#usr_41.txt">usr_41</a>|  Write a Vim script
+ Previous chapter: |<a href="usr_32.html#usr_32.txt">usr_32</a>|  The undo tree
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="40.1">40.1</a>*</b>	Key mapping
+
+A simple mapping was explained in section |<a href="usr_05.html#05.3">05.3</a>|.  The principle is that one
+sequence of key strokes is translated into another sequence of key strokes.
+This is a simple, yet powerful mechanism.
+   The simplest form is that one key is mapped to a sequence of keys.  Since
+the function keys, except <code class="special">&lt;F1&gt;</code>, have no predefined meaning in Vim, these are
+good choices to map.  Example:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;F2&gt;</code> GoDate: <code class="special">&lt;Esc&gt;</code>:read !date<code class="special">&lt;CR&gt;</code>kJ</code>
+<code class="example"></code>
+This shows how three modes are used.  After going to the last line with "G",
+the "o" command opens a new line and starts Insert mode.  The text "Date: " is
+inserted and <code class="special">&lt;Esc&gt;</code> takes you out of insert mode.
+   Notice the use of special keys inside <code class="special">&lt;&gt;</code>.  This is called angle bracket
+notation.  You type these as separate characters, not by pressing the key
+itself.  This makes the mappings better readable and you can copy and paste
+the text without problems.
+   The ":" character takes Vim to the command line.  The ":read !date" command
+reads the output from the "date" command and appends it below the current
+line.  The <code class="special">&lt;CR&gt;</code> is required to execute the ":read" command.
+   At this point of execution the text looks like this:
+
+<code class="section">	Date:  </code>
+<code class="section">	Fri Jun 15 12:54:34 CEST 2001 </code>
+
+Now "kJ" moves the cursor up and joins the lines together.
+   To decide which key or keys you use for mapping, see |<a href="map.html#map-which-keys">map-which-keys</a>|.
+
+
+MAPPING AND MODES
+
+The ":map" command defines remapping for keys in Normal mode.  You can also
+define mappings for other modes.  For example, ":imap" applies to Insert mode.
+You can use it to insert a date below the cursor:
+<code class="example"></code>
+<code class="example">	:imap <code class="special">&lt;F2&gt;</code> <code class="special">&lt;CR&gt;</code>Date: <code class="special">&lt;Esc&gt;</code>:read !date<code class="special">&lt;CR&gt;</code>kJ</code>
+<code class="example"></code>
+It looks a lot like the mapping for <code class="special">&lt;F2&gt;</code> in Normal mode, only the start is
+different.  The <code class="special">&lt;F2&gt;</code> mapping for Normal mode is still there.  Thus you can map
+the same key differently for each mode.
+   Notice that, although this mapping starts in Insert mode, it ends in Normal
+mode.  If you want it to continue in Insert mode, append an "a" to the
+mapping.
+
+Here is an overview of map commands and in which mode they work:
+
+	:map		Normal, Visual and Operator-pending
+	:vmap		Visual
+	:nmap		Normal
+	:omap		Operator-pending
+	:map!		Insert and Command-line
+	:imap		Insert
+	:cmap		Command-line
+
+Operator-pending mode is when you typed an operator character, such as "d" or
+"y", and you are expected to type the motion command or a text object.  Thus
+when you type "dw", the "w" is entered in operator-pending mode.
+
+Suppose that you want to define <code class="special">&lt;F7&gt;</code> so that the command d<code class="special">&lt;F7&gt;</code> deletes a C
+program block (text enclosed in curly braces, <code class="special">{}</code>).  Similarly y<code class="special">&lt;F7&gt;</code> would yank
+the program block into the unnamed register.  Therefore, what you need to do
+is to define <code class="special">&lt;F7&gt;</code> to select the current program block.  You can do this with
+the following command:
+<code class="example"></code>
+<code class="example">	:omap <code class="special">&lt;F7&gt;</code> a{</code>
+<code class="example"></code>
+This causes <code class="special">&lt;F7&gt;</code> to perform a select block "a{" in operator-pending mode, just
+like you typed it.  This mapping is useful if typing a { on your keyboard is a
+bit difficult.
+
+
+LISTING MAPPINGS
+
+To see the currently defined mappings, use ":map" without arguments.  Or one
+of the variants that include the mode in which they work.  The output could
+look like this:
+
+<code class="section">	   _g		 :call MyGrep(1)<code class="special">&lt;CR&gt;</code> </code>
+<code class="section">	v  <code class="special">&lt;F2&gt;</code>		 :s/^/&gt; /<code class="special">&lt;CR&gt;</code>:noh<code class="special">&lt;CR&gt;</code>`` </code>
+<code class="section">	n  <code class="special">&lt;F2&gt;</code>		 :.,$s/^/&gt; /<code class="special">&lt;CR&gt;</code>:noh<code class="special">&lt;CR&gt;</code>`` </code>
+	   <code class="special">&lt;xHome&gt;</code>	 <code class="special">&lt;Home&gt;</code>
+	   <code class="special">&lt;xEnd&gt;</code>	 <code class="special">&lt;End&gt;</code>
+
+
+The first column of the list shows in which mode the mapping is effective.
+This is "n" for Normal mode, "i" for Insert mode, etc.  A blank is used for a
+mapping defined with ":map", thus effective in both Normal and Visual mode.
+   One useful purpose of listing the mapping is to check if special keys in <code class="special">&lt;&gt;</code>
+form have been recognized (this only works when color is supported).  For
+example, when <code class="special">&lt;Esc&gt;</code> is displayed in color, it stands for the escape character.
+When it has the same color as the other text, it is five characters.
+
+
+REMAPPING
+
+The result of a mapping is inspected for other mappings in it.  For example,
+the mappings for <code class="special">&lt;F2&gt;</code> above could be shortened to:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;F2&gt;</code> G<code class="special">&lt;F3&gt;</code></code>
+<code class="example">	:imap <code class="special">&lt;F2&gt;</code> <code class="special">&lt;Esc&gt;</code><code class="special">&lt;F3&gt;</code></code>
+<code class="example">	:map <code class="special">&lt;F3&gt;</code>  oDate: <code class="special">&lt;Esc&gt;</code>:read !date<code class="special">&lt;CR&gt;</code>kJ</code>
+<code class="example"></code>
+For Normal mode <code class="special">&lt;F2&gt;</code> is mapped to go to the last line, and then behave like
+<code class="special">&lt;F3&gt;</code> was pressed.  In Insert mode <code class="special">&lt;F2&gt;</code> stops Insert mode with <code class="special">&lt;Esc&gt;</code> and then
+also uses <code class="special">&lt;F3&gt;</code>.  Then <code class="special">&lt;F3&gt;</code> is mapped to do the actual work.
+
+Suppose you hardly ever use Ex mode, and want to use the "Q" command to format
+text (this was so in old versions of Vim).  This mapping will do it:
+<code class="example"></code>
+<code class="example">	:map Q gq</code>
+<code class="example"></code>
+But, in rare cases you need to use Ex mode anyway.  Let's map "gQ" to Q, so
+that you can still go to Ex mode:
+<code class="example"></code>
+<code class="example">	:map gQ Q</code>
+<code class="example"></code>
+What happens now is that when you type "gQ" it is mapped to "Q".  So far so
+good.  But then "Q" is mapped to "gq", thus typing "gQ" results in "gq", and
+you don't get to Ex mode at all.
+   To avoid keys to be mapped again, use the ":noremap" command:
+<code class="example"></code>
+<code class="example">	:noremap gQ Q</code>
+<code class="example"></code>
+Now Vim knows that the "Q" is not to be inspected for mappings that apply to
+it.  There is a similar command for every mode:
+
+	:noremap	Normal, Visual and Operator-pending
+	:vnoremap	Visual
+	:nnoremap	Normal
+	:onoremap	Operator-pending
+	:noremap!	Insert and Command-line
+	:inoremap	Insert
+	:cnoremap	Command-line
+
+
+RECURSIVE MAPPING
+
+When a mapping triggers itself, it will run forever.  This can be used to
+repeat an action an unlimited number of times.
+   For example, you have a list of files that contain a version number in the
+first line.  You edit these files with "vim *.txt".  You are now editing the
+first file.  Define this mapping:
+<code class="example"></code>
+<code class="example">	:map ,, :s/5.1/5.2/<code class="special">&lt;CR&gt;</code>:wnext<code class="special">&lt;CR&gt;</code>,,</code>
+<code class="example"></code>
+Now you type ",,".  This triggers the mapping.  It replaces "5.1" with "5.2"
+in the first line.  Then it does a ":wnext" to write the file and edit the
+next one.  The mapping ends in ",,".  This triggers the same mapping again,
+thus doing the substitution, etc.
+   This continues until there is an error.  In this case it could be a file
+where the substitute command doesn't find a match for "5.1".  You can then
+make a change to insert "5.1" and continue by typing ",," again.  Or the
+":wnext" fails, because you are in the last file in the list.
+   When a mapping runs into an error halfway, the rest of the mapping is
+discarded.  <code class="keystroke">CTRL-C</code> interrupts the mapping (<code class="keystroke">CTRL-Break</code> on MS-Windows).
+
+
+DELETE A MAPPING
+
+To remove a mapping use the ":unmap" command.  Again, the mode the unmapping
+applies to depends on the command used:
+
+	:unmap		Normal, Visual and Operator-pending
+	:vunmap		Visual
+	:nunmap		Normal
+	:ounmap		Operator-pending
+	:unmap!		Insert and Command-line
+	:iunmap		Insert
+	:cunmap		Command-line
+
+There is a trick to define a mapping that works in Normal and Operator-pending
+mode, but not in Visual mode.  First define it for all three modes, then
+delete it for Visual mode:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;C-A&gt;</code> /---&gt;<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	:vunmap <code class="special">&lt;C-A&gt;</code></code>
+<code class="example"></code>
+Notice that the five characters "<code class="special">&lt;C-A&gt;</code>" stand for the single key <code class="keystroke">CTRL-A</code>.
+
+To remove all mappings use the |<a href="map.html#:mapclear">:mapclear</a>| command.  You can guess the
+variations for different modes by now.  Be careful with this command, it can't
+be undone.
+
+
+SPECIAL CHARACTERS
+
+The ":map" command can be followed by another command.  A | character
+separates the two commands.  This also means that a | character can't be used
+inside a map command.  To include one, use <code class="special">&lt;Bar&gt;</code> (five characters).  Example:
+
+<code class="example">	:map <code class="special">&lt;F8&gt;</code> :write <code class="special">&lt;Bar&gt;</code> !checkin %:S<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+The same problem applies to the ":unmap" command, with the addition that you
+have to watch out for trailing white space.  These two commands are different:
+
+<code class="example">	:unmap a | unmap b</code>
+<code class="example">	:unmap a| unmap b</code>
+<code class="example"></code>
+The first command tries to unmap "a ", with a trailing space.
+
+When using a space inside a mapping, use <code class="special">&lt;Space&gt;</code> (seven characters):
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;Space&gt;</code> W</code>
+<code class="example"></code>
+This makes the spacebar move a blank-separated word forward.
+
+It is not possible to put a comment directly after a mapping, because the "
+character is considered to be part of the mapping.  You can use |", this
+starts a new, empty command with a comment.  Example:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;Space&gt;</code> W|     " Use spacebar to move forward a word</code>
+<code class="example"></code>
+<code class="example"></code>
+MAPPINGS AND ABBREVIATIONS
+
+Abbreviations are a lot like Insert mode mappings.  The arguments are handled
+in the same way.  The main difference is the way they are triggered.  An
+abbreviation is triggered by typing a non-word character after the word.  A
+mapping is triggered when typing the last character.
+   Another difference is that the characters you type for an abbreviation are
+inserted in the text while you type them.  When the abbreviation is triggered
+these characters are deleted and replaced by what the abbreviation produces.
+When typing the characters for a mapping, nothing is inserted until you type
+the last character that triggers it.  If the 'showcmd' option is set, the
+typed characters are displayed in the last line of the Vim window.
+   An exception is when a mapping is ambiguous.  Suppose you have done two
+mappings:
+<code class="example"></code>
+<code class="example">	:imap aa foo</code>
+<code class="example">	:imap aaa bar</code>
+<code class="example"></code>
+Now, when you type "aa", Vim doesn't know if it should apply the first or the
+second mapping.  It waits for another character to be typed.  If it is an "a",
+the second mapping is applied and results in "bar".  If it is a space, for
+example, the first mapping is applied, resulting in "foo", and then the space
+is inserted.
+
+
+ADDITIONALLY...
+
+The <code class="special">&lt;script&gt;</code> keyword can be used to make a mapping local to a script.  See
+|<a href="map.html#:map-%3Cscript%3E">:map-&lt;script&gt;</a>|.
+
+The <code class="special">&lt;buffer&gt;</code> keyword can be used to make a mapping local to a specific buffer.
+See |<a href="map.html#:map-%3Cbuffer%3E">:map-&lt;buffer&gt;</a>|
+
+The <code class="special">&lt;unique&gt;</code> keyword can be used to make defining a new mapping fail when it
+already exists.  Otherwise a new mapping simply overwrites the old one.  See
+|<a href="map.html#:map-%3Cunique%3E">:map-&lt;unique&gt;</a>|.
+
+To make a key do nothing, map it to <code class="special">&lt;Nop&gt;</code> (five characters).  This will make
+the <code class="special">&lt;F7&gt;</code> key do nothing at all:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;F7&gt;</code> <code class="special">&lt;Nop&gt;</code>| map! <code class="special">&lt;F7&gt;</code> <code class="special">&lt;Nop&gt;</code></code>
+<code class="example"></code>
+There must be no space after <code class="special">&lt;Nop&gt;</code>.
+
+</pre><hr/><pre><b class="vimtag">*<a name="40.2">40.2</a>*</b>	Defining command-line commands
+
+The Vim editor enables you to define your own commands.  You execute these
+commands just like any other Command-line mode command.
+   To define a command, use the ":command" command, as follows:
+<code class="example"></code>
+<code class="example">	:command DeleteFirst 1delete</code>
+<code class="example"></code>
+Now when you execute the command ":DeleteFirst" Vim executes ":1delete", which
+deletes the first line.
+
+	<code class="note">Note:</code>
+	User-defined commands must start with a capital letter.  You cannot
+	use ":X", ":Next" and ":Print".  The underscore cannot be used!  You
+	can use digits, but this is discouraged.
+
+To list the user-defined commands, execute the following command:
+<code class="example"></code>
+<code class="example">	:command</code>
+<code class="example"></code>
+Just like with the builtin commands, the user defined commands can be
+abbreviated.  You need to type just enough to distinguish the command from
+another.  Command line completion can be used to get the full name.
+
+
+NUMBER OF ARGUMENTS
+
+User-defined commands can take a series of arguments.  The number of arguments
+must be specified by the -nargs option.  For instance, the example
+:DeleteFirst command takes no arguments, so you could have defined it as
+follows:
+<code class="example"></code>
+<code class="example">	:command -nargs=0 DeleteFirst 1delete</code>
+<code class="example"></code>
+However, because zero arguments is the default, you do not need to add
+"-nargs=0".  The other values of -nargs are as follows:
+
+	-nargs=0	No arguments
+	-nargs=1	One argument
+	-nargs=*	Any number of arguments
+	-nargs=?	Zero or one argument
+	-nargs=+	One or more arguments
+
+
+USING THE ARGUMENTS
+
+Inside the command definition, the arguments are represented by the
+<code class="special">&lt;args&gt;</code> keyword.  For example:
+<code class="example"></code>
+<code class="example">	:command -nargs=+ Say :echo "<code class="special">&lt;args&gt;</code>"</code>
+<code class="example"></code>
+Now when you type
+<code class="example"></code>
+<code class="example">	:Say Hello World</code>
+<code class="example"></code>
+Vim echoes "Hello World".  However, if you add a double quote, it won't work.
+For example:
+<code class="example"></code>
+<code class="example">	:Say he said "hello"</code>
+<code class="example"></code>
+To get special characters turned into a string, properly escaped to use as an
+expression, use "<code class="special">&lt;q-args&gt;</code>":
+<code class="example"></code>
+<code class="example">	:command -nargs=+ Say :echo <code class="special">&lt;q-args&gt;</code></code>
+<code class="example"></code>
+Now the above ":Say" command will result in this to be executed:
+<code class="example"></code>
+<code class="example">	:echo "he said \"hello\""</code>
+<code class="example"></code>
+The <code class="special">&lt;f-args&gt;</code> keyword contains the same information as the <code class="special">&lt;args&gt;</code> keyword,
+except in a format suitable for use as function call arguments.  For example:
+
+<code class="example">	:command -nargs=* DoIt :call AFunction(<code class="special">&lt;f-args&gt;</code>)</code>
+<code class="example">	:DoIt a b c</code>
+<code class="example"></code>
+Executes the following command:
+<code class="example"></code>
+<code class="example">	:call AFunction("a", "b", "c")</code>
+<code class="example"></code>
+<code class="example"></code>
+LINE RANGE
+
+Some commands take a range as their argument.  To tell Vim that you are
+defining such a command, you need to specify a -range option.  The values for
+this option are as follows:
+
+	-range		Range is allowed; default is the current line.
+	-range=%	Range is allowed; default is the whole file.
+	-range=<code class="special">{count}</code>	Range is allowed; the last number in it is used as a
+			single number whose default is <code class="special">{count}</code>.
+
+When a range is specified, the keywords <code class="special">&lt;line1&gt;</code> and <code class="special">&lt;line2&gt;</code> get the values of
+the first and last line in the range.  For example, the following command
+defines the SaveIt command, which writes out the specified range to the file
+"save_file":
+<code class="example"></code>
+<code class="example">	:command -range=% SaveIt :<code class="special">&lt;line1&gt;</code>,<code class="special">&lt;line2&gt;</code>write! save_file</code>
+<code class="example"></code>
+<code class="example"></code>
+OTHER OPTIONS
+
+Some of the other options and keywords are as follows:
+
+	-count=<code class="special">{number}</code>		The command can take a count whose default is
+				<code class="special">{number}</code>.  The resulting count can be used
+				through the <code class="special">&lt;count&gt;</code> keyword.
+	-bang			You can use a !.  If present, using <code class="special">&lt;bang&gt;</code> will
+				result in a !.
+	-register		You can specify a register.  (The default is
+				the unnamed register.)
+				The register specification is available as
+				<code class="special">&lt;reg&gt;</code> (a.k.a. <code class="special">&lt;register&gt;</code>).
+	-complete=<code class="special">{type}</code>	Type of command-line completion used.  See
+				|<a href="map.html#:command-completion">:command-completion</a>| for the list of possible
+				values.
+	-bar			The command can be followed by | and another
+				command, or " and a comment.
+	-buffer			The command is only available for the current
+				buffer.
+
+Finally, you have the <code class="special">&lt;lt&gt;</code> keyword.  It stands for the character &lt;.  Use this
+to escape the special meaning of the <code class="special">&lt;&gt;</code> items mentioned.
+
+
+REDEFINING AND DELETING
+
+To redefine the same command use the ! argument:
+<code class="example"></code>
+<code class="example">	:command -nargs=+ Say :echo "<code class="special">&lt;args&gt;</code>"</code>
+<code class="example">	:command! -nargs=+ Say :echo <code class="special">&lt;q-args&gt;</code></code>
+<code class="example"></code>
+To delete a user command use ":delcommand".  It takes a single argument, which
+is the name of the command.  Example:
+<code class="example"></code>
+<code class="example">	:delcommand SaveIt</code>
+<code class="example"></code>
+To delete all the user commands:
+<code class="example"></code>
+<code class="example">	:comclear</code>
+<code class="example"></code>
+Careful, this can't be undone!
+
+More details about all this in the reference manual: |<a href="map.html#user-commands">user-commands</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="40.3">40.3</a>*</b>	Autocommands
+
+An autocommand is a command that is executed automatically in response to some
+event, such as a file being read or written or a buffer change.  Through the
+use of autocommands you can train Vim to edit compressed files, for example.
+That is used in the |<a href="pi_gzip.html#gzip">gzip</a>| plugin.
+   Autocommands are very powerful.  Use them with care and they will help you
+avoid typing many commands.  Use them carelessly and they will cause a lot of
+trouble.
+
+Suppose you want to replace a datestamp on the end of a file every time it is
+written.  First you define a function:
+<code class="example"></code>
+<code class="example">	:function DateInsert()</code>
+<code class="example">	:  $delete</code>
+<code class="example">	:  read !date</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+You want this function to be called each time, just before a buffer is written
+to a file.  This will make that happen:
+<code class="example"></code>
+<code class="example">	:autocmd BufWritePre *  call DateInsert()</code>
+<code class="example"></code>
+"BufWritePre" is the event for which this autocommand is triggered: Just
+before (pre) writing a buffer to a file.  The "*" is a pattern to match with
+the file name.  In this case it matches all files.
+   With this command enabled, when you do a ":write", Vim checks for any
+matching BufWritePre autocommands and executes them, and then it
+performs the ":write".
+   The general form of the :autocmd command is as follows:
+<code class="example"></code>
+<code class="example">	:autocmd [group] <code class="special">{events}</code> <code class="special">{file_pattern}</code> [nested] <code class="special">{command}</code></code>
+<code class="example"></code>
+The [group] name is optional.  It is used in managing and calling the commands
+(more on this later).  The <code class="special">{events}</code> parameter is a list of events (comma
+separated) that trigger the command.
+   <code class="special">{file_pattern}</code> is a filename, usually with wildcards.  For example, using
+"*.txt" makes the autocommand be used for all files whose name end in ".txt".
+The optional [nested] flag allows for nesting of autocommands (see below), and
+finally, <code class="special">{command}</code> is the command to be executed.
+
+
+EVENTS
+
+One of the most useful events is BufReadPost.  It is triggered after a new
+file is being edited.  It is commonly used to set option values.  For example,
+you know that "*.gsm" files are GNU assembly language.  To get the syntax file
+right, define this autocommand:
+<code class="example"></code>
+<code class="example">	:autocmd BufReadPost *.gsm  set filetype=asm</code>
+<code class="example"></code>
+If Vim is able to detect the type of file, it will set the 'filetype' option
+for you.  This triggers the Filetype event.  Use this to do something when a
+certain type of file is edited.  For example, to load a list of abbreviations
+for text files:
+<code class="example"></code>
+<code class="example">	:autocmd Filetype text  source ~/.vim/abbrevs.vim</code>
+<code class="example"></code>
+When starting to edit a new file, you could make Vim insert a skeleton:
+<code class="example"></code>
+<code class="example">	:autocmd BufNewFile *.[ch]  0read ~/skeletons/skel.c</code>
+<code class="example"></code>
+See |<a href="autocmd.html#autocmd-events">autocmd-events</a>| for a complete list of events.
+
+
+PATTERNS
+
+The <code class="special">{file_pattern}</code> argument can actually be a comma-separated list of file
+patterns.  For example: "<b class="vimtag">*<a name=".c,">.c,</a>*</b>.h" matches files ending in ".c" and ".h".
+   The usual file wildcards can be used.  Here is a summary of the most often
+used ones:
+
+	*		Match any character any number of times
+	?		Match any character once
+	[abc]		Match the character a, b or c
+	.		Matches a dot
+	a<code class="special">{b,c}</code>		Matches "ab" and "ac"
+
+When the pattern includes a slash (/) Vim will compare directory names.
+Without the slash only the last part of a file name is used.  For example,
+"<b class="vimtag">*<a name=".txt%22 matches %22%2Fhome%2Fbiep%2Freadme.txt%22.  The pattern %22%2Fhome%2Fbiep%2F">.txt" matches "/home/biep/readme.txt".  The pattern "/home/biep/</a>*</b>" would
+also match it.  But "home/foo/*.txt" wouldn't.
+   When including a slash, Vim matches the pattern against both the full path
+of the file ("/home/biep/readme.txt") and the relative path (e.g.,
+"biep/readme.txt").
+
+	<code class="note">Note:</code>
+	When working on a system that uses a backslash as file separator, such
+	as MS-Windows, you still use forward slashes in autocommands.  This
+	makes it easier to write the pattern, since a backslash has a special
+	meaning.  It also makes the autocommands portable.
+
+
+DELETING
+
+To delete an autocommand, use the same command as what it was defined with,
+but leave out the <code class="special">{command}</code> at the end and use a !.  Example:
+<code class="example"></code>
+<code class="example">	:autocmd! FileWritePre *</code>
+<code class="example"></code>
+This will delete all autocommands for the "FileWritePre" event that use the
+"*" pattern.
+
+
+LISTING
+
+To list all the currently defined autocommands, use this:
+<code class="example"></code>
+<code class="example">	:autocmd</code>
+<code class="example"></code>
+The list can be very long, especially when filetype detection is used.  To
+list only part of the commands, specify the group, event and/or pattern.  For
+example, to list all BufNewFile autocommands:
+<code class="example"></code>
+<code class="example">	:autocmd BufNewFile</code>
+<code class="example"></code>
+To list all autocommands for the pattern "*.c":
+<code class="example"></code>
+<code class="example">	:autocmd <b class="vimtag">*<a name=" "> </a>*</b>.c</code>
+<code class="example"></code>
+Using "*" for the event will list all the events.  To list all autocommands
+for the cprograms group:
+<code class="example"></code>
+<code class="example">	:autocmd cprograms</code>
+<code class="example"></code>
+<code class="example"></code>
+GROUPS
+
+The <code class="special">{group}</code> item, used when defining an autocommand, groups related autocommands
+together.  This can be used to delete all the autocommands in a certain group,
+for example.
+   When defining several autocommands for a certain group, use the ":augroup"
+command.  For example, let's define autocommands for C programs:
+<code class="example"></code>
+<code class="example">	:augroup cprograms</code>
+<code class="example">	:  autocmd BufReadPost <b class="vimtag">*<a name=".c,">.c,</a>*</b>.h :set sw=4 sts=4</code>
+<code class="example">	:  autocmd BufReadPost *.cpp   :set sw=3 sts=3</code>
+<code class="example">	:augroup END</code>
+<code class="example"></code>
+This will do the same as:
+<code class="example"></code>
+<code class="example">	:autocmd cprograms BufReadPost <b class="vimtag">*<a name=".c,">.c,</a>*</b>.h :set sw=4 sts=4</code>
+<code class="example">	:autocmd cprograms BufReadPost *.cpp   :set sw=3 sts=3</code>
+<code class="example"></code>
+To delete all autocommands in the "cprograms" group:
+<code class="example"></code>
+<code class="example">	:autocmd! cprograms</code>
+<code class="example"></code>
+<code class="example"></code>
+NESTING
+
+Generally, commands executed as the result of an autocommand event will not
+trigger any new events.  If you read a file in response to a FileChangedShell
+event, it will not trigger the autocommands that would set the syntax, for
+example.  To make the events triggered, add the "nested" argument:
+<code class="example"></code>
+<code class="example">	:autocmd FileChangedShell * nested  edit</code>
+<code class="example"></code>
+<code class="example"></code>
+EXECUTING AUTOCOMMANDS
+
+It is possible to trigger an autocommand by pretending an event has occurred.
+This is useful to have one autocommand trigger another one.  Example:
+<code class="example"></code>
+<code class="example">	:autocmd BufReadPost *.new  execute "doautocmd BufReadPost " . expand("<code class="special">&lt;afile&gt;</code>:r")</code>
+<code class="example"></code>
+This defines an autocommand that is triggered when a new file has been edited.
+The file name must end in ".new".  The ":execute" command uses expression
+evaluation to form a new command and execute it.  When editing the file
+"tryout.c.new" the executed command will be:
+<code class="example"></code>
+<code class="example">	:doautocmd BufReadPost tryout.c</code>
+<code class="example"></code>
+The expand() function takes the "<code class="special">&lt;afile&gt;</code>" argument, which stands for the file
+name the autocommand was executed for, and takes the root of the file name
+with ":r".
+
+":doautocmd" executes on the current buffer.  The ":doautoall" command works
+like "doautocmd" except it executes on all the buffers.
+
+
+USING NORMAL MODE COMMANDS
+
+The commands executed by an autocommand are Command-line commands.  If you
+want to use a Normal mode command, the ":normal" command can be used.
+Example:
+<code class="example"></code>
+<code class="example">	:autocmd BufReadPost *.log normal G</code>
+<code class="example"></code>
+This will make the cursor jump to the last line of *.log files when you start
+to edit it.
+   Using the ":normal" command is a bit tricky.  First of all, make sure its
+argument is a complete command, including all the arguments.  When you use "i"
+to go to Insert mode, there must also be a <code class="special">&lt;Esc&gt;</code> to leave Insert mode again.
+If you use a "/" to start a search pattern, there must be a <code class="special">&lt;CR&gt;</code> to execute
+it.
+   The ":normal" command uses all the text after it as commands.  Thus there
+can be no | and another command following.  To work around this, put the
+":normal" command inside an ":execute" command.  This also makes it possible
+to pass unprintable characters in a convenient way.  Example:
+<code class="example"></code>
+<code class="example">	:autocmd BufReadPost *.chg execute "normal ONew entry:\<code class="special">&lt;Esc&gt;</code>" |</code>
+<code class="example">		\ 1read !date</code>
+<code class="example"></code>
+This also shows the use of a backslash to break a long command into more
+lines.  This can be used in Vim scripts (not at the command line).
+
+When you want the autocommand do something complicated, which involves jumping
+around in the file and then returning to the original position, you may want
+to restore the view on the file.  See |<a href="tips.html#restore-position">restore-position</a>| for an example.
+
+
+IGNORING EVENTS
+
+At times, you will not want to trigger an autocommand.  The 'eventignore'
+option contains a list of events that will be totally ignored.  For example,
+the following causes events for entering and leaving a window to be ignored:
+<code class="example"></code>
+<code class="example">	:set eventignore=WinEnter,WinLeave</code>
+<code class="example"></code>
+To ignore all events, use the following command:
+<code class="example"></code>
+<code class="example">	:set eventignore=all</code>
+<code class="example"></code>
+To set it back to the normal behavior, make 'eventignore' empty:
+<code class="example"></code>
+<code class="example">	:set eventignore=</code>
+<code class="example"></code>
+</pre><hr/><pre><code class="example"></code>
+Next chapter: |<a href="usr_41.html#usr_41.txt">usr_41</a>|  Write a Vim script
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

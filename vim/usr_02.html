@@ -1,0 +1,706 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_02</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_02</h2>
+<pre>
+<b class="vimtag">*<a name="usr_02.txt">usr_02.txt</a>*</b>	For Vim version 8.2.  Last change: 2019 Nov 21
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			    The first steps in Vim
+
+
+This chapter provides just enough information to edit a file with Vim.  Not
+well or fast, but you can edit.  Take some time to practice with these
+commands, they form the base for what follows.
+
+|<a href="usr_02.html#02.1">02.1</a>|	Running Vim for the First Time
+|<a href="usr_02.html#02.2">02.2</a>|	Inserting text
+|<a href="usr_02.html#02.3">02.3</a>|	Moving around
+|<a href="usr_02.html#02.4">02.4</a>|	Deleting characters
+|<a href="usr_02.html#02.5">02.5</a>|	Undo and Redo
+|<a href="usr_02.html#02.6">02.6</a>|	Other editing commands
+|<a href="usr_02.html#02.7">02.7</a>|	Getting out
+|<a href="usr_02.html#02.8">02.8</a>|	Finding help
+
+     Next chapter: |<a href="usr_03.html#usr_03.txt">usr_03</a>|  Moving around
+ Previous chapter: |<a href="usr_01.html#usr_01.txt">usr_01</a>|  About the manuals
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.1">02.1</a>*</b>	Running Vim for the First Time
+
+To start Vim, enter this command:
+<code class="example"></code>
+<code class="example">	gvim file.txt</code>
+<code class="example"></code>
+In UNIX you can type this at any command prompt.  If you are running Microsoft
+Windows, open a Command Prompt and enter the command.
+   In either case, Vim starts editing a file called file.txt.  Because this
+is a new file, you get a blank window. This is what your screen will look
+like:
+
+	+---------------------------------------+
+	|<code class="badlink">#					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">"file" [New file]			</code>|
+	+---------------------------------------+
+		('#" is the cursor position.)
+
+The tilde (~) lines indicate lines not in the file.  In other words, when Vim
+runs out of file to display, it displays tilde lines.  At the bottom of the
+screen, a message line indicates the file is named file.txt and shows that you
+are creating a new file.  The message information is temporary and other
+information overwrites it.
+
+
+THE VIM COMMAND
+
+The gvim command causes the editor to create a new window for editing.  If you
+use this command:
+<code class="example"></code>
+<code class="example">	vim file.txt</code>
+<code class="example"></code>
+the editing occurs inside your command window.  In other words, if you are
+running inside an xterm, the editor uses your xterm window.  If you are using
+an MS-Windows command prompt window, the editing occurs inside this window.
+The text in the window will look the same for both versions, but with gvim you
+have extra features, like a menu bar.  More about that later.
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.2">02.2</a>*</b>	Inserting text
+
+The Vim editor is a modal editor.  That means that the editor behaves
+differently, depending on which mode you are in.  The two basic modes are
+called Normal mode and Insert mode.  In Normal mode the characters you type
+are commands.  In Insert mode the characters are inserted as text.
+   Since you have just started Vim it will be in Normal mode.  To start Insert
+mode you type the "i" command (i for Insert).  Then you can enter
+the text.  It will be inserted into the file.  Do not worry if you make
+mistakes; you can correct them later.  To enter the following programmer's
+limerick, this is what you type:
+<code class="example"></code>
+<code class="example">	iA very intelligent turtle</code>
+<code class="example">	Found programming UNIX a hurdle</code>
+<code class="example"></code>
+After typing "turtle" you press the <code class="special">&lt;Enter&gt;</code> key to start a new line.  Finally
+you press the <code class="special">&lt;Esc&gt;</code> key to stop Insert mode and go back to Normal mode.  You
+now have two lines of text in your Vim window:
+
+	+---------------------------------------+
+	|<code class="badlink">A very intelligent turtle		</code>|
+	|<code class="badlink">Found programming UNIX a hurdle	</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">					</code>|
+	+---------------------------------------+
+
+
+WHAT IS THE MODE?
+
+To be able to see what mode you are in, type this command:
+<code class="example"></code>
+<code class="example">	:set showmode</code>
+<code class="example"></code>
+You will notice that when typing the colon Vim moves the cursor to the last
+line of the window.  That's where you type colon commands (commands that start
+with a colon).  Finish this command by pressing the <code class="special">&lt;Enter&gt;</code> key (all commands
+that start with a colon are finished this way).
+   Now, if you type the "i" command Vim will display --INSERT-- at the bottom
+of the window.  This indicates you are in Insert mode.
+
+	+---------------------------------------+
+	|<code class="badlink">A very intelligent turtle		</code>|
+	|<code class="badlink">Found programming UNIX a hurdle	</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">-- INSERT --				</code>|
+	+---------------------------------------+
+
+If you press <code class="special">&lt;Esc&gt;</code> to go back to Normal mode the last line will be made blank.
+
+
+GETTING OUT OF TROUBLE
+
+One of the problems for Vim novices is mode confusion, which is caused by
+forgetting which mode you are in or by accidentally typing a command that
+switches modes.  To get back to Normal mode, no matter what mode you are in,
+press the <code class="special">&lt;Esc&gt;</code> key.  Sometimes you have to press it twice.  If Vim beeps back
+at you, you already are in Normal mode.
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.3">02.3</a>*</b>	Moving around
+
+After you return to Normal mode, you can move around by using these keys:
+
+	h   left						<b class="vimtag">*<a name="hjkl">hjkl</a>*</b>
+	j   down
+	k   up
+	l   right
+
+At first, it may appear that these commands were chosen at random.  After all,
+who ever heard of using l for right?  But actually, there is a very good
+reason for these choices: Moving the cursor is the most common thing you do in
+an editor, and these keys are on the home row of your right hand.  In other
+words, these commands are placed where you can type them the fastest
+(especially when you type with ten fingers).
+
+	<code class="note">Note:</code>
+	You can also move the cursor by using the arrow keys.  If you do,
+	however, you greatly slow down your editing because to press the arrow
+	keys, you must move your hand from the text keys to the arrow keys.
+	Considering that you might be doing it hundreds of times an hour, this
+	can take a significant amount of time.
+	   Also, there are keyboards which do not have arrow keys, or which
+	locate them in unusual places; therefore, knowing the use of the hjkl
+	keys helps in those situations.
+
+One way to remember these commands is that h is on the left, l is on the
+right and j points down.  In a picture:
+<code class="example"></code>
+<code class="example">		       k</code>
+<code class="example">		   h     l</code>
+<code class="example">		     j</code>
+<code class="example"></code>
+The best way to learn these commands is by using them.  Use the "i" command to
+insert some more lines of text.  Then use the hjkl keys to move around and
+insert a word somewhere.  Don't forget to press <code class="special">&lt;Esc&gt;</code> to go back to Normal
+mode.  The |<a href="usr_01.html#vimtutor">vimtutor</a>| is also a nice way to learn by doing.
+
+For Japanese users, Hiroshi Iwatani suggested using this:
+
+			Komsomolsk
+			    ^
+			    |
+	   Huan Ho	<code class="special">&lt;--- ---&gt;</code>  Los Angeles
+	(Yellow river)	    |
+			    v
+			  Java (the island, not the programming language)
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.4">02.4</a>*</b>	Deleting characters
+
+To delete a character, move the cursor over it and type "x".  (This is a
+throwback to the old days of the typewriter, when you deleted things by typing
+xxxx over them.)  Move the cursor to the beginning of the first line, for
+example, and type xxxxxxx (seven x's) to delete "A very ".  The result should
+look like this:
+
+	+---------------------------------------+
+	|<code class="badlink">intelligent turtle			</code>|
+	|<code class="badlink">Found programming UNIX a hurdle	</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">					</code>|
+	+---------------------------------------+
+
+Now you can insert new text, for example by typing:
+<code class="example"></code>
+<code class="example">	iA young <code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+This begins an insert (the i), inserts the words "A young", and then exits
+insert mode (the final <code class="special">&lt;Esc&gt;</code>).	The result:
+
+	+---------------------------------------+
+	|<code class="badlink">A young intelligent turtle		</code>|
+	|<code class="badlink">Found programming UNIX a hurdle	</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">					</code>|
+	+---------------------------------------+
+
+
+DELETING A LINE
+
+To delete a whole line use the "dd" command.  The following line will
+then move up to fill the gap:
+
+	+---------------------------------------+
+	|<code class="badlink">Found programming UNIX a hurdle	</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">~					</code>|
+	|<code class="badlink">					</code>|
+	+---------------------------------------+
+
+
+DELETING A LINE BREAK
+
+In Vim you can join two lines together, which means that the line break
+between them is deleted.  The "J" command does this.
+   Take these two lines:
+
+<code class="section">	A young intelligent </code>
+<code class="section">	turtle </code>
+
+Move the cursor to the first line and press "J":
+
+<code class="section">	A young intelligent turtle </code>
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.5">02.5</a>*</b>	Undo and Redo
+
+Suppose you delete too much.  Well, you can type it in again, but an easier
+way exists.  The "u" command undoes the last edit.  Take a look at this in
+action: After using "dd" to delete the first line, "u" brings it back.
+   Another one: Move the cursor to the A in the first line:
+
+<code class="section">	A young intelligent turtle </code>
+
+Now type xxxxxxx to delete "A young".  The result is as follows:
+
+<code class="section">	 intelligent turtle </code>
+
+Type "u" to undo the last delete.  That delete removed the g, so the undo
+restores the character.
+
+<code class="section">	g intelligent turtle </code>
+
+The next "u" command restores the next-to-last character deleted:
+
+<code class="section">	ng intelligent turtle </code>
+
+The next "u" command gives you the u, and so on:
+
+<code class="section">	ung intelligent turtle </code>
+<code class="section">	oung intelligent turtle </code>
+<code class="section">	young intelligent turtle </code>
+<code class="section">	 young intelligent turtle </code>
+<code class="section">	A young intelligent turtle </code>
+
+	<code class="note">Note:</code>
+	If you type "u" twice, and the result is that you get the same text
+	back, you have Vim configured to work Vi compatible.  Look here to fix
+	this: |<a href="usr_01.html#not-compatible">not-compatible</a>|.
+	   This text assumes you work "The Vim Way".  You might prefer to use
+	the good old Vi way, but you will have to watch out for small
+	differences in the text then.
+
+
+REDO
+
+If you undo too many times, you can press <code class="keystroke">CTRL-R</code> (redo) to reverse the
+preceding command.  In other words, it undoes the undo.  To see this in
+action, press <code class="keystroke">CTRL-R</code> twice.  The character A and the space after it disappear:
+
+<code class="section">	young intelligent turtle </code>
+
+There's a special version of the undo command, the "U" (undo line) command.
+The undo line command undoes all the changes made on the last line that was
+edited.  Typing this command twice cancels the preceding "U".
+
+<code class="section">	A very intelligent turtle </code>
+	  xxxx				Delete very
+
+<code class="section">	A intelligent turtle </code>
+		      xxxxxx		Delete turtle
+
+<code class="section">	A intelligent </code>
+					Restore line with "U"
+<code class="section">	A very intelligent turtle </code>
+					Undo "U" with "u"
+<code class="section">	A intelligent </code>
+
+The "U" command is a change by itself, which the "u" command undoes and <code class="keystroke">CTRL-R</code>
+redoes.  This might be a bit confusing.  Don't worry, with "u" and <code class="keystroke">CTRL-R</code> you
+can go to any of the situations you had.  More about that in section |<a href="usr_32.html#32.2">32.2</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.6">02.6</a>*</b>	Other editing commands
+
+Vim has a large number of commands to change the text.  See |<a href="quickref.html#Q_in">Q_in</a>| and below.
+Here are a few often used ones.
+
+
+APPENDING
+
+The "i" command inserts a character before the character under the cursor.
+That works fine; but what happens if you want to add stuff to the end of the
+line?  For that you need to insert text after the cursor.  This is done with
+the "a" (append) command.
+   For example, to change the line
+
+<code class="section">	and that's not saying much for the turtle. </code>
+to
+<code class="section">	and that's not saying much for the turtle!!! </code>
+
+move the cursor over to the dot at the end of the line. Then type "x" to
+delete the period.  The cursor is now positioned at the end of the line on the
+e in turtle.  Now type
+<code class="example"></code>
+<code class="example">	a!!!<code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+to append three exclamation points after the e in turtle:
+
+<code class="section">	and that's not saying much for the turtle!!! </code>
+
+
+OPENING UP A NEW LINE
+
+The "o" command creates a new, empty line below the cursor and puts Vim in
+Insert mode.  Then you can type the text for the new line.
+   Suppose the cursor is somewhere in the first of these two lines:
+
+<code class="section">	A very intelligent turtle </code>
+<code class="section">	Found programming UNIX a hurdle </code>
+
+If you now use the "o" command and type new text:
+<code class="example"></code>
+<code class="example">	oThat liked using Vim<code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+The result is:
+
+<code class="section">	A very intelligent turtle </code>
+<code class="section">	That liked using Vim </code>
+<code class="section">	Found programming UNIX a hurdle </code>
+
+The "O" command (uppercase) opens a line above the cursor.
+
+
+USING A COUNT
+
+Suppose you want to move up nine lines.  You can type "kkkkkkkkk" or you can
+enter the command "9k".  In fact, you can precede many commands with a number.
+Earlier in this chapter, for instance, you added three exclamation points to
+the end of a line by typing "a!!!<code class="special">&lt;Esc&gt;</code>".  Another way to do this is to use the
+command "3a!<code class="special">&lt;Esc&gt;</code>".  The count of 3 tells the command that follows to triple
+its effect.  Similarly, to delete three characters, use the command "3x".  The
+count always comes before the command it applies to.
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.7">02.7</a>*</b>	Getting out
+
+To exit, use the "ZZ" command.  This command writes the file and exits.
+
+	<code class="note">Note:</code>
+	Unlike many other editors, Vim does not automatically make a backup
+	file.  If you type "ZZ", your changes are committed and there's no
+	turning back.  You can configure the Vim editor to produce backup
+	files; see |<a href="usr_07.html#07.4">07.4</a>|.
+
+
+DISCARDING CHANGES
+
+Sometimes you will make a sequence of changes and suddenly realize you were
+better off before you started.  Not to worry; Vim has a
+quit-and-throw-things-away command.  It is:
+<code class="example"></code>
+<code class="example">	:q!</code>
+<code class="example"></code>
+Don't forget to press <code class="special">&lt;Enter&gt;</code> to finish the command.
+
+For those of you interested in the details, the three parts of this command
+are the colon (:), which enters Command-line mode; the q command, which tells
+the editor to quit; and the override command modifier (!).
+   The override command modifier is needed because Vim is reluctant to throw
+away changes.  If you were to just type ":q", Vim would display an error
+message and refuse to exit:
+
+<code class="section">	E37: No write since last change (use ! to override) </code>
+
+By specifying the override, you are in effect telling Vim, "I know that what
+I'm doing looks stupid, but I really want to do this."
+
+If you want to continue editing with Vim: The ":e!" command reloads the
+original version of the file.
+
+</pre><hr/><pre><b class="vimtag">*<a name="02.8">02.8</a>*</b>	Finding help
+
+Everything you always wanted to know can be found in the Vim help files.
+Don't be afraid to ask!
+
+If you know what you are looking for, it is usually easier to search for it
+using the help system, instead of using Google.  Because the subjects follow
+a certain style guide.
+
+Also the help has the advantage of belonging to your particular Vim version.
+You won't see help for commands added later.  These would not work for you.
+
+To get generic help use this command:
+<code class="example"></code>
+<code class="example">	:help</code>
+<code class="example"></code>
+You could also use the first function key <code class="special">&lt;F1&gt;</code>.  If your keyboard has a <code class="special">&lt;Help&gt;</code>
+key it might work as well.
+   If you don't supply a subject, ":help" displays the general help window.
+The creators of Vim did something very clever (or very lazy) with the help
+system: They made the help window a normal editing window.  You can use all
+the normal Vim commands to move through the help information.  Therefore h, j,
+k, and l move left, down, up and right.
+   To get out of the help window, use the same command you use to get out of
+the editor: "ZZ".  This will only close the help window, not exit Vim.
+
+As you read the help text, you will notice some text enclosed in vertical bars
+(for example, |<a href="helphelp.html#help">help</a>|).  This indicates a hyperlink.  If you position the
+cursor anywhere between the bars and press CTRL-] (jump to tag), the help
+system takes you to the indicated subject.  (For reasons not discussed here,
+the Vim terminology for a hyperlink is tag.  So CTRL-] jumps to the location
+of the tag given by the word under the cursor.)
+   After a few jumps, you might want to go back.  <code class="keystroke">CTRL-T</code> (pop tag) takes you
+back to the preceding position.  <code class="keystroke">CTRL-O</code> (jump to older position) also works
+nicely here.
+   At the top of the help screen, there is the notation <b class="vimtag">*<a name="help.txt">help.txt</a>*</b>.  This name
+between "*" characters is used by the help system to define a tag (hyperlink
+destination).
+   See |<a href="usr_29.html#29.1">29.1</a>| for details about using tags.
+
+To get help on a given subject, use the following command:
+<code class="example"></code>
+<code class="example">	:help <code class="special">{subject}</code></code>
+<code class="example"></code>
+To get help on the "x" command, for example, enter the following:
+<code class="example"></code>
+<code class="example">	:help x</code>
+<code class="example"></code>
+To find out how to delete text, use this command:
+<code class="example"></code>
+<code class="example">	:help deleting</code>
+<code class="example"></code>
+To get a complete index of all Vim commands, use the following command:
+<code class="example"></code>
+<code class="example">	:help index</code>
+<code class="example"></code>
+When you need to get help for a control character command (for example,
+<code class="keystroke">CTRL-A</code>), you need to spell it with the prefix "CTRL-".
+<code class="example"></code>
+<code class="example">	:help <code class="keystroke">CTRL-A</code></code>
+<code class="example"></code>
+The Vim editor has many different modes.  By default, the help system displays
+the normal-mode commands.  For example, the following command displays help
+for the normal-mode <code class="keystroke">CTRL-H</code> command:
+<code class="example"></code>
+<code class="example">	:help <code class="keystroke">CTRL-H</code></code>
+<code class="example"></code>
+To identify other modes, use a mode prefix.  If you want the help for the
+insert-mode version of a command, use "i_".  For <code class="keystroke">CTRL-H</code> this gives you the
+following command:
+<code class="example"></code>
+<code class="example">	:help i_<code class="keystroke">CTRL-H</code></code>
+<code class="example"></code>
+When you start the Vim editor, you can use several command-line arguments.
+These all begin with a dash (-).  To find what the -t argument does, for
+example, use the command:
+<code class="example"></code>
+<code class="example">	:help -t</code>
+<code class="example"></code>
+The Vim editor has a number of options that enable you to configure and
+customize the editor.  If you want help for an option, you need to enclose it
+in single quotation marks.  To find out what the 'number' option does, for
+example, use the following command:
+<code class="example"></code>
+<code class="example">	:help 'number'</code>
+<code class="example"></code>
+The table with all mode prefixes can be found below: |<a href="usr_02.html#help-summary">help-summary</a>|.
+
+Special keys are enclosed in angle brackets.  To find help on the up-arrow key
+in Insert mode, for instance, use this command:
+<code class="example"></code>
+<code class="example">	:help i_<code class="special">&lt;Up&gt;</code></code>
+<code class="example"></code>
+If you see an error message that you don't understand, for example:
+
+<code class="section">	E37: No write since last change (use ! to override) </code>
+
+You can use the error ID at the start to find help about it:
+<code class="example"></code>
+<code class="example">	:help E37</code>
+<code class="example"></code>
+<code class="example"></code>
+Summary: 					<b class="vimtag">*<a name="help-summary">help-summary</a>*</b>
+<code class="example"></code>
+1) Use Ctrl-D after typing a topic and let Vim show all available topics.
+   Or press Tab to complete:
+<code class="example">	:help some<code class="special">&lt;Tab&gt;</code></code>
+&lt;   More information on how to use the help:
+<code class="example">	:help helphelp</code>
+<code class="example"></code>
+2) Follow the links in bars to related help.  You can go from the detailed
+   help to the user documentation, which describes certain commands more from
+   a user perspective and less detailed.  E.g. after:
+<code class="example">	:help pattern.txt</code>
+   You can see the user guide topics |<a href="usr_03.html#03.9">03.9</a>| and |<a href="usr_27.html#usr_27.txt">usr_27</a>| in the
+   introduction.
+
+3) Options are enclosed in single apostrophes.  To go to the help topic for the
+   list option:
+<code class="example">	:help 'list'</code>
+&lt;   If you only know you are looking for a certain option, you can also do:
+<code class="example">	:help options.txt</code>
+   to open the help page which describes all option handling and then search
+   using regular expressions, e.g. textwidth.
+   Certain options have their own namespace, e.g.:
+<code class="example">	:help cpo-<code class="special">&lt;letter&gt;</code></code>
+   for the corresponding flag of the 'cpoptions' settings, substitute <code class="special">&lt;letter&gt;</code>
+   by a specific flag, e.g.:
+<code class="example">	:help cpo-;</code>
+&lt;   And for the guioption flags:
+<code class="example">	:help go-<code class="special">&lt;letter&gt;</code></code>
+<code class="example"></code>
+4) Normal mode commands do not have a prefix. To go to the help page for the
+   "gt" command:
+<code class="example">	:help gt</code>
+<code class="example"></code>
+5) Insert mode commands start with i_.  Help for deleting a word:
+<code class="example">	:help i_<code class="keystroke">CTRL-W</code></code>
+<code class="example"></code>
+6) Visual mode commands start with v_.  Help for jumping to the other side of
+   the Visual area:
+<code class="example">	:help v_o</code>
+<code class="example"></code>
+7) Command line editing and arguments start with c_.  Help for using the
+   command argument %:
+<code class="example">	:help c_%</code>
+<code class="example"></code>
+8) Ex-commands always start with ":", so to go to the ":s" command help:
+<code class="example">	:help :s</code>
+<code class="example"></code>
+9) Commands specifically for debugging start with "&gt;".  To go to the help
+   for the "cont" debug command:
+<code class="example">	:help &gt;cont</code>
+<code class="example"></code>
+10) Key combinations.  They usually start with a single letter indicating
+    the mode for which they can be used.  E.g.:
+<code class="example">	:help i_<code class="keystroke">CTRL-X</code></code>
+    takes you to the family of <code class="keystroke">CTRL-X</code> commands for insert mode which can be
+    used to auto-complete different things.  <code class="note">Note</code>, that certain keys will
+    always be written the same, e.g. Control will always be CTRL.
+    For normal mode commands there is no prefix and the topic is available at
+    :h CTRL-<code class="special">&lt;Letter&gt;</code>. E.g.
+<code class="example">	:help <code class="keystroke">CTRL-W</code></code>
+&lt;    In contrast
+<code class="example">	:help c_<code class="keystroke">CTRL-R</code></code>
+    will describe what the <code class="keystroke">CTRL-R</code> does when entering commands in the Command
+    line and
+<code class="example">	:help v_<code class="keystroke">CTRL-A</code></code>
+&lt;    talks about incrementing numbers in visual mode and
+<code class="example">	:help g_<code class="keystroke">CTRL-A</code></code>
+    talks about the "g<code class="special">&lt;C-A&gt;</code>" command (e.g. you have to press "g" then
+    <code class="special">&lt;<code class="keystroke">CTRL-A</code>&gt;</code>).  Here the "g" stands for the normal command "g" which always
+    expects a second key before doing something similar to the commands
+    starting with "z".
+
+11) Regexp items always start with /.  So to get help for the "\+" quantifier
+    in Vim regexes:
+<code class="example">	:help /\+</code>
+    If you need to know everything about regular expressions, start reading
+    at:
+<code class="example">	:help pattern.txt</code>
+<code class="example"></code>
+12) Registers always start with "quote". To find out about the special ":"
+    register:
+<code class="example">	:help quote:</code>
+<code class="example"></code>
+13) Vim script is available at
+<code class="example">	:help eval.txt</code>
+    Certain aspects of the language are available at :h expr-X where "X" is a
+    single letter. E.g.
+<code class="example">	:help expr-!</code>
+    will take you to the topic describing the "!" (Not) operator for Vim
+    script.
+    Also important is
+<code class="example">	:help function-list</code>
+    to find a short description of all functions available.  Help topics for
+    Vim script functions always include the "()", so:
+<code class="example">	:help append()</code>
+    talks about the append Vim script function rather than how to append text
+    in the current buffer.
+
+14) Mappings are talked about in the help page :h |<a href="map.html#map.txt">map</a>|. Use
+<code class="example">	:help mapmode-i</code>
+    to find out about the |<a href="map.html#:imap">:imap</a>| command.  Also use :map-topic
+    to find out about certain subtopics particular for mappings.  e.g:
+<code class="example">	:help :map-local</code>
+&lt;    for buffer-local mappings or
+<code class="example">	:help map-bar</code>
+    for how the '|' is handled in mappings.
+
+15) Command definitions are talked about :h command-topic, so use
+<code class="example">	:help command-bar</code>
+    to find out about the '!' argument for custom commands.
+
+16) Window management commands always start with <code class="keystroke">CTRL-W</code>, so you find the
+    corresponding help at :h <code class="keystroke">CTRL-W_letter</code>.  E.g.
+<code class="example">	:help <code class="keystroke">CTRL-W_p</code></code>
+&lt;    for moving the previous accessed window.  You can also access
+<code class="example">	:help windows.txt</code>
+    and read your way through if you are looking for window handling
+    commands.
+
+17) Use |<a href="helphelp.html#:helpgrep">:helpgrep</a>| to search in all help pages (and also of any installed
+    plugins).  See |<a href="helphelp.html#:helpgrep">:helpgrep</a>| for how to use it.
+    To search for a topic:
+<code class="example">	:helpgrep topic</code>
+&lt;    This takes you to the first match.  To go to the next one:
+<code class="example">	:cnext</code>
+    All matches are available in the quickfix window which can be opened
+    with:
+<code class="example">	:copen</code>
+    Move around to the match you like and press Enter to jump to that help.
+
+18) The user manual.  This describes help topics for beginners in a rather
+    friendly way.  Start at |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>| to find the table of content (as you
+    might have guessed):
+<code class="example">	:help usr_toc.txt</code>
+    Skim over the contents to find interesting topics. The "Digraphs" and
+    "Entering special characters" items are in chapter 24, so to go to that
+    particular help page:
+<code class="example">	:help usr_24.txt</code>
+    Also if you want to access a certain chapter in the help, the chapter
+    number can be accessed directly like this:
+<code class="example">	:help 10.1</code>
+    which goes to chapter 10.1 in |<a href="usr_10.html#usr_10.txt">usr_10</a>| and talks about recording
+    macros.
+
+19) Highlighting groups.  Always start with hl-groupname.  E.g.
+<code class="example">	:help hl-WarningMsg</code>
+    talks about the WarningMsg highlighting group.
+
+20) Syntax highlighting is namespaced to :syn-topic.  E.g.
+<code class="example">	:help :syn-conceal</code>
+    talks about the conceal argument for the ":syn" command.
+
+21) Quickfix commands usually start with :c while location list commands
+    usually start with :l
+
+22) Autocommand events can be found by their name:
+<code class="example">	:help BufWinLeave</code>
+&lt;    To see all possible events:
+<code class="example">	:help autocommand-events</code>
+<code class="example"></code>
+23) Command-line switches always start with "-".  So for the help of the -f
+    command switch of Vim use:
+<code class="example">	:help -f</code>
+<code class="example"></code>
+24) Optional features always start with "+".  To find out about the
+    conceal feature use:
+<code class="example">	:help +conceal</code>
+<code class="example"></code>
+25) Documentation for included filetype specific functionality is usually
+    available in the form ft-<code class="special">&lt;filetype&gt;</code>-<code class="special">&lt;functionality&gt;</code>.  So
+<code class="example">	:help ft-c-syntax</code>
+    talks about the C syntax file and the option it provides.  Sometimes,
+    additional sections for omni completion
+<code class="example">	:help ft-php-omni</code>
+&lt;    or filetype plugins
+<code class="example">	:help ft-tex-plugin</code>
+    are available.
+
+26) Error and Warning codes can be looked up directly in the help.  So
+<code class="example">	:help E297</code>
+&lt;    takes you exactly to the description of the swap error message and
+<code class="example">	:help W10</code>
+    talks about the warning "Changing a readonly file".
+    Sometimes, however, those error codes are not described, but rather are
+    listed at the Vim command that usually causes this.  So:
+<code class="example">	:help E128</code>
+    takes you to the |<a href="eval.html#:function">:function</a>| command
+
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_03.html#usr_03.txt">usr_03</a>|  Moving around
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

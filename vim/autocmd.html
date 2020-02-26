@@ -1,0 +1,1722 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: autocmd</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>AUTOCMD</h2>
+<pre>
+<b class="vimtag">*<a name="autocmd.txt">autocmd.txt</a>*</b>   For Vim version 8.2.  Last change: 2020 Jan 26
+
+
+		  VIM REFERENCE MANUAL    by Bram Moolenaar
+
+
+Automatic commands				<b class="vimtag">*<a name="autocommand">autocommand</a>*</b> <b class="vimtag">*<a name="autocommands">autocommands</a>*</b>
+
+For a basic explanation, see section |<a href="usr_40.html#40.3">40.3</a>| in the user manual.
+
+1.  Introduction		|<a href="autocmd.html#autocmd-intro">autocmd-intro</a>|
+2.  Defining autocommands	|<a href="autocmd.html#autocmd-define">autocmd-define</a>|
+3.  Removing autocommands	|<a href="autocmd.html#autocmd-remove">autocmd-remove</a>|
+4.  Listing autocommands	|<a href="autocmd.html#autocmd-list">autocmd-list</a>|
+5.  Events			|<a href="autocmd.html#autocmd-events">autocmd-events</a>|
+6.  Patterns			|<a href="autocmd.html#autocmd-patterns">autocmd-patterns</a>|
+7.  Buffer-local autocommands	|<a href="autocmd.html#autocmd-buflocal">autocmd-buflocal</a>|
+8.  Groups			|<a href="autocmd.html#autocmd-groups">autocmd-groups</a>|
+9.  Executing autocommands	|<a href="autocmd.html#autocmd-execute">autocmd-execute</a>|
+10. Using autocommands		|<a href="autocmd.html#autocmd-use">autocmd-use</a>|
+11. Disabling autocommands	|<a href="autocmd.html#autocmd-disable">autocmd-disable</a>|
+
+
+</pre><hr/><pre>1. Introduction						<b class="vimtag">*<a name="autocmd-intro">autocmd-intro</a>*</b>
+
+You can specify commands to be executed automatically when reading or writing
+a file, when entering or leaving a buffer or window, and when exiting Vim.
+For example, you can create an autocommand to set the 'cindent' option for
+files matching *.c.  You can also use autocommands to implement advanced
+features, such as editing compressed files (see |<a href="autocmd.html#gzip-example">gzip-example</a>|).  The usual
+place to put autocommands is in your .vimrc or .exrc file.
+
+				<b class="vimtag">*<a name="E203">E203</a>*</b> <b class="vimtag">*<a name="E204">E204</a>*</b> <b class="vimtag">*<a name="E143">E143</a>*</b> <b class="vimtag">*<a name="E855">E855</a>*</b> <b class="vimtag">*<a name="E937">E937</a>*</b> <b class="vimtag">*<a name="E952">E952</a>*</b>
+WARNING: Using autocommands is very powerful, and may lead to unexpected side
+effects.  Be careful not to destroy your text.
+- It's a good idea to do some testing on an expendable copy of a file first.
+  For example: If you use autocommands to decompress a file when starting to
+  edit it, make sure that the autocommands for compressing when writing work
+  correctly.
+- Be prepared for an error halfway through (e.g., disk full).  Vim will mostly
+  be able to undo the changes to the buffer, but you may have to clean up the
+  changes to other files by hand (e.g., compress a file that has been
+  decompressed).
+- If the BufRead<b class="vimtag">*<a name=" events allow you to edit a compressed file, the FileRead"> events allow you to edit a compressed file, the FileRead</a>*</b>
+  events should do the same (this makes recovery possible in some rare cases).
+  It's a good idea to use the same autocommands for the File<b class="vimtag">*<a name=" and Buf"> and Buf</a>*</b> events
+  when possible.
+
+</pre><hr/><pre>2. Defining autocommands				<b class="vimtag">*<a name="autocmd-define">autocmd-define</a>*</b>
+
+							<b class="vimtag">*<a name=":au">:au</a>*</b> <b class="vimtag">*<a name=":autocmd">:autocmd</a>*</b>
+:au[tocmd] [group] <code class="special">{event}</code> <code class="special">{pat}</code> [++once] [++nested] <code class="special">{cmd}</code>
+			Add <code class="special">{cmd}</code> to the list of commands that Vim will
+			execute automatically on <code class="special">{event}</code> for a file matching
+			<code class="special">{pat}</code> |<a href="autocmd.html#autocmd-patterns">autocmd-patterns</a>|.
+			<code class="note">Note:</code> A quote character is seen as argument to the
+			:autocmd and won't start a comment.
+			Vim always adds the <code class="special">{cmd}</code> after existing autocommands,
+			so that the autocommands execute in the order in which
+			they were given.
+			See |<a href="autocmd.html#autocmd-nested">autocmd-nested</a>| for [++nested].  "nested"
+			(without the ++) can also be used, for backwards
+			compatibility.
+							<b class="vimtag">*<a name="autocmd-once">autocmd-once</a>*</b>
+			If [++once] is supplied the command is executed once,
+			then removed ("one shot").
+
+The special pattern <code class="special">&lt;buffer&gt;</code> or <code class="special">&lt;buffer=N&gt;</code> defines a buffer-local autocommand.
+See |<a href="autocmd.html#autocmd-buflocal">autocmd-buflocal</a>|.
+
+<code class="note">Note:</code> The ":autocmd" command can only be followed by another command when the
+'|' appears before <code class="special">{cmd}</code>.  This works:
+<code class="example">	:augroup mine |<code class="badlink"> au! BufRead </code>| augroup END</code>
+But this sees "augroup" as part of the defined command:
+<code class="example">	:augroup mine |<code class="badlink"> au! BufRead * </code>| augroup END</code>
+<code class="example">	:augroup mine |<code class="badlink"> au BufRead * set tw=70 </code>| augroup END</code>
+Instead you can put the group name into the command:
+<code class="example">	:au! mine BufRead *</code>
+<code class="example">	:au mine BufRead * set tw=70</code>
+Or use `:execute`:
+<code class="example">	:augroup mine |<code class="badlink"> exe "au! BufRead *" </code>| augroup END</code>
+<code class="example">	:augroup mine |<code class="badlink"> exe "au BufRead * set tw=70" </code>| augroup END</code>
+<code class="example"></code>
+<code class="note">Note</code> that special characters (e.g., "%", "<code class="special">&lt;cword&gt;</code>") in the ":autocmd"
+arguments are not expanded when the autocommand is defined.  These will be
+expanded when the Event is recognized, and the <code class="special">{cmd}</code> is executed.  The only
+exception is that "<code class="special">&lt;sfile&gt;</code>" is expanded when the autocmd is defined.  Example:
+
+<code class="example">	:au BufNewFile,BufRead *.html so <code class="special">&lt;sfile&gt;</code>:h/html.vim</code>
+<code class="example"></code>
+Here Vim expands <code class="special">&lt;sfile&gt;</code> to the name of the file containing this line.
+
+`:autocmd` adds to the list of autocommands regardless of whether they are
+already present.  When your .vimrc file is sourced twice, the autocommands
+will appear twice.  To avoid this, define your autocommands in a group, so
+that you can easily clear them:
+<code class="example"></code>
+<code class="example">	augroup vimrc</code>
+<code class="example">	  " Remove all vimrc autocommands</code>
+<code class="example">	  autocmd!</code>
+<code class="example">	  au BufNewFile,BufRead *.html so <code class="special">&lt;sfile&gt;</code>:h/html.vim</code>
+<code class="example">	augroup END</code>
+<code class="example"></code>
+If you don't want to remove all autocommands, you can instead use a variable
+to ensure that Vim includes the autocommands only once:
+<code class="example"></code>
+<code class="example">	:if !exists("autocommands_loaded")</code>
+<code class="example">	:  let autocommands_loaded = 1</code>
+<code class="example">	:  au ...</code>
+<code class="example">	:endif</code>
+<code class="example"></code>
+When the [group] argument is not given, Vim uses the current group (as defined
+with ":augroup"); otherwise, Vim uses the group defined with [group].  <code class="note">Note</code>
+that [group] must have been defined before.  You cannot define a new group
+with ":au group ..."; use ":augroup" for that.
+
+While testing autocommands, you might find the 'verbose' option to be useful:
+<code class="example">	:set verbose=9</code>
+This setting makes Vim echo the autocommands as it executes them.
+
+When defining an autocommand in a script, it will be able to call functions
+local to the script and use mappings local to the script.  When the event is
+triggered and the command executed, it will run in the context of the script
+it was defined in.  This matters if |<a href="map.html#%3CSID%3E">&lt;SID&gt;</a>| is used in a command.
+
+When executing the commands, the message from one command overwrites a
+previous message.  This is different from when executing the commands
+manually.  Mostly the screen will not scroll up, thus there is no hit-enter
+prompt.  When one command outputs two messages this can happen anyway.
+
+</pre><hr/><pre>3. Removing autocommands				<b class="vimtag">*<a name="autocmd-remove">autocmd-remove</a>*</b>
+
+:au[tocmd]! [group] <code class="special">{event}</code> <code class="special">{pat}</code> [++once] [++nested] <code class="special">{cmd}</code>
+			Remove all autocommands associated with <code class="special">{event}</code> and
+			<code class="special">{pat}</code>, and add the command <code class="special">{cmd}</code>.
+			See |<a href="autocmd.html#autocmd-once">autocmd-once</a>| for [++once].
+			See |<a href="autocmd.html#autocmd-nested">autocmd-nested</a>| for [++nested].
+
+:au[tocmd]! [group] <code class="special">{event}</code> <code class="special">{pat}</code>
+			Remove all autocommands associated with <code class="special">{event}</code> and
+			<code class="special">{pat}</code>.
+
+:au[tocmd]! [group] * <code class="special">{pat}</code>
+			Remove all autocommands associated with <code class="special">{pat}</code> for all
+			events.
+
+:au[tocmd]! [group] <code class="special">{event}</code>
+			Remove ALL autocommands for <code class="special">{event}</code>.
+			Warning: You should not do this without a group for
+			|<a href="autocmd.html#BufRead">BufRead</a>| and other common events, it can break
+			plugins, syntax highlighting, etc.
+
+:au[tocmd]! [group]	Remove ALL autocommands.
+			<code class="note">Note:</code> a quote will be seen as argument to the :autocmd
+			and won't start a comment.
+			Warning: You should normally not do this without a
+			group, it breaks plugins, syntax highlighting, etc.
+
+When the [group] argument is not given, Vim uses the current group (as defined
+with ":augroup"); otherwise, Vim uses the group defined with [group].
+
+</pre><hr/><pre>4. Listing autocommands					<b class="vimtag">*<a name="autocmd-list">autocmd-list</a>*</b>
+
+:au[tocmd] [group] <code class="special">{event}</code> <code class="special">{pat}</code>
+			Show the autocommands associated with <code class="special">{event}</code> and
+			<code class="special">{pat}</code>.
+
+:au[tocmd] [group] * <code class="special">{pat}</code>
+			Show the autocommands associated with <code class="special">{pat}</code> for all
+			events.
+
+:au[tocmd] [group] <code class="special">{event}</code>
+			Show all autocommands for <code class="special">{event}</code>.
+
+:au[tocmd] [group]	Show all autocommands.
+
+If you provide the [group] argument, Vim lists only the autocommands for
+[group]; otherwise, Vim lists the autocommands for ALL groups.  <code class="note">Note</code> that this
+argument behavior differs from that for defining and removing autocommands.
+
+In order to list buffer-local autocommands, use a pattern in the form <code class="special">&lt;buffer&gt;</code>
+or <code class="special">&lt;buffer=N&gt;</code>.  See |<a href="autocmd.html#autocmd-buflocal">autocmd-buflocal</a>|.
+
+							<b class="vimtag">*<a name=":autocmd-verbose">:autocmd-verbose</a>*</b>
+When 'verbose' is non-zero, listing an autocommand will also display where it
+was last defined. Example:
+<code class="example"></code>
+<code class="example">    :verbose autocmd BufEnter</code>
+<code class="example">    FileExplorer  BufEnter</code>
+<code class="example">	*	  call s:LocalBrowse(expand("<code class="special">&lt;amatch&gt;</code>"))</code>
+<code class="example">	    Last set from /usr/share/vim/vim-7.0/plugin/NetrwPlugin.vim</code>
+
+See |<a href="various.html#:verbose-cmd">:verbose-cmd</a>| for more information.
+
+</pre><hr/><pre>5. Events					<b class="vimtag">*<a name="autocmd-events">autocmd-events</a>*</b> <b class="vimtag">*<a name="E215">E215</a>*</b> <b class="vimtag">*<a name="E216">E216</a>*</b>
+
+You can specify a comma-separated list of event names.  No white space can be
+used in this list.  The command applies to all the events in the list.
+
+For READING FILES there are four kinds of events possible:
+	BufNewFile			starting to edit a non-existent file
+	BufReadPre	BufReadPost	starting to edit an existing file
+	FilterReadPre	FilterReadPost	read the temp file with filter output
+	FileReadPre	FileReadPost	any other file read
+Vim uses only one of these four kinds when reading a file.  The "Pre" and
+"Post" events are both triggered, before and after reading the file.
+
+<code class="note">Note</code> that the autocommands for the *ReadPre events and all the Filter events
+are not allowed to change the current buffer (you will get an error message if
+this happens).  This is to prevent the file to be read into the wrong buffer.
+
+<code class="note">Note</code> that the 'modified' flag is reset AFTER executing the BufReadPost
+and BufNewFile autocommands.  But when the 'modified' option was set by the
+autocommands, this doesn't happen.
+
+You can use the 'eventignore' option to ignore a number of events or all
+events.
+					<b class="vimtag">*<a name="autocommand-events">autocommand-events</a>*</b> <b class="vimtag">*<a name="{event}">{event}</a>*</b>
+Vim recognizes the following events.  Vim ignores the case of event names
+(e.g., you can use "BUFread" or "bufread" instead of "BufRead").
+
+First an overview by function with a short explanation.  Then the list
+alphabetically with full explanations |<a href="autocmd.html#autocmd-events-abc">autocmd-events-abc</a>|.
+
+<code class="section">Name			triggered by </code>
+
+	Reading
+|<a href="autocmd.html#BufNewFile">BufNewFile</a>|		starting to edit a file that doesn't exist
+|<a href="autocmd.html#BufReadPre">BufReadPre</a>|		starting to edit a new buffer, before reading the file
+|<a href="autocmd.html#BufRead">BufRead</a>|		starting to edit a new buffer, after reading the file
+|<a href="autocmd.html#BufReadPost">BufReadPost</a>|		starting to edit a new buffer, after reading the file
+|<a href="autocmd.html#BufReadCmd">BufReadCmd</a>|		before starting to edit a new buffer |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+|<a href="autocmd.html#FileReadPre">FileReadPre</a>|		before reading a file with a ":read" command
+|<a href="autocmd.html#FileReadPost">FileReadPost</a>|		after reading a file with a ":read" command
+|<a href="autocmd.html#FileReadCmd">FileReadCmd</a>|		before reading a file with a ":read" command |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+|<a href="autocmd.html#FilterReadPre">FilterReadPre</a>|		before reading a file from a filter command
+|<a href="autocmd.html#FilterReadPost">FilterReadPost</a>|	after reading a file from a filter command
+
+|<a href="autocmd.html#StdinReadPre">StdinReadPre</a>|		before reading from stdin into the buffer
+|<a href="autocmd.html#StdinReadPost">StdinReadPost</a>|		After reading from the stdin into the buffer
+
+	Writing
+|<a href="autocmd.html#BufWrite">BufWrite</a>|		starting to write the whole buffer to a file
+|<a href="autocmd.html#BufWritePre">BufWritePre</a>|		starting to write the whole buffer to a file
+|<a href="autocmd.html#BufWritePost">BufWritePost</a>|		after writing the whole buffer to a file
+|<a href="autocmd.html#BufWriteCmd">BufWriteCmd</a>|		before writing the whole buffer to a file |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+|<a href="autocmd.html#FileWritePre">FileWritePre</a>|		starting to write part of a buffer to a file
+|<a href="autocmd.html#FileWritePost">FileWritePost</a>|		after writing part of a buffer to a file
+|<a href="autocmd.html#FileWriteCmd">FileWriteCmd</a>|		before writing part of a buffer to a file |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+|<a href="autocmd.html#FileAppendPre">FileAppendPre</a>|		starting to append to a file
+|<a href="autocmd.html#FileAppendPost">FileAppendPost</a>|	after appending to a file
+|<a href="autocmd.html#FileAppendCmd">FileAppendCmd</a>|		before appending to a file |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+|<a href="autocmd.html#FilterWritePre">FilterWritePre</a>|	starting to write a file for a filter command or diff
+|<a href="autocmd.html#FilterWritePost">FilterWritePost</a>|	after writing a file for a filter command or diff
+
+	Buffers
+|<a href="autocmd.html#BufAdd">BufAdd</a>|		just after adding a buffer to the buffer list
+|<a href="autocmd.html#BufCreate">BufCreate</a>|		just after adding a buffer to the buffer list
+|<a href="autocmd.html#BufDelete">BufDelete</a>|		before deleting a buffer from the buffer list
+|<a href="autocmd.html#BufWipeout">BufWipeout</a>|		before completely deleting a buffer
+
+|<a href="autocmd.html#BufFilePre">BufFilePre</a>|		before changing the name of the current buffer
+|<a href="autocmd.html#BufFilePost">BufFilePost</a>|		after changing the name of the current buffer
+
+|<a href="autocmd.html#BufEnter">BufEnter</a>|		after entering a buffer
+|<a href="autocmd.html#BufLeave">BufLeave</a>|		before leaving to another buffer
+|<a href="autocmd.html#BufWinEnter">BufWinEnter</a>|		after a buffer is displayed in a window
+|<a href="autocmd.html#BufWinLeave">BufWinLeave</a>|		before a buffer is removed from a window
+
+|<a href="autocmd.html#BufUnload">BufUnload</a>|		before unloading a buffer
+|<a href="autocmd.html#BufHidden">BufHidden</a>|		just after a buffer has become hidden
+|<a href="autocmd.html#BufNew">BufNew</a>|		just after creating a new buffer
+
+|<a href="autocmd.html#SwapExists">SwapExists</a>|		detected an existing swap file
+
+	Options
+|<a href="autocmd.html#FileType">FileType</a>|		when the 'filetype' option has been set
+|<a href="autocmd.html#Syntax">Syntax</a>|		when the 'syntax' option has been set
+|<a href="autocmd.html#EncodingChanged">EncodingChanged</a>|	after the 'encoding' option has been changed
+|<a href="autocmd.html#TermChanged">TermChanged</a>|		after the value of 'term' has changed
+|<a href="autocmd.html#OptionSet">OptionSet</a>|		after setting any option
+
+	Startup and exit
+|<a href="autocmd.html#VimEnter">VimEnter</a>|		after doing all the startup stuff
+|<a href="autocmd.html#GUIEnter">GUIEnter</a>|		after starting the GUI successfully
+|<a href="autocmd.html#GUIFailed">GUIFailed</a>|		after starting the GUI failed
+|<a href="autocmd.html#TermResponse">TermResponse</a>|		after the terminal response to |<a href="term.html#t_RV">t_RV</a>| is received
+
+|<a href="autocmd.html#QuitPre">QuitPre</a>|		when using `:quit`, before deciding whether to exit
+|<a href="autocmd.html#ExitPre">ExitPre</a>|		when using a command that may make Vim exit
+|<a href="autocmd.html#VimLeavePre">VimLeavePre</a>|		before exiting Vim, before writing the viminfo file
+|<a href="autocmd.html#VimLeave">VimLeave</a>|		before exiting Vim, after writing the viminfo file
+
+	Terminal
+|<a href="autocmd.html#TerminalOpen">TerminalOpen</a>|		after a terminal buffer was created
+|<a href="autocmd.html#TerminalWinOpen">TerminalWinOpen</a>|	after a terminal buffer was created in a new window
+
+	Various
+|<a href="autocmd.html#FileChangedShell">FileChangedShell</a>|	Vim notices that a file changed since editing started
+|<a href="autocmd.html#FileChangedShellPost">FileChangedShellPost</a>|	After handling a file changed since editing started
+|<a href="autocmd.html#FileChangedRO">FileChangedRO</a>|		before making the first change to a read-only file
+
+|<a href="autocmd.html#DiffUpdated">DiffUpdated</a>|		after diffs have been updated
+|<a href="autocmd.html#DirChanged">DirChanged</a>|		after the working directory has changed
+
+|<a href="autocmd.html#ShellCmdPost">ShellCmdPost</a>|		after executing a shell command
+|<a href="autocmd.html#ShellFilterPost">ShellFilterPost</a>|	after filtering with a shell command
+
+|<a href="autocmd.html#CmdUndefined">CmdUndefined</a>|		a user command is used but it isn't defined
+|<a href="autocmd.html#FuncUndefined">FuncUndefined</a>|		a user function is used but it isn't defined
+|<a href="autocmd.html#SpellFileMissing">SpellFileMissing</a>|	a spell file is used but it can't be found
+|<a href="autocmd.html#SourcePre">SourcePre</a>|		before sourcing a Vim script
+|<a href="autocmd.html#SourcePost">SourcePost</a>|		after sourcing a Vim script
+|<a href="autocmd.html#SourceCmd">SourceCmd</a>|		before sourcing a Vim script |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+|<a href="autocmd.html#VimResized">VimResized</a>|		after the Vim window size changed
+|<a href="autocmd.html#FocusGained">FocusGained</a>|		Vim got input focus
+|<a href="autocmd.html#FocusLost">FocusLost</a>|		Vim lost input focus
+|<a href="autocmd.html#CursorHold">CursorHold</a>|		the user doesn't press a key for a while
+|<a href="autocmd.html#CursorHoldI">CursorHoldI</a>|		the user doesn't press a key for a while in Insert mode
+|<a href="autocmd.html#CursorMoved">CursorMoved</a>|		the cursor was moved in Normal mode
+|<a href="autocmd.html#CursorMovedI">CursorMovedI</a>|		the cursor was moved in Insert mode
+
+|<a href="autocmd.html#WinNew">WinNew</a>|		after creating a new window
+|<a href="autocmd.html#TabNew">TabNew</a>|		after creating a new tab page
+|<a href="autocmd.html#TabClosed">TabClosed</a>|		after closing a tab page
+|<a href="autocmd.html#WinEnter">WinEnter</a>|		after entering another window
+|<a href="autocmd.html#WinLeave">WinLeave</a>|		before leaving a window
+|<a href="autocmd.html#TabEnter">TabEnter</a>|		after entering another tab page
+|<a href="autocmd.html#TabLeave">TabLeave</a>|		before leaving a tab page
+|<a href="autocmd.html#CmdwinEnter">CmdwinEnter</a>|		after entering the command-line window
+|<a href="autocmd.html#CmdwinLeave">CmdwinLeave</a>|		before leaving the command-line window
+
+|<a href="autocmd.html#CmdlineChanged">CmdlineChanged</a>|	after a change was made to the command-line text
+|<a href="autocmd.html#CmdlineEnter">CmdlineEnter</a>|		after the cursor moves to the command line
+|<a href="autocmd.html#CmdlineLeave">CmdlineLeave</a>|		before the cursor leaves the command line
+
+|<a href="autocmd.html#InsertEnter">InsertEnter</a>|		starting Insert mode
+|<a href="autocmd.html#InsertChange">InsertChange</a>|		when typing <code class="special">&lt;Insert&gt;</code> while in Insert or Replace mode
+|<a href="autocmd.html#InsertLeave">InsertLeave</a>|		when leaving Insert mode
+|<a href="autocmd.html#InsertCharPre">InsertCharPre</a>|		when a character was typed in Insert mode, before
+			inserting it
+
+|<a href="autocmd.html#TextChanged">TextChanged</a>|		after a change was made to the text in Normal mode
+|<a href="autocmd.html#TextChangedI">TextChangedI</a>|		after a change was made to the text in Insert mode
+			when popup menu is not visible
+|<a href="autocmd.html#TextChangedP">TextChangedP</a>|		after a change was made to the text in Insert mode
+			when popup menu visible
+|<a href="autocmd.html#TextYankPost">TextYankPost</a>|		after text has been yanked or deleted
+
+|<a href="autocmd.html#SafeState">SafeState</a>|		nothing pending, going to wait for the user to type a
+			character
+|<a href="autocmd.html#SafeStateAgain">SafeStateAgain</a>|	repeated SafeState
+
+|<a href="autocmd.html#ColorSchemePre">ColorSchemePre</a>|	before loading a color scheme
+|<a href="autocmd.html#ColorScheme">ColorScheme</a>|		after loading a color scheme
+
+|<a href="autocmd.html#RemoteReply">RemoteReply</a>|		a reply from a server Vim was received
+
+|<a href="autocmd.html#QuickFixCmdPre">QuickFixCmdPre</a>|	before a quickfix command is run
+|<a href="autocmd.html#QuickFixCmdPost">QuickFixCmdPost</a>|	after a quickfix command is run
+
+|<a href="autocmd.html#SessionLoadPost">SessionLoadPost</a>|	after loading a session file
+
+|<a href="autocmd.html#MenuPopup">MenuPopup</a>|		just before showing the popup menu
+|<a href="autocmd.html#CompleteChanged">CompleteChanged</a>|	after Insert mode completion menu changed
+|<a href="autocmd.html#CompleteDonePre">CompleteDonePre</a>|	after Insert mode completion is done, before clearing
+			info
+|<a href="autocmd.html#CompleteDone">CompleteDone</a>|		after Insert mode completion is done, after clearing
+			info
+
+|<a href="autocmd.html#User">User</a>|			to be used in combination with ":doautocmd"
+
+
+The alphabetical list of autocommand events:		<b class="vimtag">*<a name="autocmd-events-abc">autocmd-events-abc</a>*</b>
+
+							<b class="vimtag">*<a name="BufCreate">BufCreate</a>*</b> <b class="vimtag">*<a name="BufAdd">BufAdd</a>*</b>
+BufAdd or BufCreate		Just after creating a new buffer which is
+				added to the buffer list, or adding a buffer
+				to the buffer list.
+				Also used just after a buffer in the buffer
+				list has been renamed.
+				Not triggered for the initial buffers created
+				during startup.
+				The BufCreate event is for historic reasons.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being created "<code class="special">&lt;afile&gt;</code>".
+							<b class="vimtag">*<a name="BufDelete">BufDelete</a>*</b>
+BufDelete			Before deleting a buffer from the buffer list.
+				The BufUnload may be called first (if the
+				buffer was loaded).
+				Also used just before a buffer in the buffer
+				list is renamed.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being deleted "<code class="special">&lt;afile&gt;</code>" and "<code class="special">&lt;abuf&gt;</code>".
+				Don't change to another buffer, it will cause
+				problems.
+							<b class="vimtag">*<a name="BufEnter">BufEnter</a>*</b>
+BufEnter			After entering a buffer.  Useful for setting
+				options for a file type.  Also executed when
+				starting to edit a buffer, after the
+				BufReadPost autocommands.
+							<b class="vimtag">*<a name="BufFilePost">BufFilePost</a>*</b>
+BufFilePost			After changing the name of the current buffer
+				with the ":file" or ":saveas" command.
+							<b class="vimtag">*<a name="BufFilePre">BufFilePre</a>*</b>
+BufFilePre			Before changing the name of the current buffer
+				with the ":file" or ":saveas" command.
+							<b class="vimtag">*<a name="BufHidden">BufHidden</a>*</b>
+BufHidden			Just before a buffer becomes hidden.  That is,
+				when there are no longer windows that show
+				the buffer, but the buffer is not unloaded or
+				deleted.  Not used for ":qa" or ":q" when
+				exiting Vim.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being unloaded "<code class="special">&lt;afile&gt;</code>".
+							<b class="vimtag">*<a name="BufLeave">BufLeave</a>*</b>
+BufLeave			Before leaving to another buffer.  Also when
+				leaving or closing the current window and the
+				new current window is not for the same buffer.
+				Not used for ":qa" or ":q" when exiting Vim.
+							<b class="vimtag">*<a name="BufNew">BufNew</a>*</b>
+BufNew				Just after creating a new buffer.  Also used
+				just after a buffer has been renamed.  When
+				the buffer is added to the buffer list BufAdd
+				will be triggered too.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being created "<code class="special">&lt;afile&gt;</code>".
+							<b class="vimtag">*<a name="BufNewFile">BufNewFile</a>*</b>
+BufNewFile			When starting to edit a file that doesn't
+				exist.  Can be used to read in a skeleton
+				file.
+						<b class="vimtag">*<a name="BufRead">BufRead</a>*</b> <b class="vimtag">*<a name="BufReadPost">BufReadPost</a>*</b>
+BufRead or BufReadPost		When starting to edit a new buffer, after
+				reading the file into the buffer, before
+				executing the modelines.  See |<a href="autocmd.html#BufWinEnter">BufWinEnter</a>|
+				for when you need to do something after
+				processing the modelines.
+				This does NOT work for ":r file".  Not used
+				when the file doesn't exist.  Also used after
+				successfully recovering a file.
+				Also triggered for the filetypedetect group
+				when executing ":filetype detect" and when
+				writing an unnamed buffer in a way that the
+				buffer gets a name.
+							<b class="vimtag">*<a name="BufReadCmd">BufReadCmd</a>*</b>
+BufReadCmd			Before starting to edit a new buffer.  Should
+				read the file into the buffer. |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+						<b class="vimtag">*<a name="BufReadPre">BufReadPre</a>*</b> <b class="vimtag">*<a name="E200">E200</a>*</b> <b class="vimtag">*<a name="E201">E201</a>*</b>
+BufReadPre			When starting to edit a new buffer, before
+				reading the file into the buffer.  Not used
+				if the file doesn't exist.
+							<b class="vimtag">*<a name="BufUnload">BufUnload</a>*</b>
+BufUnload			Before unloading a buffer.  This is when the
+				text in the buffer is going to be freed.  This
+				may be after a BufWritePost and before a
+				BufDelete.  Also used for all buffers that are
+				loaded when Vim is going to exit.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being unloaded "<code class="special">&lt;afile&gt;</code>".
+				Don't change to another buffer or window, it
+				will cause problems!
+				When exiting and v:dying is 2 or more this
+				event is not triggered.
+							<b class="vimtag">*<a name="BufWinEnter">BufWinEnter</a>*</b>
+BufWinEnter			After a buffer is displayed in a window.  This
+				can be when the buffer is loaded (after
+				processing the modelines) or when a hidden
+				buffer is displayed in a window (and is no
+				longer hidden).
+				Does not happen for |<a href="windows.html#:split">:split</a>| without
+				arguments, since you keep editing the same
+				buffer, or ":split" with a file that's already
+				open in a window, because it re-uses an
+				existing buffer.  But it does happen for a
+				":split" with the name of the current buffer,
+				since it reloads that buffer.
+				Does not happen for a terminal window, because
+				it starts in Terminal-Job mode and Normal mode
+				commands won't work. Use |<a href="autocmd.html#TerminalOpen">TerminalOpen</a>| instead.
+							<b class="vimtag">*<a name="BufWinLeave">BufWinLeave</a>*</b>
+BufWinLeave			Before a buffer is removed from a window.
+				Not when it's still visible in another window.
+				Also triggered when exiting.  It's triggered
+				before BufUnload or BufHidden.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being unloaded "<code class="special">&lt;afile&gt;</code>".
+				When exiting and v:dying is 2 or more this
+				event is not triggered.
+							<b class="vimtag">*<a name="BufWipeout">BufWipeout</a>*</b>
+BufWipeout			Before completely deleting a buffer.  The
+				BufUnload and BufDelete events may be called
+				first (if the buffer was loaded and was in the
+				buffer list).  Also used just before a buffer
+				is renamed (also when it's not in the buffer
+				list).
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer being deleted "<code class="special">&lt;afile&gt;</code>".
+				Don't change to another buffer, it will cause
+				problems.
+						<b class="vimtag">*<a name="BufWrite">BufWrite</a>*</b> <b class="vimtag">*<a name="BufWritePre">BufWritePre</a>*</b>
+BufWrite or BufWritePre		Before writing the whole buffer to a file.
+							<b class="vimtag">*<a name="BufWriteCmd">BufWriteCmd</a>*</b>
+BufWriteCmd			Before writing the whole buffer to a file.
+				Should do the writing of the file and reset
+				'modified' if successful, unless '+' is in
+				'cpo' and writing to another file |<a href="options.html#cpo-+">cpo-+</a>|.
+				The buffer contents should not be changed.
+				When the command resets 'modified' the undo
+				information is adjusted to mark older undo
+				states as 'modified', like |<a href="editing.html#:write">:write</a>| does.
+				|<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+							<b class="vimtag">*<a name="BufWritePost">BufWritePost</a>*</b>
+BufWritePost			After writing the whole buffer to a file
+				(should undo the commands for BufWritePre).
+							<b class="vimtag">*<a name="CmdUndefined">CmdUndefined</a>*</b>
+CmdUndefined			When a user command is used but it isn't
+				defined.  Useful for defining a command only
+				when it's used.  The pattern is matched
+				against the command name.  Both <code class="special">&lt;amatch&gt;</code> and
+				<code class="special">&lt;afile&gt;</code> are set to the name of the command.
+				<code class="note">NOTE:</code> Autocompletion won't work until the
+				command is defined.  An alternative is to
+				always define the user command and have it
+				invoke an autoloaded function.  See |<a href="eval.html#autoload">autoload</a>|.
+							<b class="vimtag">*<a name="CmdlineChanged">CmdlineChanged</a>*</b>
+CmdlineChanged			After a change was made to the text in the
+				command line.  Be careful not to mess up
+				the command line, it may cause Vim to lock up.
+				<code class="special">&lt;afile&gt;</code> is set to a single character,
+				indicating the type of command-line.
+				|<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|
+							<b class="vimtag">*<a name="CmdlineEnter">CmdlineEnter</a>*</b>
+CmdlineEnter			After moving the cursor to the command line,
+				where the user can type a command or search
+				string.
+				<code class="special">&lt;afile&gt;</code> is set to a single character,
+				indicating the type of command-line.
+				|<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|
+							<b class="vimtag">*<a name="CmdlineLeave">CmdlineLeave</a>*</b>
+CmdlineLeave			Before leaving the command line.
+				Also when abandoning the command line, after
+				typing <code class="keystroke">CTRL-C</code> or <code class="special">&lt;Esc&gt;</code>.
+				When the commands result in an error the
+				command line is still executed.
+				<code class="special">&lt;afile&gt;</code> is set to a single character,
+				indicating the type of command-line.
+				|<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|
+							<b class="vimtag">*<a name="CmdwinEnter">CmdwinEnter</a>*</b>
+CmdwinEnter			After entering the command-line window.
+				Useful for setting options specifically for
+				this special type of window.
+				<code class="special">&lt;afile&gt;</code> is set to a single character,
+				indicating the type of command-line.
+				|<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|
+							<b class="vimtag">*<a name="CmdwinLeave">CmdwinLeave</a>*</b>
+CmdwinLeave			Before leaving the command-line window.
+				Useful to clean up any global setting done
+				with CmdwinEnter.
+				<code class="special">&lt;afile&gt;</code> is set to a single character,
+				indicating the type of command-line.
+				|<a href="cmdline.html#cmdwin-char">cmdwin-char</a>|
+							<b class="vimtag">*<a name="ColorScheme">ColorScheme</a>*</b>
+ColorScheme			After loading a color scheme. |<a href="syntax.html#:colorscheme">:colorscheme</a>|
+				The pattern is matched against the
+				colorscheme name. <code class="special">&lt;afile&gt;</code> can be used for the
+				name of the actual file where this option was
+				set, and <code class="special">&lt;amatch&gt;</code> for the new colorscheme
+				name.
+
+							<b class="vimtag">*<a name="ColorSchemePre">ColorSchemePre</a>*</b>
+ColorSchemePre			Before loading a color scheme. |<a href="syntax.html#:colorscheme">:colorscheme</a>|
+				Useful to setup removing things added by a
+				color scheme, before another one is loaded.
+CompleteChanged						<b class="vimtag">*<a name="CompleteChanged">CompleteChanged</a>*</b>
+				After each time the Insert mode completion
+				menu changed.  Not fired on popup menu hide,
+				use |<a href="autocmd.html#CompleteDonePre">CompleteDonePre</a>| or |<a href="autocmd.html#CompleteDone">CompleteDone</a>| for
+				that.  Never triggered recursively.
+
+				Sets these |<a href="eval.html#v:event">v:event</a>| keys:
+				    completed_item	See |<a href="insert.html#complete-items">complete-items</a>|.
+				    height		nr of items visible
+				    width		screen cells
+				    row			top screen row
+				    col			leftmost screen column
+				    size		total nr of items
+				    scrollbar		TRUE if visible
+
+				It is not allowed to change the text |<a href="eval.html#textlock">textlock</a>|.
+
+				The size and position of the popup are also
+				available by calling |<a href="eval.html#pum_getpos()">pum_getpos()</a>|.
+
+							<b class="vimtag">*<a name="CompleteDonePre">CompleteDonePre</a>*</b>
+CompleteDonePre			After Insert mode completion is done.  Either
+				when something was completed or abandoning
+				completion. |<a href="insert.html#ins-completion">ins-completion</a>|
+				|<a href="eval.html#complete_info()">complete_info()</a>| can be used, the info is
+				cleared after triggering CompleteDonePre.
+				The |<a href="eval.html#v:completed_item">v:completed_item</a>| variable contains
+				information about the completed item.
+
+							<b class="vimtag">*<a name="CompleteDone">CompleteDone</a>*</b>
+CompleteDone			After Insert mode completion is done.  Either
+				when something was completed or abandoning
+				completion. |<a href="insert.html#ins-completion">ins-completion</a>|
+				|<a href="eval.html#complete_info()">complete_info()</a>| cannot be used, the info is
+				cleared before triggering CompleteDone.  Use
+				CompleteDonePre if you need it.
+				The |<a href="eval.html#v:completed_item">v:completed_item</a>| variable contains
+				information about the completed item.
+
+							<b class="vimtag">*<a name="CursorHold">CursorHold</a>*</b>
+CursorHold			When the user doesn't press a key for the time
+				specified with 'updatetime'.  Not re-triggered
+				until the user has pressed a key (i.e. doesn't
+				fire every 'updatetime' ms if you leave Vim to
+				make some coffee. :)  See |<a href="windows.html#CursorHold-example">CursorHold-example</a>|
+				for previewing tags.
+				This event is only triggered in Normal mode.
+				It is not triggered when waiting for a command
+				argument to be typed, or a movement after an
+				operator.
+				While recording the CursorHold event is not
+				triggered. |<a href="repeat.html#q">q</a>|
+							<b class="vimtag">*<a name="%3CCursorHold%3E">&lt;CursorHold&gt;</a>*</b>
+				Internally the autocommand is triggered by the
+				<code class="special">&lt;CursorHold&gt;</code> key. In an expression mapping
+				|<a href="eval.html#getchar()">getchar()</a>| may see this character.
+
+				<code class="note">Note:</code> Interactive commands cannot be used for
+				this event.  There is no hit-enter prompt,
+				the screen is updated directly (when needed).
+				<code class="note">Note:</code> In the future there will probably be
+				another option to set the time.
+				Hint: to force an update of the status lines
+				use:
+<code class="example">					:let &amp;ro = &amp;ro</code>
+				{only on Amiga, Unix, Win32 and all GUI
+				versions}
+							<b class="vimtag">*<a name="CursorHoldI">CursorHoldI</a>*</b>
+CursorHoldI			Just like CursorHold, but in Insert mode.
+				Not triggered when waiting for another key,
+				e.g. after <code class="keystroke">CTRL-V</code>, and not when in <code class="keystroke">CTRL-X</code> mode
+				|<a href="insert.html#insert_expand">insert_expand</a>|.
+
+							<b class="vimtag">*<a name="CursorMoved">CursorMoved</a>*</b>
+CursorMoved			After the cursor was moved in Normal or Visual
+				mode.  Also when the text of the cursor line
+				has been changed, e.g., with "x", "rx" or "p".
+				Not triggered when there is typeahead or when
+				an operator is pending.
+				For an example see |<a href="tips.html#match-parens">match-parens</a>|.
+				<code class="note">Note:</code> This can not be skipped with
+				`:noautocmd`.
+				Careful: This is triggered very often, don't
+				do anything that the user does not expect or
+				that is slow.
+							<b class="vimtag">*<a name="CursorMovedI">CursorMovedI</a>*</b>
+CursorMovedI			After the cursor was moved in Insert mode.
+				Not triggered when the popup menu is visible.
+				Otherwise the same as CursorMoved.
+							<b class="vimtag">*<a name="EncodingChanged">EncodingChanged</a>*</b>
+EncodingChanged			Fires off after the 'encoding' option has been
+				changed.  Useful to set up fonts, for example.
+							<b class="vimtag">*<a name="FileAppendCmd">FileAppendCmd</a>*</b>
+FileAppendCmd			Before appending to a file.  Should do the
+				appending to the file.  Use the '[ and ']
+				marks for the range of lines.|<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+							<b class="vimtag">*<a name="FileAppendPost">FileAppendPost</a>*</b>
+FileAppendPost			After appending to a file.
+							<b class="vimtag">*<a name="FileAppendPre">FileAppendPre</a>*</b>
+FileAppendPre			Before appending to a file.  Use the '[ and ']
+				marks for the range of lines.
+							<b class="vimtag">*<a name="FileChangedRO">FileChangedRO</a>*</b>
+FileChangedRO			Before making the first change to a read-only
+				file.  Can be used to check-out the file from
+				a source control system.  Not triggered when
+				the change was caused by an autocommand.
+				This event is triggered when making the first
+				change in a buffer or the first change after
+				'readonly' was set, just before the change is
+				applied to the text.
+				WARNING: If the autocommand moves the cursor
+				the effect of the change is undefined.
+							<b class="vimtag">*<a name="E788">E788</a>*</b>
+				It is not allowed to change to another buffer
+				here.  You can reload the buffer but not edit
+				another one.
+							<b class="vimtag">*<a name="E881">E881</a>*</b>
+				If the number of lines changes saving for undo
+				may fail and the change will be aborted.
+							<b class="vimtag">*<a name="DiffUpdated">DiffUpdated</a>*</b>
+DiffUpdated			After diffs have been updated.  Depending on
+				what kind of diff is being used (internal or
+				external) this can be triggered on every
+				change or when doing |<a href="diff.html#:diffupdate">:diffupdate</a>|.
+							<b class="vimtag">*<a name="DirChanged">DirChanged</a>*</b>
+DirChanged			The working directory has changed in response
+				to the |<a href="editing.html#:cd">:cd</a>| or |<a href="editing.html#:tcd">:tcd</a>| or |<a href="editing.html#:lcd">:lcd</a>| commands, or
+				as a result of the 'autochdir' option.
+				The pattern can be:
+					"window"  to trigger on `:lcd`
+					"tabpage" to trigger on `:tcd`
+					"global"  to trigger on `:cd`
+					"auto"    to trigger on 'autochdir'.
+					"drop"	  to trigger on editing a file
+				<code class="special">&lt;afile&gt;</code> is set to the new directory name.
+							<b class="vimtag">*<a name="ExitPre">ExitPre</a>*</b>
+ExitPre				When using `:quit`, `:wq` in a way it makes
+				Vim exit, or using `:qall`, just after
+				|<a href="autocmd.html#QuitPre">QuitPre</a>|.  Can be used to close any
+				non-essential window.  Exiting may still be
+				cancelled if there is a modified buffer that
+				isn't automatically saved, use |<a href="autocmd.html#VimLeavePre">VimLeavePre</a>|
+				for really exiting.
+							<b class="vimtag">*<a name="FileChangedShell">FileChangedShell</a>*</b>
+FileChangedShell		When Vim notices that the modification time of
+				a file has changed since editing started.
+				Also when the file attributes of the file
+				change or when the size of the file changes.
+				|<a href="editing.html#timestamp">timestamp</a>|
+				Mostly triggered after executing a shell
+				command, but also with a |<a href="editing.html#:checktime">:checktime</a>| command
+				or when gvim regains input focus.
+				This autocommand is triggered for each changed
+				file.  It is not used when 'autoread' is set
+				and the buffer was not changed.  If a
+				FileChangedShell autocommand is present the
+				warning message and prompt is not given.
+				The |<a href="eval.html#v:fcs_reason">v:fcs_reason</a>| variable is set to indicate
+				what happened and |<a href="eval.html#v:fcs_choice">v:fcs_choice</a>| can be used
+				to tell Vim what to do next.
+				<code class="note">NOTE:</code> When this autocommand is executed, the
+				current buffer "%" may be different from the
+				buffer that was changed, which is in "<code class="special">&lt;afile&gt;</code>".
+				<code class="note">NOTE:</code> The commands must not change the current
+				buffer, jump to another buffer or delete a
+				buffer.  <b class="vimtag">*<a name="E246">E246</a>*</b> <b class="vimtag">*<a name="E811">E811</a>*</b>
+				<code class="note">NOTE:</code> This event never nests, to avoid an
+				endless loop.  This means that while executing
+				commands for the FileChangedShell event no
+				other FileChangedShell event will be
+				triggered.
+							<b class="vimtag">*<a name="FileChangedShellPost">FileChangedShellPost</a>*</b>
+FileChangedShellPost		After handling a file that was changed outside
+				of Vim.  Can be used to update the statusline.
+							<b class="vimtag">*<a name="FileEncoding">FileEncoding</a>*</b>
+FileEncoding			Obsolete.  It still works and is equivalent
+				to |<a href="autocmd.html#EncodingChanged">EncodingChanged</a>|.
+							<b class="vimtag">*<a name="FileReadCmd">FileReadCmd</a>*</b>
+FileReadCmd			Before reading a file with a ":read" command.
+				Should do the reading of the file. |<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+							<b class="vimtag">*<a name="FileReadPost">FileReadPost</a>*</b>
+FileReadPost			After reading a file with a ":read" command.
+				<code class="note">Note</code> that Vim sets the '[ and '] marks to the
+				first and last line of the read.  This can be
+				used to operate on the lines just read.
+							<b class="vimtag">*<a name="FileReadPre">FileReadPre</a>*</b>
+FileReadPre			Before reading a file with a ":read" command.
+							<b class="vimtag">*<a name="FileType">FileType</a>*</b>
+FileType			When the 'filetype' option has been set.  The
+				pattern is matched against the filetype.
+				<code class="special">&lt;afile&gt;</code> can be used for the name of the file
+				where this option was set, and <code class="special">&lt;amatch&gt;</code> for
+				the new value of 'filetype'.  Navigating to
+				another window or buffer is not allowed.
+				See |<a href="filetype.html#filetypes">filetypes</a>|.
+							<b class="vimtag">*<a name="FileWriteCmd">FileWriteCmd</a>*</b>
+FileWriteCmd			Before writing to a file, when not writing the
+				whole buffer.  Should do the writing to the
+				file.  Should not change the buffer.  Use the
+				'[ and '] marks for the range of lines.
+				|<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+							<b class="vimtag">*<a name="FileWritePost">FileWritePost</a>*</b>
+FileWritePost			After writing to a file, when not writing the
+				whole buffer.
+							<b class="vimtag">*<a name="FileWritePre">FileWritePre</a>*</b>
+FileWritePre			Before writing to a file, when not writing the
+				whole buffer.  Use the '[ and '] marks for the
+				range of lines.
+							<b class="vimtag">*<a name="FilterReadPost">FilterReadPost</a>*</b>
+FilterReadPost			After reading a file from a filter command.
+				Vim checks the pattern against the name of
+				the current buffer as with FilterReadPre.
+				Not triggered when 'shelltemp' is off.
+							<b class="vimtag">*<a name="FilterReadPre">FilterReadPre</a>*</b> <b class="vimtag">*<a name="E135">E135</a>*</b>
+FilterReadPre			Before reading a file from a filter command.
+				Vim checks the pattern against the name of
+				the current buffer, not the name of the
+				temporary file that is the output of the
+				filter command.
+				Not triggered when 'shelltemp' is off.
+							<b class="vimtag">*<a name="FilterWritePost">FilterWritePost</a>*</b>
+FilterWritePost			After writing a file for a filter command or
+				making a diff with an external diff (see
+				DiffUpdated for internal diff).
+				Vim checks the pattern against the name of
+				the current buffer as with FilterWritePre.
+				Not triggered when 'shelltemp' is off.
+							<b class="vimtag">*<a name="FilterWritePre">FilterWritePre</a>*</b>
+FilterWritePre			Before writing a file for a filter command or
+				making a diff with an external diff.
+				Vim checks the pattern against the name of
+				the current buffer, not the name of the
+				temporary file that is the output of the
+				filter command.
+				Not triggered when 'shelltemp' is off.
+							<b class="vimtag">*<a name="FocusGained">FocusGained</a>*</b>
+FocusGained			When Vim got input focus.  Only for the GUI
+				version and a few console versions where this
+				can be detected.
+							<b class="vimtag">*<a name="FocusLost">FocusLost</a>*</b>
+FocusLost			When Vim lost input focus.  Only for the GUI
+				version and a few console versions where this
+				can be detected.  May also happen when a
+				dialog pops up.
+							<b class="vimtag">*<a name="FuncUndefined">FuncUndefined</a>*</b>
+FuncUndefined			When a user function is used but it isn't
+				defined.  Useful for defining a function only
+				when it's used.  The pattern is matched
+				against the function name.  Both <code class="special">&lt;amatch&gt;</code> and
+				<code class="special">&lt;afile&gt;</code> are set to the name of the function.
+				<code class="note">NOTE:</code> When writing Vim scripts a better
+				alternative is to use an autoloaded function.
+				See |<a href="eval.html#autoload-functions">autoload-functions</a>|.
+							<b class="vimtag">*<a name="GUIEnter">GUIEnter</a>*</b>
+GUIEnter			After starting the GUI successfully, and after
+				opening the window.  It is triggered before
+				VimEnter when using gvim.  Can be used to
+				position the window from a .gvimrc file:
+<code class="example">	:autocmd GUIEnter * winpos 100 50</code>
+							<b class="vimtag">*<a name="GUIFailed">GUIFailed</a>*</b>
+GUIFailed			After starting the GUI failed.  Vim may
+				continue to run in the terminal, if possible
+				(only on Unix and alikes, when connecting the
+				X server fails).  You may want to quit Vim:
+<code class="example">	:autocmd GUIFailed * qall</code>
+							<b class="vimtag">*<a name="InsertChange">InsertChange</a>*</b>
+InsertChange			When typing <code class="special">&lt;Insert&gt;</code> while in Insert or
+				Replace mode.  The |<a href="eval.html#v:insertmode">v:insertmode</a>| variable
+				indicates the new mode.
+				Be careful not to move the cursor or do
+				anything else that the user does not expect.
+							<b class="vimtag">*<a name="InsertCharPre">InsertCharPre</a>*</b>
+InsertCharPre			When a character is typed in Insert mode,
+				before inserting the char.
+				The |<a href="eval.html#v:char">v:char</a>| variable indicates the char typed
+				and can be changed during the event to insert
+				a different character.  When |<a href="eval.html#v:char">v:char</a>| is set
+				to more than one character this text is
+				inserted literally.
+				It is not allowed to change the text |<a href="eval.html#textlock">textlock</a>|.
+				The event is not triggered when 'paste' is
+				set. <code class="special">{only with the +eval feature}</code>
+							<b class="vimtag">*<a name="InsertEnter">InsertEnter</a>*</b>
+InsertEnter			Just before starting Insert mode.  Also for
+				Replace mode and Virtual Replace mode.  The
+				|<a href="eval.html#v:insertmode">v:insertmode</a>| variable indicates the mode.
+				Be careful not to do anything else that the
+				user does not expect.
+				The cursor is restored afterwards.  If you do
+				not want that set |<a href="eval.html#v:char">v:char</a>| to a non-empty
+				string.
+							<b class="vimtag">*<a name="InsertLeave">InsertLeave</a>*</b>
+InsertLeave			When leaving Insert mode.  Also when using
+				<code class="keystroke">CTRL-O</code> |<a href="insert.html#i_CTRL-O">i_CTRL-O</a>|.  But not for |<a href="insert.html#i_CTRL-C">i_CTRL-C</a>|.
+							<b class="vimtag">*<a name="MenuPopup">MenuPopup</a>*</b>
+MenuPopup			Just before showing the popup menu (under the
+				right mouse button).  Useful for adjusting the
+				menu for what is under the cursor or mouse
+				pointer.
+				The pattern is matched against one or two
+				characters representing the mode:
+					n	Normal
+					v	Visual
+					o	Operator-pending
+					i	Insert
+					c	Command line
+					tl	Terminal
+							<b class="vimtag">*<a name="OptionSet">OptionSet</a>*</b>
+OptionSet			After setting an option.  The pattern is
+				matched against the long option name.
+				|<a href="cmdline.html#%3Camatch%3E">&lt;amatch&gt;</a>| indicates what option has been set.
+
+				|<a href="eval.html#v:option_type">v:option_type</a>| indicates whether it's global
+				or local scoped.
+				|<a href="eval.html#v:option_command">v:option_command</a>| indicates what type of
+				set/let command was used (follow the tag to
+				see the table).
+				|<a href="eval.html#v:option_new">v:option_new</a>| indicates the newly set value.
+				|<a href="eval.html#v:option_oldlocal">v:option_oldlocal</a>| has the old local value.
+				|<a href="eval.html#v:option_oldglobal">v:option_oldglobal</a>| has the old global value.
+				|<a href="eval.html#v:option_old">v:option_old</a>| indicates the old option value.
+
+				|<a href="eval.html#v:option_oldlocal">v:option_oldlocal</a>| is only set when |<a href="options.html#:set">:set</a>|
+				or |<a href="options.html#:setlocal">:setlocal</a>| or a |<a href="options.html#modeline">modeline</a>| was used to set
+				the option. Similarly |<a href="eval.html#v:option_oldglobal">v:option_oldglobal</a>| is
+				only set when |<a href="options.html#:set">:set</a>| or |<a href="options.html#:setglobal">:setglobal</a>| was used.
+
+				<code class="note">Note</code> that when setting a |<a href="options.html#global-local">global-local</a>| string
+				option with |<a href="options.html#:set">:set</a>|, then |<a href="eval.html#v:option_old">v:option_old</a>| is the
+				old global value. However, for all other kinds
+				of options (local string options, global-local
+				number options, ...) it is the old local
+				value.
+
+				OptionSet is not triggered on startup and for
+				the 'key' option for obvious reasons.
+
+				Usage example: Check for the existence of the
+				directory in the 'backupdir' and 'undodir'
+				options, create the directory if it doesn't
+				exist yet.
+
+				<code class="note">Note:</code> It's a bad idea to reset an option
+				during this autocommand, this may break a
+				plugin. You can always use `:noa` to prevent
+				triggering this autocommand.
+
+				When using |<a href="options.html#:set">:set</a>| in the autocommand the event
+				is not triggered again.
+							<b class="vimtag">*<a name="QuickFixCmdPre">QuickFixCmdPre</a>*</b>
+QuickFixCmdPre			Before a quickfix command is run (|<a href="quickfix.html#:make">:make</a>|,
+				|<a href="quickfix.html#:lmake">:lmake</a>|, |<a href="quickfix.html#:grep">:grep</a>|, |<a href="quickfix.html#:lgrep">:lgrep</a>|, |<a href="quickfix.html#:grepadd">:grepadd</a>|,
+				|<a href="quickfix.html#:lgrepadd">:lgrepadd</a>|, |<a href="quickfix.html#:vimgrep">:vimgrep</a>|, |<a href="quickfix.html#:lvimgrep">:lvimgrep</a>|,
+				|<a href="quickfix.html#:vimgrepadd">:vimgrepadd</a>|, |<a href="quickfix.html#:lvimgrepadd">:lvimgrepadd</a>|, |<a href="if_cscop.html#:cscope">:cscope</a>|,
+				|<a href="quickfix.html#:cfile">:cfile</a>|, |<a href="quickfix.html#:cgetfile">:cgetfile</a>|, |<a href="quickfix.html#:caddfile">:caddfile</a>|, |<a href="quickfix.html#:lfile">:lfile</a>|,
+				|<a href="quickfix.html#:lgetfile">:lgetfile</a>|, |<a href="quickfix.html#:laddfile">:laddfile</a>|, |<a href="helphelp.html#:helpgrep">:helpgrep</a>|,
+				|<a href="helphelp.html#:lhelpgrep">:lhelpgrep</a>|, |<a href="quickfix.html#:cexpr">:cexpr</a>|, |<a href="quickfix.html#:cgetexpr">:cgetexpr</a>|,
+				|<a href="quickfix.html#:caddexpr">:caddexpr</a>|, |<a href="quickfix.html#:cbuffer">:cbuffer</a>|, |<a href="quickfix.html#:cgetbuffer">:cgetbuffer</a>|,
+				|<a href="quickfix.html#:caddbuffer">:caddbuffer</a>|).
+				The pattern is matched against the command
+				being run.  When |<a href="quickfix.html#:grep">:grep</a>| is used but 'grepprg'
+				is set to "internal" it still matches "grep".
+				This command cannot be used to set the
+				'makeprg' and 'grepprg' variables.
+				If this command causes an error, the quickfix
+				command is not executed.
+							<b class="vimtag">*<a name="QuickFixCmdPost">QuickFixCmdPost</a>*</b>
+QuickFixCmdPost			Like QuickFixCmdPre, but after a quickfix
+				command is run, before jumping to the first
+				location. For |<a href="quickfix.html#:cfile">:cfile</a>| and |<a href="quickfix.html#:lfile">:lfile</a>| commands
+				it is run after error file is read and before
+				moving to the first error.
+				See |<a href="quickfix.html#QuickFixCmdPost-example">QuickFixCmdPost-example</a>|.
+							<b class="vimtag">*<a name="QuitPre">QuitPre</a>*</b>
+QuitPre				When using `:quit`, `:wq` or `:qall`, before
+				deciding whether it closes the current window
+				or quits Vim.  Can be used to close any
+				non-essential window if the current window is
+				the last ordinary window.
+				Also see |<a href="autocmd.html#ExitPre">ExitPre</a>|.
+							<b class="vimtag">*<a name="RemoteReply">RemoteReply</a>*</b>
+RemoteReply			When a reply from a Vim that functions as
+				server was received |<a href="eval.html#server2client()">server2client()</a>|.  The
+				pattern is matched against the <code class="special">{serverid}</code>.
+				<code class="special">&lt;amatch&gt;</code> is equal to the <code class="special">{serverid}</code> from which
+				the reply was sent, and <code class="special">&lt;afile&gt;</code> is the actual
+				reply string.
+				<code class="note">Note</code> that even if an autocommand is defined,
+				the reply should be read with |<a href="eval.html#remote_read()">remote_read()</a>|
+				to consume it.
+							<b class="vimtag">*<a name="SafeState">SafeState</a>*</b>
+SafeState			When nothing is pending, going to wait for the
+				user to type a character.
+				This will not be triggered when:
+				- an operator is pending
+				- a register was entered with "r
+				- halfway executing a command
+				- executing a mapping
+				- there is typeahead
+				- Insert mode completion is active
+				- Command line completion is active
+				You can use `mode()` to find out what state
+				Vim is in.  That may be:
+				- VIsual mode
+				- Normal mode
+				- Insert mode
+				- Command-line mode
+				Depending on what you want to do, you may also
+				check more with `state()`, e.g. whether the
+				screen was scrolled for messages.
+							<b class="vimtag">*<a name="SafeStateAgain">SafeStateAgain</a>*</b>
+SafeStateAgain			Like SafeState but after processing any
+				messages and invoking callbacks. This may be
+				triggered often, don't do something that takes
+				time.
+
+							<b class="vimtag">*<a name="SessionLoadPost">SessionLoadPost</a>*</b>
+SessionLoadPost			After loading the session file created using
+				the |<a href="starting.html#:mksession">:mksession</a>| command.
+							<b class="vimtag">*<a name="ShellCmdPost">ShellCmdPost</a>*</b>
+ShellCmdPost			After executing a shell command with |<a href="various.html#:!cmd">:!cmd</a>|,
+				|<a href="various.html#:shell">:shell</a>|, |<a href="quickfix.html#:make">:make</a>| and |<a href="quickfix.html#:grep">:grep</a>|.  Can be used to
+				check for any changed files.
+							<b class="vimtag">*<a name="ShellFilterPost">ShellFilterPost</a>*</b>
+ShellFilterPost			After executing a shell command with
+				":<code class="special">{range}</code>!cmd", ":w !cmd" or ":r !cmd".
+				Can be used to check for any changed files.
+							<b class="vimtag">*<a name="SourcePre">SourcePre</a>*</b>
+SourcePre			Before sourcing a Vim script. |<a href="repeat.html#:source">:source</a>|
+				<code class="special">&lt;afile&gt;</code> is the name of the file being sourced.
+							<b class="vimtag">*<a name="SourcePost">SourcePost</a>*</b>
+SourcePost			After sourcing a Vim script. |<a href="repeat.html#:source">:source</a>|
+				<code class="special">&lt;afile&gt;</code> is the name of the file being sourced.
+				Not triggered when sourcing was interrupted.
+				Also triggered after a SourceCmd autocommand
+				was triggered.
+							<b class="vimtag">*<a name="SourceCmd">SourceCmd</a>*</b>
+SourceCmd			When sourcing a Vim script. |<a href="repeat.html#:source">:source</a>|
+				<code class="special">&lt;afile&gt;</code> is the name of the file being sourced.
+				The autocommand must source this file.
+				|<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+							<b class="vimtag">*<a name="SpellFileMissing">SpellFileMissing</a>*</b>
+SpellFileMissing		When trying to load a spell checking file and
+				it can't be found.  The pattern is matched
+				against the language.  <code class="special">&lt;amatch&gt;</code> is the
+				language, 'encoding' also matters.  See
+				|<a href="spell.html#spell-SpellFileMissing">spell-SpellFileMissing</a>|.
+							<b class="vimtag">*<a name="StdinReadPost">StdinReadPost</a>*</b>
+StdinReadPost			After reading from the stdin into the buffer,
+				before executing the modelines.  Only used
+				when the "-" argument was used when Vim was
+				started |<a href="starting.html#--">--</a>|.
+							<b class="vimtag">*<a name="StdinReadPre">StdinReadPre</a>*</b>
+StdinReadPre			Before reading from stdin into the buffer.
+				Only used when the "-" argument was used when
+				Vim was started |<a href="starting.html#--">--</a>|.
+							<b class="vimtag">*<a name="SwapExists">SwapExists</a>*</b>
+SwapExists			Detected an existing swap file when starting
+				to edit a file.  Only when it is possible to
+				select a way to handle the situation, when Vim
+				would ask the user what to do.
+				The |<a href="eval.html#v:swapname">v:swapname</a>| variable holds the name of
+				the swap file found, <code class="special">&lt;afile&gt;</code> the file being
+				edited.  |<a href="eval.html#v:swapcommand">v:swapcommand</a>| may contain a command
+				to be executed in the opened file.
+				The commands should set the |<a href="eval.html#v:swapchoice">v:swapchoice</a>|
+				variable to a string with one character to
+				tell Vim what should be done next:
+					'o'	open read-only
+					'e'	edit the file anyway
+					'r'	recover
+					'd'	delete the swap file
+					'q'	quit, don't edit the file
+					'a'	abort, like hitting <code class="keystroke">CTRL-C</code>
+				When set to an empty string the user will be
+				asked, as if there was no SwapExists autocmd.
+							<b class="vimtag">*<a name="E812">E812</a>*</b>
+				It is not allowed to change to another buffer,
+				change a buffer name or change directory
+				here.
+				<code class="special">{only available with the +eval feature}</code>
+							<b class="vimtag">*<a name="Syntax">Syntax</a>*</b>
+Syntax				When the 'syntax' option has been set.  The
+				pattern is matched against the syntax name.
+				<code class="special">&lt;afile&gt;</code> can be used for the name of the file
+				where this option was set, and <code class="special">&lt;amatch&gt;</code> for
+				the new value of 'syntax'.
+				See |<a href="syntax.html#:syn-on">:syn-on</a>|.
+							<b class="vimtag">*<a name="TabClosed">TabClosed</a>*</b>
+TabClosed			After closing a tab page.
+							<b class="vimtag">*<a name="TabEnter">TabEnter</a>*</b>
+TabEnter			Just after entering a tab page. |<a href="tabpage.html#tab-page">tab-page</a>|
+				After triggering the WinEnter and before
+				triggering the BufEnter event.
+							<b class="vimtag">*<a name="TabLeave">TabLeave</a>*</b>
+TabLeave			Just before leaving a tab page. |<a href="tabpage.html#tab-page">tab-page</a>|
+				A WinLeave event will have been triggered
+				first.
+							<b class="vimtag">*<a name="TabNew">TabNew</a>*</b>
+TabNew				When a tab page was created. |<a href="tabpage.html#tab-page">tab-page</a>|
+				A WinEnter event will have been triggered
+				first, TabEnter follows.
+							<b class="vimtag">*<a name="TermChanged">TermChanged</a>*</b>
+TermChanged			After the value of 'term' has changed.  Useful
+				for re-loading the syntax file to update the
+				colors, fonts and other terminal-dependent
+				settings.  Executed for all loaded buffers.
+							<b class="vimtag">*<a name="TerminalOpen">TerminalOpen</a>*</b>
+TerminalOpen			Just after a terminal buffer was created, with
+				`:terminal` or |<a href="terminal.html#term_start()">term_start()</a>|. This event is
+				triggered even if the buffer is created
+				without a window, with the ++hidden option.
+							<b class="vimtag">*<a name="TerminalWinOpen">TerminalWinOpen</a>*</b>
+TerminalWinOpen			Just after a terminal buffer was created, with
+				`:terminal` or |<a href="terminal.html#term_start()">term_start()</a>|. This event is
+				triggered only if the buffer is created
+				with a window.  Can be used to set window
+				local options for the terminal window.
+							<b class="vimtag">*<a name="TermResponse">TermResponse</a>*</b>
+TermResponse			After the response to |<a href="term.html#t_RV">t_RV</a>| is received from
+				the terminal.  The value of |<a href="eval.html#v:termresponse">v:termresponse</a>|
+				can be used to do things depending on the
+				terminal version.  <code class="note">Note</code> that this event may be
+				triggered halfway executing another event,
+				especially if file I/O, a shell command or
+				anything else that takes time is involved.
+							<b class="vimtag">*<a name="TextChanged">TextChanged</a>*</b>
+TextChanged			After a change was made to the text in the
+				current buffer in Normal mode.  That is after
+				|<a href="eval.html#b:changedtick">b:changedtick</a>| has changed (also when that
+				happened before the TextChanged autocommand
+				was defined).
+				Not triggered when there is typeahead or when
+				an operator is pending.
+				<code class="note">Note:</code> This can not be skipped with
+				`:noautocmd`.
+				Careful: This is triggered very often, don't
+				do anything that the user does not expect or
+				that is slow.
+							<b class="vimtag">*<a name="TextChangedI">TextChangedI</a>*</b>
+TextChangedI			After a change was made to the text in the
+				current buffer in Insert mode.
+				Not triggered when the popup menu is visible.
+				Otherwise the same as TextChanged.
+							<b class="vimtag">*<a name="TextChangedP">TextChangedP</a>*</b>
+TextChangedP			After a change was made to the text in the
+				current buffer in Insert mode, only when the
+				popup menu is visible.  Otherwise the same as
+				TextChanged.
+							<b class="vimtag">*<a name="TextYankPost">TextYankPost</a>*</b>
+TextYankPost			After text has been yanked or deleted in the
+				current buffer.  The following values of
+				|<a href="eval.html#v:event">v:event</a>| can be used to determine the operation
+				that triggered this autocmd:
+				   operator	The operation performed.
+				   regcontents	Text that was stored in the
+						register, as a list of lines,
+						like with:
+<code class="example">						getreg(r, 1, 1)</code>
+				   regname	Name of the |<a href="sponsor.html#register">register</a>| or
+						empty string for the unnamed
+						register.
+				   regtype	Type of the register, see
+						|<a href="eval.html#getregtype()">getregtype()</a>|.
+				Not triggered when |<a href="change.html#quote_">quote_</a>| is used nor when
+				called recursively.
+				It is not allowed to change the buffer text,
+				see |<a href="eval.html#textlock">textlock</a>|.
+				<code class="special">{only when compiled with the +eval feature}</code>
+							<b class="vimtag">*<a name="User">User</a>*</b>
+User				Never executed automatically.  To be used for
+				autocommands that are only executed with
+				":doautocmd".
+				<code class="note">Note</code> that when `:doautocmd User MyEvent` is
+				used while there are no matching autocommands,
+				you will get an error.  If you don't want
+				that, define a dummy autocommand yourself.
+							<b class="vimtag">*<a name="UserGettingBored">UserGettingBored</a>*</b>
+UserGettingBored		When the user presses the same key 42 times.
+				Just kidding! :-)
+							<b class="vimtag">*<a name="VimEnter">VimEnter</a>*</b>
+VimEnter			After doing all the startup stuff, including
+				loading .vimrc files, executing the "-c cmd"
+				arguments, creating all windows and loading
+				the buffers in them.
+				Just before this event is triggered the
+				|<a href="eval.html#v:vim_did_enter">v:vim_did_enter</a>| variable is set, so that you
+				can do:
+<code class="example">				   if v:vim_did_enter</code>
+<code class="example">				     call s:init()</code>
+<code class="example">				   else</code>
+<code class="example">				     au VimEnter * call s:init()</code>
+<code class="example">				   endif</code>
+							<b class="vimtag">*<a name="VimLeave">VimLeave</a>*</b>
+VimLeave			Before exiting Vim, just after writing the
+				.viminfo file.  Executed only once, like
+				VimLeavePre.
+				To detect an abnormal exit use |<a href="eval.html#v:dying">v:dying</a>|.
+				When v:dying is 2 or more this event is not
+				triggered.
+							<b class="vimtag">*<a name="VimLeavePre">VimLeavePre</a>*</b>
+VimLeavePre			Before exiting Vim, just before writing the
+				.viminfo file.  This is executed only once,
+				if there is a match with the name of what
+				happens to be the current buffer when exiting.
+				Mostly useful with a "*" pattern.
+<code class="example">	:autocmd VimLeavePre * call CleanupStuff()</code>
+				To detect an abnormal exit use |<a href="eval.html#v:dying">v:dying</a>|.
+				When v:dying is 2 or more this event is not
+				triggered.
+							<b class="vimtag">*<a name="VimResized">VimResized</a>*</b>
+VimResized			After the Vim window was resized, thus 'lines'
+				and/or 'columns' changed.  Not when starting
+				up though.
+							<b class="vimtag">*<a name="WinEnter">WinEnter</a>*</b>
+WinEnter			After entering another window.  Not done for
+				the first window, when Vim has just started.
+				Useful for setting the window height.
+				If the window is for another buffer, Vim
+				executes the BufEnter autocommands after the
+				WinEnter autocommands.
+				<code class="note">Note:</code> For split and tabpage commands the
+				WinEnter event is triggered after the split
+				or tab command but before the file is loaded.
+
+							<b class="vimtag">*<a name="WinLeave">WinLeave</a>*</b>
+WinLeave			Before leaving a window.  If the window to be
+				entered next is for a different buffer, Vim
+				executes the BufLeave autocommands before the
+				WinLeave autocommands (but not for ":new").
+				Not used for ":qa" or ":q" when exiting Vim.
+
+							<b class="vimtag">*<a name="WinNew">WinNew</a>*</b>
+WinNew				When a new window was created.  Not done for
+				the first window, when Vim has just started.
+				Before a WinEnter event.
+
+</pre><hr/><pre>6. Patterns					<b class="vimtag">*<a name="autocmd-patterns">autocmd-patterns</a>*</b> <b class="vimtag">*<a name="{pat}">{pat}</a>*</b>
+
+The <code class="special">{pat}</code> argument can be a comma separated list.  This works as if the
+command was given with each pattern separately.  Thus this command:
+<code class="example">	:autocmd BufRead <b class="vimtag">*<a name=".txt,">.txt,</a>*</b>.info set et</code>
+Is equivalent to:
+<code class="example">	:autocmd BufRead *.txt set et</code>
+<code class="example">	:autocmd BufRead *.info set et</code>
+<code class="example"></code>
+The file pattern <code class="special">{pat}</code> is tested for a match against the file name in one of
+two ways:
+1. When there is no '/' in the pattern, Vim checks for a match against only
+   the tail part of the file name (without its leading directory path).
+2. When there is a '/' in the pattern, Vim checks for a match against both the
+   short file name (as you typed it) and the full file name (after expanding
+   it to a full path and resolving symbolic links).
+
+The special pattern <code class="special">&lt;buffer&gt;</code> or <code class="special">&lt;buffer=N&gt;</code> is used for buffer-local
+autocommands |<a href="autocmd.html#autocmd-buflocal">autocmd-buflocal</a>|.  This pattern is not matched against the name
+of a buffer.
+
+Examples:
+<code class="example">	:autocmd BufRead *.txt		set et</code>
+Set the 'et' option for all text files.
+<code class="example"></code>
+<code class="example">	:autocmd BufRead /vim/src/*.c	set cindent</code>
+Set the 'cindent' option for C files in the /vim/src directory.
+<code class="example"></code>
+<code class="example">	:autocmd BufRead /tmp/*.c	set ts=5</code>
+If you have a link from "/tmp/test.c" to "/home/nobody/vim/src/test.c", and
+you start editing "/tmp/test.c", this autocommand will match.
+
+<code class="note">Note:</code>  To match part of a path, but not from the root directory, use a '*' as
+the first character.  Example:
+<code class="example">	:autocmd BufRead <b class="vimtag">*<a name="%2Fdoc%2F">/doc/</a>*</b>.txt	set tw=78</code>
+This autocommand will for example be executed for "/tmp/doc/xx.txt" and
+"/usr/home/piet/doc/yy.txt".  The number of directories does not matter here.
+
+
+The file name that the pattern is matched against is after expanding
+wildcards.  Thus if you issue this command:
+<code class="example">	:e $ROOTDIR/main.$EXT</code>
+The argument is first expanded to:
+<code class="example">	/usr/root/main.py</code>
+Before it's matched with the pattern of the autocommand.  Careful with this
+when using events like FileReadCmd, the value of <code class="special">&lt;amatch&gt;</code> may not be what you
+expect.
+
+
+Environment variables can be used in a pattern:
+<code class="example">	:autocmd BufRead $VIMRUNTIME/doc/*.txt  set expandtab</code>
+And ~ can be used for the home directory (if $HOME is defined):
+<code class="example">	:autocmd BufWritePost ~/.vimrc   so ~/.vimrc</code>
+<code class="example">	:autocmd BufRead ~archive/*      set readonly</code>
+The environment variable is expanded when the autocommand is defined, not when
+the autocommand is executed.  This is different from the command!
+
+							<b class="vimtag">*<a name="file-pattern">file-pattern</a>*</b>
+The pattern is interpreted like mostly used in file names:
+	*	matches any sequence of characters; Unusual: includes path
+		separators
+	?	matches any single character
+	\?	matches a '?'
+	.	matches a '.'
+	~	matches a '~'
+	,	separates patterns
+	\,	matches a ','
+	<code class="special">{ }</code>	like \( \) in a |<a href="pattern.html#pattern">pattern</a>|
+	,	inside <code class="special">{ }</code>: like \|<code class="badlink"> in a </code>|pattern|
+	\}	literal }
+	\{	literal {
+	\\\<code class="special">{n,m\}</code>  like \<code class="special">{n,m}</code> in a |<a href="pattern.html#pattern">pattern</a>|
+	\	special meaning like in a |<a href="pattern.html#pattern">pattern</a>|
+	[ch]	matches 'c' or 'h'
+	[^ch]   match any character but 'c' and 'h'
+
+<code class="note">Note</code> that for all systems the '/' character is used for path separator (even
+for MS-Windows).  This was done because the backslash is difficult to use in a
+pattern and to make the autocommands portable across different systems.
+
+It is possible to use |<a href="pattern.html#pattern">pattern</a>| items, but they may not work as expected,
+because of the translation done for the above.
+
+							<b class="vimtag">*<a name="autocmd-changes">autocmd-changes</a>*</b>
+Matching with the pattern is done when an event is triggered.  Changing the
+buffer name in one of the autocommands, or even deleting the buffer, does not
+change which autocommands will be executed.  Example:
+<code class="example"></code>
+<code class="example">	au BufEnter *.foo  bdel</code>
+<code class="example">	au BufEnter *.foo  set modified</code>
+<code class="example"></code>
+This will delete the current buffer and then set 'modified' in what has become
+the current buffer instead.  Vim doesn't take into account that "*.foo"
+doesn't match with that buffer name.  It matches "*.foo" with the name of the
+buffer at the moment the event was triggered.
+
+However, buffer-local autocommands will not be executed for a buffer that has
+been wiped out with |<a href="windows.html#:bwipe">:bwipe</a>|.  After deleting the buffer with |<a href="windows.html#:bdel">:bdel</a>| the
+buffer actually still exists (it becomes unlisted), thus the autocommands are
+still executed.
+
+</pre><hr/><pre>7. Buffer-local autocommands	<b class="vimtag">*<a name="autocmd-buflocal">autocmd-buflocal</a>*</b> <b class="vimtag">*<a name="autocmd-buffer-local">autocmd-buffer-local</a>*</b>
+					<b class="vimtag">*<a name="%3Cbuffer%20N%3E">&lt;buffer=N&gt;</a>*</b> <b class="vimtag">*<a name="%3Cbuffer%20abuf%3E">&lt;buffer=abuf&gt;</a>*</b> <b class="vimtag">*<a name="E680">E680</a>*</b>
+
+Buffer-local autocommands are attached to a specific buffer.  They are useful
+if the buffer does not have a name and when the name does not match a specific
+pattern.  But it also means they must be explicitly added to each buffer.
+
+Instead of a pattern buffer-local autocommands use one of these forms:
+	<code class="special">&lt;buffer&gt;</code>	current buffer
+	<code class="special">&lt;buffer=99&gt;</code>	buffer number 99
+	<code class="special">&lt;buffer=abuf&gt;</code>	using <code class="special">&lt;abuf&gt;</code> (only when executing autocommands)
+			|<a href="cmdline.html#%3Cabuf%3E">&lt;abuf&gt;</a>|
+
+Examples:
+<code class="example">    :au CursorHold <code class="special">&lt;buffer&gt;</code>  echo 'hold'</code>
+<code class="example">    :au CursorHold <code class="special">&lt;buffer=33&gt;</code>  echo 'hold'</code>
+<code class="example">    :au BufNewFile * au CursorHold <code class="special">&lt;buffer=abuf&gt;</code>  echo 'hold'</code>
+<code class="example"></code>
+All the commands for autocommands also work with buffer-local autocommands,
+simply use the special string instead of the pattern.  Examples:
+<code class="example">    :au! * <code class="special">&lt;buffer&gt;</code>		     " remove buffer-local autocommands for</code>
+<code class="example">				     " current buffer</code>
+<code class="example">    :au! * <code class="special">&lt;buffer=33&gt;</code>		     " remove buffer-local autocommands for</code>
+<code class="example">				     " buffer #33</code>
+<code class="example">    :bufdo :au! CursorHold <code class="special">&lt;buffer&gt;</code>  " remove autocmd for given event for all</code>
+<code class="example">				     " buffers</code>
+<code class="example">    :au * <code class="special">&lt;buffer&gt;</code>		     " list buffer-local autocommands for</code>
+<code class="example">				     " current buffer</code>
+<code class="example"></code>
+<code class="note">Note</code> that when an autocommand is defined for the current buffer, it is stored
+with the buffer number.  Thus it uses the form "<code class="special">&lt;buffer=12&gt;</code>", where 12 is the
+number of the current buffer.  You will see this when listing autocommands,
+for example.
+
+To test for presence of buffer-local autocommands use the |<a href="eval.html#exists()">exists()</a>| function
+as follows:
+<code class="example">    :if exists("#CursorHold#<code class="special">&lt;buffer=12&gt;</code>") |<code class="badlink"> ... </code>| endif</code>
+<code class="example">    :if exists("#CursorHold#<code class="special">&lt;buffer&gt;</code>") |<code class="badlink"> ... </code>| endif    " for current buffer</code>
+<code class="example"></code>
+When a buffer is wiped out its buffer-local autocommands are also gone, of
+course.  <code class="note">Note</code> that when deleting a buffer, e.g., with ":bdel", it is only
+unlisted, the autocommands are still present.  In order to see the removal of
+buffer-local autocommands:
+<code class="example">    :set verbose=6</code>
+<code class="example"></code>
+It is not possible to define buffer-local autocommands for a non-existent
+buffer.
+
+</pre><hr/><pre>8. Groups						<b class="vimtag">*<a name="autocmd-groups">autocmd-groups</a>*</b>
+
+Autocommands can be put together in a group.  This is useful for removing or
+executing a group of autocommands.  For example, all the autocommands for
+syntax highlighting are put in the "highlight" group, to be able to execute
+":doautoall highlight BufRead" when the GUI starts.
+
+When no specific group is selected, Vim uses the default group.  The default
+group does not have a name.  You cannot execute the autocommands from the
+default group separately; you can execute them only by executing autocommands
+for all groups.
+
+Normally, when executing autocommands automatically, Vim uses the autocommands
+for all groups.  The group only matters when executing autocommands with
+":doautocmd" or ":doautoall", or when defining or deleting autocommands.
+
+The group name can contain any characters except white space.  The group name
+"end" is reserved (also in uppercase).
+
+The group name is case sensitive.  <code class="note">Note</code> that this is different from the event
+name!
+
+							<b class="vimtag">*<a name=":aug">:aug</a>*</b> <b class="vimtag">*<a name=":augroup">:augroup</a>*</b>
+:aug[roup] <code class="special">{name}</code>		Define the autocmd group name for the
+				following ":autocmd" commands.  The name "end"
+				or "END" selects the default group.
+				To avoid confusion, the name should be
+				different from existing <code class="special">{event}</code> names, as this
+				most likely will not do what you intended.
+
+					<b class="vimtag">*<a name=":augroup-delete">:augroup-delete</a>*</b> <b class="vimtag">*<a name="E367">E367</a>*</b> <b class="vimtag">*<a name="W19">W19</a>*</b> <b class="vimtag">*<a name="E936">E936</a>*</b>
+:aug[roup]! <code class="special">{name}</code>		Delete the autocmd group <code class="special">{name}</code>.  Don't use
+				this if there is still an autocommand using
+				this group!  You will get a warning if doing
+				it anyway. when the group is the current group
+				you will get error E936.
+
+To enter autocommands for a specific group, use this method:
+1. Select the group with ":augroup <code class="special">{name}</code>".
+2. Delete any old autocommands with ":au!".
+3. Define the autocommands.
+4. Go back to the default group with "augroup END".
+
+Example:
+<code class="example">	:augroup uncompress</code>
+<code class="example">	:  au!</code>
+<code class="example">	:  au BufEnter *.gz	%!gunzip</code>
+<code class="example">	:augroup END</code>
+<code class="example"></code>
+This prevents having the autocommands defined twice (e.g., after sourcing the
+.vimrc file again).
+
+</pre><hr/><pre>9. Executing autocommands				<b class="vimtag">*<a name="autocmd-execute">autocmd-execute</a>*</b>
+
+Vim can also execute Autocommands non-automatically.  This is useful if you
+have changed autocommands, or when Vim has executed the wrong autocommands
+(e.g., the file pattern match was wrong).
+
+<code class="note">Note</code> that the 'eventignore' option applies here too.  Events listed in this
+option will not cause any commands to be executed.
+
+				<b class="vimtag">*<a name=":do">:do</a>*</b> <b class="vimtag">*<a name=":doau">:doau</a>*</b> <b class="vimtag">*<a name=":doaut">:doaut</a>*</b> <b class="vimtag">*<a name=":doautocmd">:doautocmd</a>*</b> <b class="vimtag">*<a name="E217">E217</a>*</b>
+:do[autocmd] [<code class="special">&lt;nomodeline&gt;</code>] [group] <code class="special">{event}</code> [fname]
+			Apply the autocommands matching [fname] (default:
+			current file name) for <code class="special">{event}</code> to the current buffer.
+			You can use this when the current file name does not
+			match the right pattern, after changing settings, or
+			to execute autocommands for a certain event.
+			It's possible to use this inside an autocommand too,
+			so you can base the autocommands for one extension on
+			another extension.  Example:
+<code class="example">				:au BufEnter *.cpp so ~/.vimrc_cpp</code>
+<code class="example">				:au BufEnter *.cpp doau BufEnter x.c</code>
+			Be careful to avoid endless loops.  See
+			|<a href="autocmd.html#autocmd-nested">autocmd-nested</a>|.
+
+			When the [group] argument is not given, Vim executes
+			the autocommands for all groups.  When the [group]
+			argument is included, Vim executes only the matching
+			autocommands for that group.  <code class="note">Note:</code> if you use an
+			undefined group name, Vim gives you an error message.
+							<b class="vimtag">*<a name="%3Cnomodeline%3E">&lt;nomodeline&gt;</a>*</b>
+			After applying the autocommands the modelines are
+			processed, so that their settings overrule the
+			settings from autocommands, like what happens when
+			editing a file. This is skipped when the <code class="special">&lt;nomodeline&gt;</code>
+			argument is present. You probably want to use
+			<code class="special">&lt;nomodeline&gt;</code> for events that are not used when loading
+			a buffer, such as |<a href="autocmd.html#User">User</a>|.
+			Processing modelines is also skipped when no
+			matching autocommands were executed.
+
+						<b class="vimtag">*<a name=":doautoa">:doautoa</a>*</b> <b class="vimtag">*<a name=":doautoall">:doautoall</a>*</b>
+:doautoa[ll] [<code class="special">&lt;nomodeline&gt;</code>] [group] <code class="special">{event}</code> [fname]
+			Like ":doautocmd", but apply the autocommands to each
+			loaded buffer.  <code class="note">Note</code> that [fname] is used to select
+			the autocommands, not the buffers to which they are
+			applied.
+			Careful: Don't use this for autocommands that delete a
+			buffer, change to another buffer or change the
+			contents of a buffer; the result is unpredictable.
+			This command is intended for autocommands that set
+			options, change highlighting, and things like that.
+
+</pre><hr/><pre>10. Using autocommands					<b class="vimtag">*<a name="autocmd-use">autocmd-use</a>*</b>
+
+For WRITING FILES there are four possible sets of events.  Vim uses only one
+of these sets for a write command:
+
+BufWriteCmd	BufWritePre	BufWritePost	writing the whole buffer
+		FilterWritePre	FilterWritePost	writing to filter temp file
+FileAppendCmd	FileAppendPre	FileAppendPost	appending to a file
+FileWriteCmd	FileWritePre	FileWritePost	any other file write
+
+When there is a matching "*Cmd" autocommand, it is assumed it will do the
+writing.  No further writing is done and the other events are not triggered.
+|<a href="autocmd.html#Cmd-event">Cmd-event</a>|
+
+<code class="note">Note</code> that the *WritePost commands should undo any changes to the buffer that
+were caused by the *WritePre commands; otherwise, writing the file will have
+the side effect of changing the buffer.
+
+Before executing the autocommands, the buffer from which the lines are to be
+written temporarily becomes the current buffer.  Unless the autocommands
+change the current buffer or delete the previously current buffer, the
+previously current buffer is made the current buffer again.
+
+The <b class="vimtag">*<a name="WritePre and ">WritePre and </a>*</b>AppendPre autocommands must not delete the buffer from
+which the lines are to be written.
+
+The '[ and '] marks have a special position:
+- Before the *ReadPre event the '[ mark is set to the line just above where
+  the new lines will be inserted.
+- Before the *ReadPost event the '[ mark is set to the first line that was
+  just read, the '] mark to the last line.
+- Before executing the <b class="vimtag">*<a name="WriteCmd, ">WriteCmd, </a>*</b>WritePre and *AppendPre autocommands the '[
+  mark is set to the first line that will be written, the '] mark to the last
+  line.
+Careful: '[ and '] change when using commands that change the buffer.
+
+In commands which expect a file name, you can use "<code class="special">&lt;afile&gt;</code>" for the file name
+that is being read |<a href="cmdline.html#:%3Cafile%3E">:&lt;afile&gt;</a>| (you can also use "%" for the current file
+name).  "<code class="special">&lt;abuf&gt;</code>" can be used for the buffer number of the currently effective
+buffer.  This also works for buffers that don't have a name.  But it doesn't
+work for files without a buffer (e.g., with ":r file").
+
+							<b class="vimtag">*<a name="gzip-example">gzip-example</a>*</b>
+Examples for reading and writing compressed files:
+<code class="example">  :augroup gzip</code>
+<code class="example">  :  autocmd!</code>
+<code class="example">  :  autocmd BufReadPre,FileReadPre	*.gz set bin</code>
+<code class="example">  :  autocmd BufReadPost,FileReadPost	*.gz '[,']!gunzip</code>
+<code class="example">  :  autocmd BufReadPost,FileReadPost	*.gz set nobin</code>
+<code class="example">  :  autocmd BufReadPost,FileReadPost	*.gz execute ":doautocmd BufReadPost " . expand("%:r")</code>
+<code class="example">  :  autocmd BufWritePost,FileWritePost	*.gz !mv <code class="special">&lt;afile&gt;</code> <code class="special">&lt;afile&gt;</code>:r</code>
+<code class="example">  :  autocmd BufWritePost,FileWritePost	*.gz !gzip <code class="special">&lt;afile&gt;</code>:r</code>
+<code class="example"></code>
+<code class="example">  :  autocmd FileAppendPre		*.gz !gunzip <code class="special">&lt;afile&gt;</code></code>
+<code class="example">  :  autocmd FileAppendPre		*.gz !mv <code class="special">&lt;afile&gt;</code>:r <code class="special">&lt;afile&gt;</code></code>
+<code class="example">  :  autocmd FileAppendPost		*.gz !mv <code class="special">&lt;afile&gt;</code> <code class="special">&lt;afile&gt;</code>:r</code>
+<code class="example">  :  autocmd FileAppendPost		*.gz !gzip <code class="special">&lt;afile&gt;</code>:r</code>
+<code class="example">  :augroup END</code>
+<code class="example"></code>
+The "gzip" group is used to be able to delete any existing autocommands with
+":autocmd!", for when the file is sourced twice.
+
+("<code class="special">&lt;afile&gt;</code>:r" is the file name without the extension, see |<a href="cmdline.html#:_%:">:_%:</a>|)
+
+The commands executed for the BufNewFile, BufRead/BufReadPost, BufWritePost,
+FileAppendPost and VimLeave events do not set or reset the changed flag of the
+buffer.  When you decompress the buffer with the BufReadPost autocommands, you
+can still exit with ":q".  When you use ":undo" in BufWritePost to undo the
+changes made by BufWritePre commands, you can still do ":q" (this also makes
+"ZZ" work).  If you do want the buffer to be marked as modified, set the
+'modified' option.
+
+To execute Normal mode commands from an autocommand, use the ":normal"
+command.  Use with care!  If the Normal mode command is not finished, the user
+needs to type characters (e.g., after ":normal m" you need to type a mark
+name).
+
+If you want the buffer to be unmodified after changing it, reset the
+'modified' option.  This makes it possible to exit the buffer with ":q"
+instead of ":q!".
+
+							<b class="vimtag">*<a name="autocmd-nested">autocmd-nested</a>*</b> <b class="vimtag">*<a name="E218">E218</a>*</b>
+By default, autocommands do not nest.  For example, if you use ":e" or ":w" in
+an autocommand, Vim does not execute the BufRead and BufWrite autocommands for
+those commands.  If you do want this, use the "nested" flag for those commands
+in which you want nesting.  For example:
+<code class="example">  :autocmd FileChangedShell *.c ++nested e!</code>
+The nesting is limited to 10 levels to get out of recursive loops.
+
+It's possible to use the ":au" command in an autocommand.  This can be a
+self-modifying command!  This can be useful for an autocommand that should
+execute only once.
+
+If you want to skip autocommands for one command, use the |<a href="autocmd.html#:noautocmd">:noautocmd</a>| command
+modifier or the 'eventignore' option.
+
+<code class="note">Note:</code> When reading a file (with ":read file" or with a filter command) and the
+last line in the file does not have an <code class="special">&lt;EOL&gt;</code>, Vim remembers this.  At the next
+write (with ":write file" or with a filter command), if the same line is
+written again as the last line in a file AND 'binary' is set, Vim does not
+supply an <code class="special">&lt;EOL&gt;</code>.  This makes a filter command on the just read lines write the
+same file as was read, and makes a write command on just filtered lines write
+the same file as was read from the filter.  For example, another way to write
+a compressed file:
+<code class="example"></code>
+<code class="example">  :autocmd FileWritePre *.gz   set bin|'[,']!gzip</code>
+<code class="example">  :autocmd FileWritePost *.gz  undo|set nobin</code>
+
+							<b class="vimtag">*<a name="autocommand-pattern">autocommand-pattern</a>*</b>
+You can specify multiple patterns, separated by commas.  Here are some
+examples:
+<code class="example"></code>
+<code class="example">  :autocmd BufRead   *		set tw=79 nocin ic infercase fo=2croq</code>
+<code class="example">  :autocmd BufRead   .letter	set tw=72 fo=2tcrq</code>
+<code class="example">  :autocmd BufEnter  .letter	set dict=/usr/lib/dict/words</code>
+<code class="example">  :autocmd BufLeave  .letter	set dict=</code>
+<code class="example">  :autocmd BufRead,BufNewFile   <b class="vimtag">*<a name=".c,">.c,</a>*</b>.h	set tw=0 cin noic</code>
+<code class="example">  :autocmd BufEnter  <b class="vimtag">*<a name=".c,">.c,</a>*</b>.h	abbr FOR for (i = 0; i <code class="special">&lt; 3; ++i)&lt;CR&gt;</code><code class="special">{<code class="special">&lt;CR&gt;</code>}</code><code class="special">&lt;Esc&gt;</code>O</code>
+<code class="example">  :autocmd BufLeave  <b class="vimtag">*<a name=".c,">.c,</a>*</b>.h	unabbr FOR</code>
+<code class="example"></code>
+For makefiles (makefile, Makefile, imakefile, makefile.unix, etc.):
+<code class="example"></code>
+<code class="example">  :autocmd BufEnter  ?akefile*	set include=^s\=include</code>
+<code class="example">  :autocmd BufLeave  ?akefile*	set include&amp;</code>
+<code class="example"></code>
+To always start editing C files at the first function:
+<code class="example"></code>
+<code class="example">  :autocmd BufRead   <b class="vimtag">*<a name=".c,">.c,</a>*</b>.h	1;/^{</code>
+<code class="example"></code>
+Without the "1;" above, the search would start from wherever the file was
+entered, rather than from the start of the file.
+
+						<b class="vimtag">*<a name="skeleton">skeleton</a>*</b> <b class="vimtag">*<a name="template">template</a>*</b>
+To read a skeleton (template) file when opening a new file:
+<code class="example"></code>
+<code class="example">  :autocmd BufNewFile  *.c	0r ~/vim/skeleton.c</code>
+<code class="example">  :autocmd BufNewFile  *.h	0r ~/vim/skeleton.h</code>
+<code class="example">  :autocmd BufNewFile  *.java	0r ~/vim/skeleton.java</code>
+<code class="example"></code>
+To insert the current date and time in a *.html file when writing it:
+<code class="example"></code>
+<code class="example">  :autocmd BufWritePre,FileWritePre *.html   ks|<code class="badlink">call LastMod()</code>|'s</code>
+<code class="example">  :fun LastMod()</code>
+<code class="example">  :  if line("$") &gt; 20</code>
+<code class="example">  :    let l = 20</code>
+<code class="example">  :  else</code>
+<code class="example">  :    let l = line("$")</code>
+<code class="example">  :  endif</code>
+<code class="example">  :  exe "1," . l . "g/Last modified: /s/Last modified: .*/Last modified: " .</code>
+<code class="example">  :  \ strftime("%Y %b %d")</code>
+<code class="example">  :endfun</code>
+<code class="example"></code>
+You need to have a line "Last modified: <code class="special">&lt;date time&gt;</code>" in the first 20 lines
+of the file for this to work.  Vim replaces <code class="special">&lt;date time&gt;</code> (and anything in the
+same line after it) with the current date and time.  Explanation:
+	ks		mark current position with mark 's'
+	call LastMod()  call the LastMod() function to do the work
+	's		return the cursor to the old position
+The LastMod() function checks if the file is shorter than 20 lines, and then
+uses the ":g" command to find lines that contain "Last modified: ".  For those
+lines the ":s" command is executed to replace the existing date with the
+current one.  The ":execute" command is used to be able to use an expression
+for the ":g" and ":s" commands.  The date is obtained with the strftime()
+function.  You can change its argument to get another date string.
+
+When entering :autocmd on the command-line, completion of events and command
+names may be done (with <code class="special">&lt;Tab&gt;</code>, <code class="keystroke">CTRL-D</code>, etc.) where appropriate.
+
+Vim executes all matching autocommands in the order that you specify them.
+It is recommended that your first autocommand be used for all files by using
+"*" as the file pattern.  This means that you can define defaults you like
+here for any settings, and if there is another matching autocommand it will
+override these.  But if there is no other matching autocommand, then at least
+your default settings are recovered (if entering this file from another for
+which autocommands did match).  <code class="note">Note</code> that "*" will also match files starting
+with ".", unlike Unix shells.
+
+						    <b class="vimtag">*<a name="autocmd-searchpat">autocmd-searchpat</a>*</b>
+Autocommands do not change the current search patterns.  Vim saves the current
+search patterns before executing autocommands then restores them after the
+autocommands finish.  This means that autocommands do not affect the strings
+highlighted with the 'hlsearch' option.  Within autocommands, you can still
+use search patterns normally, e.g., with the "n" command.
+If you want an autocommand to set the search pattern, such that it is used
+after the autocommand finishes, use the ":let @/ =" command.
+The search-highlighting cannot be switched off with ":nohlsearch" in an
+autocommand.  Use the 'h' flag in the 'viminfo' option to disable search-
+highlighting when starting Vim.
+
+							<b class="vimtag">*<a name="Cmd-event">Cmd-event</a>*</b>
+When using one of the "*Cmd" events, the matching autocommands are expected to
+do the file reading, writing or sourcing.  This can be used when working with
+a special kind of file, for example on a remote system.
+CAREFUL: If you use these events in a wrong way, it may have the effect of
+making it impossible to read or write the matching files!  Make sure you test
+your autocommands properly.  Best is to use a pattern that will never match a
+normal file name, for example "ftp://*".
+
+When defining a BufReadCmd it will be difficult for Vim to recover a crashed
+editing session.  When recovering from the original file, Vim reads only those
+parts of a file that are not found in the swap file.  Since that is not
+possible with a BufReadCmd, use the |<a href="recover.html#:preserve">:preserve</a>| command to make sure the
+original file isn't needed for recovery.  You might want to do this only when
+you expect the file to be modified.
+
+For file read and write commands the |<a href="eval.html#v:cmdarg">v:cmdarg</a>| variable holds the "++enc="
+and "++ff=" argument that are effective.  These should be used for the command
+that reads/writes the file.  The |<a href="eval.html#v:cmdbang">v:cmdbang</a>| variable is one when "!" was
+used, zero otherwise.
+
+See the $VIMRUNTIME/plugin/netrwPlugin.vim for examples.
+
+</pre><hr/><pre>11. Disabling autocommands				<b class="vimtag">*<a name="autocmd-disable">autocmd-disable</a>*</b>
+
+To disable autocommands for some time use the 'eventignore' option.  <code class="note">Note</code> that
+this may cause unexpected behavior, make sure you restore 'eventignore'
+afterwards, using a |<a href="eval.html#:try">:try</a>| block with |<a href="eval.html#:finally">:finally</a>|.
+
+							<b class="vimtag">*<a name=":noautocmd">:noautocmd</a>*</b> <b class="vimtag">*<a name=":noa">:noa</a>*</b>
+To disable autocommands for just one command use the ":noautocmd" command
+modifier.  This will set 'eventignore' to "all" for the duration of the
+following command.  Example:
+<code class="example"></code>
+<code class="example">	:noautocmd w fname.gz</code>
+<code class="example"></code>
+This will write the file without triggering the autocommands defined by the
+gzip plugin.
+
+<code class="note">Note</code> that some autocommands are not triggered right away, but only later.
+This specifically applies to |<a href="autocmd.html#CursorMoved">CursorMoved</a>| and |<a href="autocmd.html#TextChanged">TextChanged</a>|.
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>

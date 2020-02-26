@@ -1,0 +1,2678 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>VIM: usr_41</title>
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
+</head>
+<body>
+<h2>USR_41</h2>
+<pre>
+<b class="vimtag">*<a name="usr_41.txt">usr_41.txt</a>*</b>	For Vim version 8.2.  Last change: 2019 Dec 17
+
+		     VIM USER MANUAL - by Bram Moolenaar
+
+			      Write a Vim script
+
+
+The Vim script language is used for the startup vimrc file, syntax files, and
+many other things.  This chapter explains the items that can be used in a Vim
+script.  There are a lot of them, thus this is a long chapter.
+
+|<a href="usr_41.html#41.1">41.1</a>|	Introduction
+|<a href="usr_41.html#41.2">41.2</a>|	Variables
+|<a href="usr_41.html#41.3">41.3</a>|	Expressions
+|<a href="usr_41.html#41.4">41.4</a>|	Conditionals
+|<a href="usr_41.html#41.5">41.5</a>|	Executing an expression
+|<a href="usr_41.html#41.6">41.6</a>|	Using functions
+|<a href="usr_41.html#41.7">41.7</a>|	Defining a function
+|<a href="usr_41.html#41.8">41.8</a>|	Lists and Dictionaries
+|<a href="usr_41.html#41.9">41.9</a>|	Exceptions
+|<a href="usr_41.html#41.10">41.10</a>|	Various remarks
+|<a href="usr_41.html#41.11">41.11</a>|	Writing a plugin
+|<a href="usr_41.html#41.12">41.12</a>|	Writing a filetype plugin
+|<a href="usr_41.html#41.13">41.13</a>|	Writing a compiler plugin
+|<a href="usr_41.html#41.14">41.14</a>|	Writing a plugin that loads quickly
+|<a href="usr_41.html#41.15">41.15</a>|	Writing library scripts
+|<a href="usr_41.html#41.16">41.16</a>|	Distributing Vim scripts
+
+     Next chapter: |<a href="usr_42.html#usr_42.txt">usr_42</a>|  Add new menus
+ Previous chapter: |<a href="usr_40.html#usr_40.txt">usr_40</a>|  Make new commands
+Table of contents: |<a href="usr_toc.html#usr_toc.txt">usr_toc</a>|
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.1">41.1</a>*</b>	Introduction				<b class="vimtag">*<a name="vim-script-intro">vim-script-intro</a>*</b> <b class="vimtag">*<a name="script">script</a>*</b>
+
+Your first experience with Vim scripts is the vimrc file.  Vim reads it when
+it starts up and executes the commands.  You can set options to values you
+prefer.  And you can use any colon command in it (commands that start with a
+":"; these are sometimes referred to as Ex commands or command-line commands).
+   Syntax files are also Vim scripts.  As are files that set options for a
+specific file type.  A complicated macro can be defined by a separate Vim
+script file.  You can think of other uses yourself.
+
+Let's start with a simple example:
+<code class="example"></code>
+<code class="example">	:let i = 1</code>
+<code class="example">	:while i &lt; 5</code>
+<code class="example">	:  echo "count is" i</code>
+<code class="example">	:  let i += 1</code>
+<code class="example">	:endwhile</code>
+
+	<code class="note">Note:</code>
+	The ":" characters are not really needed here.  You only need to use
+	them when you type a command.  In a Vim script file they can be left
+	out.  We will use them here anyway to make clear these are colon
+	commands and make them stand out from Normal mode commands.
+	<code class="note">Note:</code>
+	You can try out the examples by yanking the lines from the text here
+	and executing them with :@"
+
+The output of the example code is:
+
+<code class="section">	count is 1 </code>
+<code class="section">	count is 2 </code>
+<code class="section">	count is 3 </code>
+<code class="section">	count is 4 </code>
+
+In the first line the ":let" command assigns a value to a variable.  The
+generic form is:
+<code class="example"></code>
+<code class="example">	:let <code class="special">{variable}</code> = <code class="special">{expression}</code></code>
+<code class="example"></code>
+In this case the variable name is "i" and the expression is a simple value,
+the number one.
+   The ":while" command starts a loop.  The generic form is:
+<code class="example"></code>
+<code class="example">	:while <code class="special">{condition}</code></code>
+<code class="example">	:  <code class="special">{statements}</code></code>
+<code class="example">	:endwhile</code>
+<code class="example"></code>
+The statements until the matching ":endwhile" are executed for as long as the
+condition is true.  The condition used here is the expression "i &lt; 5".  This
+is true when the variable i is smaller than five.
+	<code class="note">Note:</code>
+	If you happen to write a while loop that keeps on running, you can
+	interrupt it by pressing <code class="keystroke">CTRL-C</code> (<code class="keystroke">CTRL-Break</code> on MS-Windows).
+
+The ":echo" command prints its arguments.  In this case the string "count is"
+and the value of the variable i.  Since i is one, this will print:
+
+<code class="section">	count is 1 </code>
+
+Then there is the ":let i += 1" command.  This does the same thing as
+":let i = i + 1".  This adds one to the variable i and assigns the new value
+to the same variable.
+
+The example was given to explain the commands, but would you really want to
+make such a loop, it can be written much more compact:
+<code class="example"></code>
+<code class="example">	:for i in range(1, 4)</code>
+<code class="example">	:  echo "count is" i</code>
+<code class="example">	:endfor</code>
+<code class="example"></code>
+We won't explain how |<a href="eval.html#:for">:for</a>| and |<a href="eval.html#range()">range()</a>| work until later.  Follow the links
+if you are impatient.
+
+
+FOUR KINDS OF NUMBERS
+
+Numbers can be decimal, hexadecimal, octal or binary.  A hexadecimal number
+starts with "0x" or "0X".  For example "0x1f" is decimal 31.  An octal number
+starts with a zero.  "017" is decimal 15.  A binary number starts with "0b" or
+"0B".  For example "0b101" is decimal 5.  Careful: don't put a zero before a
+decimal number, it will be interpreted as an octal number!
+   The ":echo" command always prints decimal numbers.  Example:
+<code class="example"></code>
+<code class="example">	:echo 0x7f 036</code>
+<code class="section">	127 30 </code>
+
+A number is made negative with a minus sign.  This also works for hexadecimal,
+octal and binary numbers.  A minus sign is also used for subtraction.  Compare
+this with the previous example:
+<code class="example"></code>
+<code class="example">	:echo 0x7f -036</code>
+<code class="section">	97 </code>
+
+White space in an expression is ignored.  However, it's recommended to use it
+for separating items, to make the expression easier to read.  For example, to
+avoid the confusion with a negative number above, put a space between the
+minus sign and the following number:
+<code class="example"></code>
+<code class="example">	:echo 0x7f - 036</code>
+<code class="example"></code>
+</pre><hr/><pre><b class="vimtag">*<a name="41.2">41.2</a>*</b>	Variables
+
+A variable name consists of ASCII letters, digits and the underscore.  It
+cannot start with a digit.  Valid variable names are:
+
+	counter
+	_aap3
+	very_long_variable_name_with_underscores
+	FuncLength
+	LENGTH
+
+Invalid names are "foo+bar" and "6var".
+   These variables are global.  To see a list of currently defined variables
+use this command:
+<code class="example"></code>
+<code class="example">	:let</code>
+<code class="example"></code>
+You can use global variables everywhere.  This also means that when the
+variable "count" is used in one script file, it might also be used in another
+file.  This leads to confusion at least, and real problems at worst.  To avoid
+this, you can use a variable local to a script file by prepending "s:".  For
+example, one script contains this code:
+<code class="example"></code>
+<code class="example">	:let s:count = 1</code>
+<code class="example">	:while s:count &lt; 5</code>
+<code class="example">	:  source other.vim</code>
+<code class="example">	:  let s:count += 1</code>
+<code class="example">	:endwhile</code>
+<code class="example"></code>
+Since "s:count" is local to this script, you can be sure that sourcing the
+"other.vim" script will not change this variable.  If "other.vim" also uses an
+"s:count" variable, it will be a different copy, local to that script.  More
+about script-local variables here: |<a href="eval.html#script-variable">script-variable</a>|.
+
+There are more kinds of variables, see |<a href="eval.html#internal-variables">internal-variables</a>|.  The most often
+used ones are:
+
+	b:name		variable local to a buffer
+	w:name		variable local to a window
+	g:name		global variable (also in a function)
+	v:name		variable predefined by Vim
+
+
+DELETING VARIABLES
+
+Variables take up memory and show up in the output of the ":let" command.  To
+delete a variable use the ":unlet" command.  Example:
+<code class="example"></code>
+<code class="example">	:unlet s:count</code>
+<code class="example"></code>
+This deletes the script-local variable "s:count" to free up the memory it
+uses.  If you are not sure if the variable exists, and don't want an error
+message when it doesn't, append !:
+<code class="example"></code>
+<code class="example">	:unlet! s:count</code>
+<code class="example"></code>
+When a script finishes, the local variables used there will not be
+automatically freed.  The next time the script executes, it can still use the
+old value.  Example:
+<code class="example"></code>
+<code class="example">	:if !exists("s:call_count")</code>
+<code class="example">	:  let s:call_count = 0</code>
+<code class="example">	:endif</code>
+<code class="example">	:let s:call_count = s:call_count + 1</code>
+<code class="example">	:echo "called" s:call_count "times"</code>
+<code class="example"></code>
+The "exists()" function checks if a variable has already been defined.  Its
+argument is the name of the variable you want to check.  Not the variable
+itself!  If you would do this:
+<code class="example"></code>
+<code class="example">	:if !exists(s:call_count)</code>
+<code class="example"></code>
+Then the value of s:call_count will be used as the name of the variable that
+exists() checks.  That's not what you want.
+   The exclamation mark ! negates a value.  When the value was true, it
+becomes false.  When it was false, it becomes true.  You can read it as "not".
+Thus "if !exists()" can be read as "if not exists()".
+   What Vim calls true is anything that is not zero.  Zero is false.
+	<code class="note">Note:</code>
+	Vim automatically converts a string to a number when it is looking for
+	a number.  When using a string that doesn't start with a digit the
+	resulting number is zero.  Thus look out for this:
+<code class="example">		:if "true"</code>
+	The "true" will be interpreted as a zero, thus as false!
+
+
+STRING VARIABLES AND CONSTANTS
+
+So far only numbers were used for the variable value.  Strings can be used as
+well.  Numbers and strings are the basic types of variables that Vim supports.
+The type is dynamic, it is set each time when assigning a value to the
+variable with ":let".  More about types in |<a href="usr_41.html#41.8">41.8</a>|.
+   To assign a string value to a variable, you need to use a string constant.
+There are two types of these.  First the string in double quotes:
+<code class="example"></code>
+<code class="example">	:let name = "peter"</code>
+<code class="example">	:echo name</code>
+<code class="section">	peter </code>
+
+If you want to include a double quote inside the string, put a backslash in
+front of it:
+<code class="example"></code>
+<code class="example">	:let name = "\"peter\""</code>
+<code class="example">	:echo name</code>
+<code class="section">	"peter" </code>
+
+To avoid the need for a backslash, you can use a string in single quotes:
+<code class="example"></code>
+<code class="example">	:let name = '"peter"'</code>
+<code class="example">	:echo name</code>
+<code class="section">	"peter" </code>
+
+Inside a single-quote string all the characters are as they are.  Only the
+single quote itself is special: you need to use two to get one.  A backslash
+is taken literally, thus you can't use it to change the meaning of the
+character after it.
+   In double-quote strings it is possible to use special characters.  Here are
+a few useful ones:
+
+	\t		<code class="special">&lt;Tab&gt;</code>
+	\n		<code class="special">&lt;NL&gt;</code>, line break
+	\r		<code class="special">&lt;CR&gt;</code>, <code class="special">&lt;Enter&gt;</code>
+	\e		<code class="special">&lt;Esc&gt;</code>
+	\b		<code class="special">&lt;BS&gt;</code>, backspace
+	\"		"
+	\\		\, backslash
+	\<code class="special">&lt;Esc&gt;</code>		<code class="special">&lt;Esc&gt;</code>
+	\<code class="special">&lt;C-W&gt;</code>		<code class="keystroke">CTRL-W</code>
+
+The last two are just examples.  The  "\<code class="special">&lt;name&gt;</code>" form can be used to include
+the special key "name".
+   See |<a href="eval.html#expr-quote">expr-quote</a>| for the full list of special items in a string.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.3">41.3</a>*</b>	Expressions
+
+Vim has a rich, yet simple way to handle expressions.  You can read the
+definition here: |<a href="eval.html#expression-syntax">expression-syntax</a>|.  Here we will show the most common
+items.
+   The numbers, strings and variables mentioned above are expressions by
+themselves.  Thus everywhere an expression is expected, you can use a number,
+string or variable.  Other basic items in an expression are:
+
+	$NAME		environment variable
+	&amp;name		option
+	@r		register
+
+Examples:
+<code class="example"></code>
+<code class="example">	:echo "The value of 'tabstop' is" &amp;ts</code>
+<code class="example">	:echo "Your home directory is" $HOME</code>
+<code class="example">	:if @a &gt; 5</code>
+<code class="example"></code>
+The &amp;name form can be used to save an option value, set it to a new value,
+do something and restore the old value.  Example:
+<code class="example"></code>
+<code class="example">	:let save_ic = &amp;ic</code>
+<code class="example">	:set noic</code>
+<code class="example">	:/The Start/,$delete</code>
+<code class="example">	:let &amp;ic = save_ic</code>
+<code class="example"></code>
+This makes sure the "The Start" pattern is used with the 'ignorecase' option
+off.  Still, it keeps the value that the user had set.  (Another way to do
+this would be to add "\C" to the pattern, see |<a href="pattern.html#%2F\C">/\C</a>|.)
+
+
+MATHEMATICS
+
+It becomes more interesting if we combine these basic items.  Let's start with
+mathematics on numbers:
+
+	a + b		add
+	a - b		subtract
+	a * b		multiply
+	a / b		divide
+	a % b		modulo
+
+The usual precedence is used.  Example:
+<code class="example"></code>
+<code class="example">	:echo 10 + 5 * 2</code>
+<code class="section">	20 </code>
+
+Grouping is done with parentheses.  No surprises here.  Example:
+<code class="example"></code>
+<code class="example">	:echo (10 + 5) * 2</code>
+<code class="section">	30 </code>
+
+Strings can be concatenated with ".".  Example:
+<code class="example"></code>
+<code class="example">	:echo "foo" . "bar"</code>
+<code class="section">	foobar </code>
+
+When the ":echo" command gets multiple arguments, it separates them with a
+space.  In the example the argument is a single expression, thus no space is
+inserted.
+
+Borrowed from the C language is the conditional expression:
+
+	a ? b : c
+
+If "a" evaluates to true "b" is used, otherwise "c" is used.  Example:
+<code class="example"></code>
+<code class="example">	:let i = 4</code>
+<code class="example">	:echo i &gt; 5 ? "i is big" : "i is small"</code>
+<code class="section">	i is small </code>
+
+The three parts of the constructs are always evaluated first, thus you could
+see it work as:
+
+	(a) ? (b) : (c)
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.4">41.4</a>*</b>	Conditionals
+
+The ":if" commands executes the following statements, until the matching
+":endif", only when a condition is met.  The generic form is:
+
+	:if <code class="special">{condition}</code>
+	   <code class="special">{statements}</code>
+	:endif
+
+Only when the expression <code class="special">{condition}</code> evaluates to true (non-zero) will the
+<code class="special">{statements}</code> be executed.  These must still be valid commands.  If they
+contain garbage, Vim won't be able to find the ":endif".
+   You can also use ":else".  The generic form for this is:
+
+	:if <code class="special">{condition}</code>
+	   <code class="special">{statements}</code>
+	:else
+	   <code class="special">{statements}</code>
+	:endif
+
+The second <code class="special">{statements}</code> is only executed if the first one isn't.
+   Finally, there is ":elseif":
+
+	:if <code class="special">{condition}</code>
+	   <code class="special">{statements}</code>
+	:elseif <code class="special">{condition}</code>
+	   <code class="special">{statements}</code>
+	:endif
+
+This works just like using ":else" and then "if", but without the need for an
+extra ":endif".
+   A useful example for your vimrc file is checking the 'term' option and
+doing something depending upon its value:
+<code class="example"></code>
+<code class="example">	:if &amp;term == "xterm"</code>
+<code class="example">	:  " Do stuff for xterm</code>
+<code class="example">	:elseif &amp;term == "vt100"</code>
+<code class="example">	:  " Do stuff for a vt100 terminal</code>
+<code class="example">	:else</code>
+<code class="example">	:  " Do something for other terminals</code>
+<code class="example">	:endif</code>
+<code class="example"></code>
+<code class="example"></code>
+LOGIC OPERATIONS
+
+We already used some of them in the examples.  These are the most often used
+ones:
+
+	a == b		equal to
+	a != b		not equal to
+	a &gt;  b		greater than
+	a &gt;= b		greater than or equal to
+	a &lt;  b		less than
+	a &lt;= b		less than or equal to
+
+The result is one if the condition is met and zero otherwise.  An example:
+<code class="example"></code>
+<code class="example">	:if v:version &gt;= 700</code>
+<code class="example">	:  echo "congratulations"</code>
+<code class="example">	:else</code>
+<code class="example">	:  echo "you are using an old version, upgrade!"</code>
+<code class="example">	:endif</code>
+<code class="example"></code>
+Here "v:version" is a variable defined by Vim, which has the value of the Vim
+version.  600 is for version 6.0.  Version 6.1 has the value 601.  This is
+very useful to write a script that works with multiple versions of Vim.
+|<a href="eval.html#v:version">v:version</a>|
+
+The logic operators work both for numbers and strings.  When comparing two
+strings, the mathematical difference is used.  This compares byte values,
+which may not be right for some languages.
+   When comparing a string with a number, the string is first converted to a
+number.  This is a bit tricky, because when a string doesn't look like a
+number, the number zero is used.  Example:
+<code class="example"></code>
+<code class="example">	:if 0 == "one"</code>
+<code class="example">	:  echo "yes"</code>
+<code class="example">	:endif</code>
+<code class="example"></code>
+This will echo "yes", because "one" doesn't look like a number, thus it is
+converted to the number zero.
+
+For strings there are two more items:
+
+	a =~ b		matches with
+	a !~ b		does not match with
+
+The left item "a" is used as a string.  The right item "b" is used as a
+pattern, like what's used for searching.  Example:
+<code class="example"></code>
+<code class="example">	:if str =~ " "</code>
+<code class="example">	:  echo "str contains a space"</code>
+<code class="example">	:endif</code>
+<code class="example">	:if str !~ '\.$'</code>
+<code class="example">	:  echo "str does not end in a full stop"</code>
+<code class="example">	:endif</code>
+<code class="example"></code>
+Notice the use of a single-quote string for the pattern.  This is useful,
+because backslashes would need to be doubled in a double-quote string and
+patterns tend to contain many backslashes.
+
+The 'ignorecase' option is used when comparing strings.  When you don't want
+that, append "#" to match case and "?" to ignore case.  Thus "==?" compares
+two strings to be equal while ignoring case.  And "!~#" checks if a pattern
+doesn't match, also checking the case of letters.  For the full table see
+|<a href="eval.html#expr-%20%20">expr-==</a>|.
+
+
+MORE LOOPING
+
+The ":while" command was already mentioned.  Two more statements can be used
+in between the ":while" and the ":endwhile":
+
+	:continue		Jump back to the start of the while loop; the
+				loop continues.
+	:break			Jump forward to the ":endwhile"; the loop is
+				discontinued.
+
+Example:
+<code class="example"></code>
+<code class="example">	:while counter &lt; 40</code>
+<code class="example">	:  call do_something()</code>
+<code class="example">	:  if skip_flag</code>
+<code class="example">	:    continue</code>
+<code class="example">	:  endif</code>
+<code class="example">	:  if finished_flag</code>
+<code class="example">	:    break</code>
+<code class="example">	:  endif</code>
+<code class="example">	:  sleep 50m</code>
+<code class="example">	:endwhile</code>
+<code class="example"></code>
+The ":sleep" command makes Vim take a nap.  The "50m" specifies fifty
+milliseconds.  Another example is ":sleep 4", which sleeps for four seconds.
+
+Even more looping can be done with the ":for" command, see below in |<a href="usr_41.html#41.8">41.8</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.5">41.5</a>*</b>	Executing an expression
+
+So far the commands in the script were executed by Vim directly.  The
+":execute" command allows executing the result of an expression.  This is a
+very powerful way to build commands and execute them.
+   An example is to jump to a tag, which is contained in a variable:
+<code class="example"></code>
+<code class="example">	:execute "tag " . tag_name</code>
+<code class="example"></code>
+The "." is used to concatenate the string "tag " with the value of variable
+"tag_name".  Suppose "tag_name" has the value "get_cmd", then the command that
+will be executed is:
+<code class="example"></code>
+<code class="example">	:tag get_cmd</code>
+<code class="example"></code>
+The ":execute" command can only execute colon commands.  The ":normal" command
+executes Normal mode commands.  However, its argument is not an expression but
+the literal command characters.  Example:
+<code class="example"></code>
+<code class="example">	:normal gg=G</code>
+<code class="example"></code>
+This jumps to the first line and formats all lines with the "=" operator.
+   To make ":normal" work with an expression, combine ":execute" with it.
+Example:
+<code class="example"></code>
+<code class="example">	:execute "normal " . normal_commands</code>
+<code class="example"></code>
+The variable "normal_commands" must contain the Normal mode commands.
+   Make sure that the argument for ":normal" is a complete command.  Otherwise
+Vim will run into the end of the argument and abort the command.  For example,
+if you start Insert mode, you must leave Insert mode as well.  This works:
+<code class="example"></code>
+<code class="example">	:execute "normal Inew text \<code class="special">&lt;Esc&gt;</code>"</code>
+<code class="example"></code>
+This inserts "new text " in the current line.  Notice the use of the special
+key "\<code class="special">&lt;Esc&gt;</code>".  This avoids having to enter a real <code class="special">&lt;Esc&gt;</code> character in your
+script.
+
+If you don't want to execute a string but evaluate it to get its expression
+value, you can use the eval() function:
+<code class="example"></code>
+<code class="example">	:let optname = "path"</code>
+<code class="example">	:let optval = eval('&amp;' . optname)</code>
+<code class="example"></code>
+A "&amp;" character is prepended to "path", thus the argument to eval() is
+"&amp;path".  The result will then be the value of the 'path' option.
+   The same thing can be done with:
+<code class="example">	:exe 'let optval = &amp;' . optname</code>
+<code class="example"></code>
+</pre><hr/><pre><b class="vimtag">*<a name="41.6">41.6</a>*</b>	Using functions
+
+Vim defines many functions and provides a large amount of functionality that
+way.  A few examples will be given in this section.  You can find the whole
+list here: |<a href="eval.html#functions">functions</a>|.
+
+A function is called with the ":call" command.  The parameters are passed in
+between parentheses separated by commas.  Example:
+<code class="example"></code>
+<code class="example">	:call search("Date: ", "W")</code>
+<code class="example"></code>
+This calls the search() function, with arguments "Date: " and "W".  The
+search() function uses its first argument as a search pattern and the second
+one as flags.  The "W" flag means the search doesn't wrap around the end of
+the file.
+
+A function can be called in an expression.  Example:
+<code class="example"></code>
+<code class="example">	:let line = getline(".")</code>
+<code class="example">	:let repl = substitute(line, '\a', "*", "g")</code>
+<code class="example">	:call setline(".", repl)</code>
+<code class="example"></code>
+The getline() function obtains a line from the current buffer.  Its argument
+is a specification of the line number.  In this case "." is used, which means
+the line where the cursor is.
+   The substitute() function does something similar to the ":substitute"
+command.  The first argument is the string on which to perform the
+substitution.  The second argument is the pattern, the third the replacement
+string.  Finally, the last arguments are the flags.
+   The setline() function sets the line, specified by the first argument, to a
+new string, the second argument.  In this example the line under the cursor is
+replaced with the result of the substitute().  Thus the effect of the three
+statements is equal to:
+<code class="example"></code>
+<code class="example">	:substitute/\a/*/g</code>
+<code class="example"></code>
+Using the functions becomes more interesting when you do more work before and
+after the substitute() call.
+
+
+FUNCTIONS						<b class="vimtag">*<a name="function-list">function-list</a>*</b>
+
+There are many functions.  We will mention them here, grouped by what they are
+used for.  You can find an alphabetical list here: |<a href="eval.html#functions">functions</a>|.  Use CTRL-] on
+the function name to jump to detailed help on it.
+
+String manipulation:					<b class="vimtag">*<a name="string-functions">string-functions</a>*</b>
+	nr2char()		get a character by its number value
+	list2str()		get a character string from a list of numbers
+	char2nr()		get number value of a character
+	str2list()		get list of numbers from a string
+	str2nr()		convert a string to a Number
+	str2float()		convert a string to a Float
+	printf()		format a string according to % items
+	escape()		escape characters in a string with a '\'
+	shellescape()		escape a string for use with a shell command
+	fnameescape()		escape a file name for use with a Vim command
+	tr()			translate characters from one set to another
+	strtrans()		translate a string to make it printable
+	tolower()		turn a string to lowercase
+	toupper()		turn a string to uppercase
+	match()			position where a pattern matches in a string
+	matchend()		position where a pattern match ends in a string
+	matchstr()		match of a pattern in a string
+	matchstrpos()		match and positions of a pattern in a string
+	matchlist()		like matchstr() and also return submatches
+	stridx()		first index of a short string in a long string
+	strridx()		last index of a short string in a long string
+	strlen()		length of a string in bytes
+	strchars()		length of a string in characters
+	strwidth()		size of string when displayed
+	strdisplaywidth()	size of string when displayed, deals with tabs
+	substitute()		substitute a pattern match with a string
+	submatch()		get a specific match in ":s" and substitute()
+	strpart()		get part of a string using byte index
+	strcharpart()		get part of a string using char index
+	strgetchar()		get character from a string using char index
+	expand()		expand special keywords
+	expandcmd()		expand a command like done for `:edit`
+	iconv()			convert text from one encoding to another
+	byteidx()		byte index of a character in a string
+	byteidxcomp()		like byteidx() but count composing characters
+	repeat()		repeat a string multiple times
+	eval()			evaluate a string expression
+	execute()		execute an Ex command and get the output
+	win_execute()		like execute() but in a specified window
+	trim()			trim characters from a string
+
+List manipulation:					<b class="vimtag">*<a name="list-functions">list-functions</a>*</b>
+	get()			get an item without error for wrong index
+	len()			number of items in a List
+	empty()			check if List is empty
+	insert()		insert an item somewhere in a List
+	add()			append an item to a List
+	extend()		append a List to a List
+	remove()		remove one or more items from a List
+	copy()			make a shallow copy of a List
+	deepcopy()		make a full copy of a List
+	filter()		remove selected items from a List
+	map()			change each List item
+	sort()			sort a List
+	reverse()		reverse the order of a List
+	uniq()			remove copies of repeated adjacent items
+	split()			split a String into a List
+	join()			join List items into a String
+	range()			return a List with a sequence of numbers
+	string()		String representation of a List
+	call()			call a function with List as arguments
+	index()			index of a value in a List
+	max()			maximum value in a List
+	min()			minimum value in a List
+	count()			count number of times a value appears in a List
+	repeat()		repeat a List multiple times
+
+Dictionary manipulation:				<b class="vimtag">*<a name="dict-functions">dict-functions</a>*</b>
+	get()			get an entry without an error for a wrong key
+	len()			number of entries in a Dictionary
+	has_key()		check whether a key appears in a Dictionary
+	empty()			check if Dictionary is empty
+	remove()		remove an entry from a Dictionary
+	extend()		add entries from one Dictionary to another
+	filter()		remove selected entries from a Dictionary
+	map()			change each Dictionary entry
+	keys()			get List of Dictionary keys
+	values()		get List of Dictionary values
+	items()			get List of Dictionary key-value pairs
+	copy()			make a shallow copy of a Dictionary
+	deepcopy()		make a full copy of a Dictionary
+	string()		String representation of a Dictionary
+	max()			maximum value in a Dictionary
+	min()			minimum value in a Dictionary
+	count()			count number of times a value appears
+
+Floating point computation:				<b class="vimtag">*<a name="float-functions">float-functions</a>*</b>
+	float2nr()		convert Float to Number
+	abs()			absolute value (also works for Number)
+	round()			round off
+	ceil()			round up
+	floor()			round down
+	trunc()			remove value after decimal point
+	fmod()			remainder of division
+	exp()			exponential
+	log()			natural logarithm (logarithm to base e)
+	log10()			logarithm to base 10
+	pow()			value of x to the exponent y
+	sqrt()			square root
+	sin()			sine
+	cos()			cosine
+	tan()			tangent
+	asin()			arc sine
+	acos()			arc cosine
+	atan()			arc tangent
+	atan2()			arc tangent
+	sinh()			hyperbolic sine
+	cosh()			hyperbolic cosine
+	tanh()			hyperbolic tangent
+	isnan()			check for not a number
+
+Other computation:					<b class="vimtag">*<a name="bitwise-function">bitwise-function</a>*</b>
+	and()			bitwise AND
+	invert()		bitwise invert
+	or()			bitwise OR
+	xor()			bitwise XOR
+	sha256()		SHA-256 hash
+
+Variables:						<b class="vimtag">*<a name="var-functions">var-functions</a>*</b>
+	type()			type of a variable
+	islocked()		check if a variable is locked
+	funcref()		get a Funcref for a function reference
+	function()		get a Funcref for a function name
+	getbufvar()		get a variable value from a specific buffer
+	setbufvar()		set a variable in a specific buffer
+	getwinvar()		get a variable from specific window
+	gettabvar()		get a variable from specific tab page
+	gettabwinvar()		get a variable from specific window &amp; tab page
+	setwinvar()		set a variable in a specific window
+	settabvar()		set a variable in a specific tab page
+	settabwinvar()		set a variable in a specific window &amp; tab page
+	garbagecollect()	possibly free memory
+
+Cursor and mark position:		<b class="vimtag">*<a name="cursor-functions">cursor-functions</a>*</b> <b class="vimtag">*<a name="mark-functions">mark-functions</a>*</b>
+	col()			column number of the cursor or a mark
+	virtcol()		screen column of the cursor or a mark
+	line()			line number of the cursor or mark
+	wincol()		window column number of the cursor
+	winline()		window line number of the cursor
+	cursor()		position the cursor at a line/column
+	screencol()		get screen column of the cursor
+	screenrow()		get screen row of the cursor
+	screenpos()		screen row and col of a text character
+	getcurpos()		get position of the cursor
+	getpos()		get position of cursor, mark, etc.
+	setpos()		set position of cursor, mark, etc.
+	byte2line()		get line number at a specific byte count
+	line2byte()		byte count at a specific line
+	diff_filler()		get the number of filler lines above a line
+	screenattr()		get attribute at a screen line/row
+	screenchar()		get character code at a screen line/row
+	screenchars()		get character codes at a screen line/row
+	screenstring()		get string of characters at a screen line/row
+
+Working with text in the current buffer:		<b class="vimtag">*<a name="text-functions">text-functions</a>*</b>
+	getline()		get a line or list of lines from the buffer
+	setline()		replace a line in the buffer
+	append()		append line or list of lines in the buffer
+	indent()		indent of a specific line
+	cindent()		indent according to C indenting
+	lispindent()		indent according to Lisp indenting
+	nextnonblank()		find next non-blank line
+	prevnonblank()		find previous non-blank line
+	search()		find a match for a pattern
+	searchpos()		find a match for a pattern
+	searchpair()		find the other end of a start/skip/end
+	searchpairpos()		find the other end of a start/skip/end
+	searchdecl()		search for the declaration of a name
+	getcharsearch()		return character search information
+	setcharsearch()		set character search information
+
+Working with text in another buffer:
+	getbufline()		get a list of lines from the specified buffer
+	setbufline()		replace a line in the specified buffer
+	appendbufline()		append a list of lines in the specified buffer
+	deletebufline()		delete lines from a specified buffer
+
+					<b class="vimtag">*<a name="system-functions">system-functions</a>*</b> <b class="vimtag">*<a name="file-functions">file-functions</a>*</b>
+System functions and manipulation of files:
+	glob()			expand wildcards
+	globpath()		expand wildcards in a number of directories
+	glob2regpat()		convert a glob pattern into a search pattern
+	findfile()		find a file in a list of directories
+	finddir()		find a directory in a list of directories
+	resolve()		find out where a shortcut points to
+	fnamemodify()		modify a file name
+	pathshorten()		shorten directory names in a path
+	simplify()		simplify a path without changing its meaning
+	executable()		check if an executable program exists
+	exepath()		full path of an executable program
+	filereadable()		check if a file can be read
+	filewritable()		check if a file can be written to
+	getfperm()		get the permissions of a file
+	setfperm()		set the permissions of a file
+	getftype()		get the kind of a file
+	isdirectory()		check if a directory exists
+	getfsize()		get the size of a file
+	getcwd()		get the current working directory
+	haslocaldir()		check if current window used |<a href="editing.html#:lcd">:lcd</a>| or |<a href="editing.html#:tcd">:tcd</a>|
+	tempname()		get the name of a temporary file
+	mkdir()			create a new directory
+	chdir()			change current working directory
+	delete()		delete a file
+	rename()		rename a file
+	system()		get the result of a shell command as a string
+	systemlist()		get the result of a shell command as a list
+	environ()		get all environment variables
+	getenv()		get one environment variable
+	setenv()		set an environment variable
+	hostname()		name of the system
+	readfile()		read a file into a List of lines
+	readdir()		get a List of file names in a directory
+	writefile()		write a List of lines or Blob into a file
+
+Date and Time:				<b class="vimtag">*<a name="date-functions">date-functions</a>*</b> <b class="vimtag">*<a name="time-functions">time-functions</a>*</b>
+	getftime()		get last modification time of a file
+	localtime()		get current time in seconds
+	strftime()		convert time to a string
+	strptime()		convert a date/time string to time
+	reltime()		get the current or elapsed time accurately
+	reltimestr()		convert reltime() result to a string
+	reltimefloat()		convert reltime() result to a Float
+
+			<b class="vimtag">*<a name="buffer-functions">buffer-functions</a>*</b> <b class="vimtag">*<a name="window-functions">window-functions</a>*</b> <b class="vimtag">*<a name="arg-functions">arg-functions</a>*</b>
+Buffers, windows and the argument list:
+	argc()			number of entries in the argument list
+	argidx()		current position in the argument list
+	arglistid()		get id of the argument list
+	argv()			get one entry from the argument list
+	bufadd()		add a file to the list of buffers
+	bufexists()		check if a buffer exists
+	buflisted()		check if a buffer exists and is listed
+	bufload()		ensure a buffer is loaded
+	bufloaded()		check if a buffer exists and is loaded
+	bufname()		get the name of a specific buffer
+	bufnr()			get the buffer number of a specific buffer
+	tabpagebuflist()	return List of buffers in a tab page
+	tabpagenr()		get the number of a tab page
+	tabpagewinnr()		like winnr() for a specified tab page
+	winnr()			get the window number for the current window
+	bufwinid()		get the window ID of a specific buffer
+	bufwinnr()		get the window number of a specific buffer
+	winbufnr()		get the buffer number of a specific window
+	listener_add()		add a callback to listen to changes
+	listener_flush()	invoke listener callbacks
+	listener_remove()	remove a listener callback
+	win_findbuf()		find windows containing a buffer
+	win_getid()		get window ID of a window
+	win_gotoid()		go to window with ID
+	win_id2tabwin()		get tab and window nr from window ID
+	win_id2win()		get window nr from window ID
+	getbufinfo()		get a list with buffer information
+	gettabinfo()		get a list with tab page information
+	getwininfo()		get a list with window information
+	getchangelist()		get a list of change list entries
+	getjumplist()		get a list of jump list entries
+	swapinfo()		information about a swap file
+	swapname()		get the swap file path of a buffer
+
+Command line:					<b class="vimtag">*<a name="command-line-functions">command-line-functions</a>*</b>
+	getcmdline()		get the current command line
+	getcmdpos()		get position of the cursor in the command line
+	setcmdpos()		set position of the cursor in the command line
+	getcmdtype()		return the current command-line type
+	getcmdwintype()		return the current command-line window type
+	getcompletion()		list of command-line completion matches
+
+Quickfix and location lists:			<b class="vimtag">*<a name="quickfix-functions">quickfix-functions</a>*</b>
+	getqflist()		list of quickfix errors
+	setqflist()		modify a quickfix list
+	getloclist()		list of location list items
+	setloclist()		modify a location list
+
+Insert mode completion:				<b class="vimtag">*<a name="completion-functions">completion-functions</a>*</b>
+	complete()		set found matches
+	complete_add()		add to found matches
+	complete_check()	check if completion should be aborted
+	complete_info()		get current completion information
+	pumvisible()		check if the popup menu is displayed
+	pum_getpos()		position and size of popup menu if visible
+
+Folding:					<b class="vimtag">*<a name="folding-functions">folding-functions</a>*</b>
+	foldclosed()		check for a closed fold at a specific line
+	foldclosedend()		like foldclosed() but return the last line
+	foldlevel()		check for the fold level at a specific line
+	foldtext()		generate the line displayed for a closed fold
+	foldtextresult()	get the text displayed for a closed fold
+
+Syntax and highlighting:	  <b class="vimtag">*<a name="syntax-functions">syntax-functions</a>*</b> <b class="vimtag">*<a name="highlighting-functions">highlighting-functions</a>*</b>
+	clearmatches()		clear all matches defined by |<a href="eval.html#matchadd()">matchadd()</a>| and
+				the |<a href="pattern.html#:match">:match</a>| commands
+	getmatches()		get all matches defined by |<a href="eval.html#matchadd()">matchadd()</a>| and
+				the |<a href="pattern.html#:match">:match</a>| commands
+	hlexists()		check if a highlight group exists
+	hlID()			get ID of a highlight group
+	synID()			get syntax ID at a specific position
+	synIDattr()		get a specific attribute of a syntax ID
+	synIDtrans()		get translated syntax ID
+	synstack()		get list of syntax IDs at a specific position
+	synconcealed()		get info about concealing
+	diff_hlID()		get highlight ID for diff mode at a position
+	matchadd()		define a pattern to highlight (a "match")
+	matchaddpos()		define a list of positions to highlight
+	matcharg()		get info about |<a href="pattern.html#:match">:match</a>| arguments
+	matchdelete()		delete a match defined by |<a href="eval.html#matchadd()">matchadd()</a>| or a
+				|<a href="pattern.html#:match">:match</a>| command
+	setmatches()		restore a list of matches saved by
+				|<a href="eval.html#getmatches()">getmatches()</a>|
+
+Spelling:					<b class="vimtag">*<a name="spell-functions">spell-functions</a>*</b>
+	spellbadword()		locate badly spelled word at or after cursor
+	spellsuggest()		return suggested spelling corrections
+	soundfold()		return the sound-a-like equivalent of a word
+
+History:					<b class="vimtag">*<a name="history-functions">history-functions</a>*</b>
+	histadd()		add an item to a history
+	histdel()		delete an item from a history
+	histget()		get an item from a history
+	histnr()		get highest index of a history list
+
+Interactive:					<b class="vimtag">*<a name="interactive-functions">interactive-functions</a>*</b>
+	browse()		put up a file requester
+	browsedir()		put up a directory requester
+	confirm()		let the user make a choice
+	getchar()		get a character from the user
+	getcharmod()		get modifiers for the last typed character
+	getmousepos()		get last known mouse position
+	feedkeys()		put characters in the typeahead queue
+	input()			get a line from the user
+	inputlist()		let the user pick an entry from a list
+	inputsecret()		get a line from the user without showing it
+	inputdialog()		get a line from the user in a dialog
+	inputsave()		save and clear typeahead
+	inputrestore()		restore typeahead
+
+GUI:						<b class="vimtag">*<a name="gui-functions">gui-functions</a>*</b>
+	getfontname()		get name of current font being used
+	getwinpos()		position of the Vim window
+	getwinposx()		X position of the Vim window
+	getwinposy()		Y position of the Vim window
+	balloon_show()		set the balloon content
+	balloon_split()		split a message for a balloon
+	balloon_gettext()	get the text in the balloon
+
+Vim server:					<b class="vimtag">*<a name="server-functions">server-functions</a>*</b>
+	serverlist()		return the list of server names
+	remote_startserver()	run a server
+	remote_send()		send command characters to a Vim server
+	remote_expr()		evaluate an expression in a Vim server
+	server2client()		send a reply to a client of a Vim server
+	remote_peek()		check if there is a reply from a Vim server
+	remote_read()		read a reply from a Vim server
+	foreground()		move the Vim window to the foreground
+	remote_foreground()	move the Vim server window to the foreground
+
+Window size and position:			<b class="vimtag">*<a name="window-size-functions">window-size-functions</a>*</b>
+	winheight()		get height of a specific window
+	winwidth()		get width of a specific window
+	win_screenpos()		get screen position of a window
+	winlayout()		get layout of windows in a tab page
+	winrestcmd()		return command to restore window sizes
+	winsaveview()		get view of current window
+	winrestview()		restore saved view of current window
+
+Mappings:				    <b class="vimtag">*<a name="mapping-functions">mapping-functions</a>*</b>
+	hasmapto()		check if a mapping exists
+	mapcheck()		check if a matching mapping exists
+	maparg()		get rhs of a mapping
+	wildmenumode()		check if the wildmode is active
+
+Testing:				    <b class="vimtag">*<a name="test-functions">test-functions</a>*</b>
+	assert_equal()		assert that two expressions values are equal
+	assert_equalfile()	assert that two file contents are equal
+	assert_<code class="note">note</code>qual()	assert that two expressions values are not equal
+	assert_inrange()	assert that an expression is inside a range
+	assert_match()		assert that a pattern matches the value
+	assert_notmatch()	assert that a pattern does not match the value
+	assert_false()		assert that an expression is false
+	assert_true()		assert that an expression is true
+	assert_exception()	assert that a command throws an exception
+	assert_beeps()		assert that a command beeps
+	assert_fails()		assert that a command fails
+	assert_report()		report a test failure
+	test_alloc_fail()	make memory allocation fail
+	test_autochdir()	enable 'autochdir' during startup
+	test_override()		test with Vim internal overrides
+	test_garbagecollect_now()   free memory right now
+	test_getvalue()		get value of an internal variable
+	test_ignore_error()	ignore a specific error message
+	test_null_blob()	return a null Blob
+	test_null_channel()	return a null Channel
+	test_null_dict()	return a null Dict
+	test_null_job()		return a null Job
+	test_null_list()	return a null List
+	test_null_partial()	return a null Partial function
+	test_null_string()	return a null String
+	test_settime()		set the time Vim uses internally
+	test_setmouse()		set the mouse position
+	test_feedinput()	add key sequence to input buffer
+	test_option_not_set()	reset flag indicating option was set
+	test_scrollbar()	simulate scrollbar movement in the GUI
+
+Inter-process communication:		    <b class="vimtag">*<a name="channel-functions">channel-functions</a>*</b>
+	ch_canread()		check if there is something to read
+	ch_open()		open a channel
+	ch_close()		close a channel
+	ch_close_in()		close the in part of a channel
+	ch_read()		read a message from a channel
+	ch_readblob()		read a Blob from a channel
+	ch_readraw()		read a raw message from a channel
+	ch_sendexpr()		send a JSON message over a channel
+	ch_sendraw()		send a raw message over a channel
+	ch_evalexpr()		evaluates an expression over channel
+	ch_evalraw()		evaluates a raw string over channel
+	ch_status()		get status of a channel
+	ch_getbufnr()		get the buffer number of a channel
+	ch_getjob()		get the job associated with a channel
+	ch_info()		get channel information
+	ch_log()		write a message in the channel log file
+	ch_logfile()		set the channel log file
+	ch_setoptions()		set the options for a channel
+	json_encode()		encode an expression to a JSON string
+	json_decode()		decode a JSON string to Vim types
+	js_encode()		encode an expression to a JSON string
+	js_decode()		decode a JSON string to Vim types
+
+Jobs:		    			        <b class="vimtag">*<a name="job-functions">job-functions</a>*</b>
+	job_start()		start a job
+	job_stop()		stop a job
+	job_status()		get the status of a job
+	job_getchannel()	get the channel used by a job
+	job_info()		get information about a job
+	job_setoptions()	set options for a job
+
+Signs:						<b class="vimtag">*<a name="sign-functions">sign-functions</a>*</b>
+	sign_define()		define or update a sign
+	sign_getdefined()	get a list of defined signs
+	sign_getplaced()	get a list of placed signs
+	sign_jump()		jump to a sign
+	sign_place()		place a sign
+	sign_placelist()	place a list of signs
+	sign_undefine()		undefine a sign
+	sign_unplace()		unplace a sign
+	sign_unplacelist()	unplace a list of signs
+
+Terminal window:				<b class="vimtag">*<a name="terminal-functions">terminal-functions</a>*</b>
+	term_start()		open a terminal window and run a job
+	term_list()		get the list of terminal buffers
+	term_sendkeys()		send keystrokes to a terminal
+	term_wait()		wait for screen to be updated
+	term_getjob()		get the job associated with a terminal
+	term_scrape()		get row of a terminal screen
+	term_getline()		get a line of text from a terminal
+	term_getattr()		get the value of attribute <code class="special">{what}</code>
+	term_getcursor()	get the cursor position of a terminal
+	term_getscrolled()	get the scroll count of a terminal
+	term_getaltscreen()	get the alternate screen flag
+	term_getsize()		get the size of a terminal
+	term_getstatus()	get the status of a terminal
+	term_gettitle()		get the title of a terminal
+	term_gettty()		get the tty name of a terminal
+	term_setansicolors()	set 16 ANSI colors, used for GUI
+	term_getansicolors()	get 16 ANSI colors, used for GUI
+	term_dumpdiff()		display difference between two screen dumps
+	term_dumpload()		load a terminal screen dump in a window
+	term_dumpwrite()	dump contents of a terminal screen to a file
+	term_setkill()		set signal to stop job in a terminal
+	term_setrestore()	set command to restore a terminal
+	term_setsize()		set the size of a terminal
+
+Popup window:					<b class="vimtag">*<a name="popup-window-functions">popup-window-functions</a>*</b>
+	popup_create()		create popup centered in the screen
+	popup_atcursor()	create popup just above the cursor position,
+				closes when the cursor moves away
+	popup_beval()		at the position indicated by v:beval_
+				variables, closes when the mouse moves away
+	popup_notification()	show a notification for three seconds
+	popup_dialog()		create popup centered with padding and border
+	popup_menu()		prompt for selecting an item from a list
+	popup_hide()		hide a popup temporarily
+	popup_show()		show a previously hidden popup
+	popup_move()		change the position and size of a popup
+	popup_setoptions()	override options of a popup
+	popup_settext()		replace the popup buffer contents
+	popup_close()		close one popup
+	popup_clear()		close all popups
+	popup_filter_menu()	select from a list of items
+	popup_filter_yesno()	blocks until 'y' or 'n' is pressed
+	popup_getoptions()	get current options for a popup
+	popup_getpos()		get actual position and size of a popup
+
+Timers:						<b class="vimtag">*<a name="timer-functions">timer-functions</a>*</b>
+	timer_start()		create a timer
+	timer_pause()		pause or unpause a timer
+	timer_stop()		stop a timer
+	timer_stopall()		stop all timers
+	timer_info()		get information about timers
+
+Tags:						<b class="vimtag">*<a name="tag-functions">tag-functions</a>*</b>
+	taglist()		get list of matching tags
+	tagfiles()		get a list of tags files
+	gettagstack()		get the tag stack of a window
+	settagstack()		modify the tag stack of a window
+
+Prompt Buffer:					<b class="vimtag">*<a name="promptbuffer-functions">promptbuffer-functions</a>*</b>
+	prompt_setcallback()	set prompt callback for a buffer
+	prompt_setinterrupt()	set interrupt callback for a buffer
+	prompt_setprompt()	set the prompt text for a buffer
+
+Various:					<b class="vimtag">*<a name="various-functions">various-functions</a>*</b>
+	mode()			get current editing mode
+	visualmode()		last visual mode used
+	exists()		check if a variable, function, etc. exists
+	has()			check if a feature is supported in Vim
+	changenr()		return number of most recent change
+	cscope_connection()	check if a cscope connection exists
+	did_filetype()		check if a FileType autocommand was used
+	eventhandler()		check if invoked by an event handler
+	getpid()		get process ID of Vim
+
+	libcall()		call a function in an external library
+	libcallnr()		idem, returning a number
+
+	undofile()		get the name of the undo file
+	undotree()		return the state of the undo tree
+
+	getreg()		get contents of a register
+	getregtype()		get type of a register
+	setreg()		set contents and type of a register
+	reg_executing()		return the name of the register being executed
+	reg_recording()		return the name of the register being recorded
+
+	shiftwidth()		effective value of 'shiftwidth'
+
+	wordcount()		get byte/word/char count of buffer
+
+	luaeval()		evaluate Lua expression
+	mzeval()		evaluate |<a href="if_mzsch.html#MzScheme">MzScheme</a>| expression
+	perleval()		evaluate Perl expression (|<a href="various.html#+perl">+perl</a>|)
+	py3eval()		evaluate Python expression (|<a href="various.html#+python3">+python3</a>|)
+	pyeval()		evaluate Python expression (|<a href="various.html#+python">+python</a>|)
+	pyxeval()		evaluate |<a href="if_pyth.html#python_x">python_x</a>| expression
+	debugbreak()		interrupt a program being debugged
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.7">41.7</a>*</b>	Defining a function
+
+Vim enables you to define your own functions.  The basic function declaration
+begins as follows:
+<code class="example"></code>
+<code class="example">	:function <code class="special">{name}</code>(<code class="special">{var1}</code>, <code class="special">{var2}</code>, ...)</code>
+<code class="example">	:  <code class="special">{body}</code></code>
+<code class="example">	:endfunction</code>
+
+	<code class="note">Note:</code>
+	Function names must begin with a capital letter.
+
+Let's define a short function to return the smaller of two numbers.  It starts
+with this line:
+<code class="example"></code>
+<code class="example">	:function Min(num1, num2)</code>
+<code class="example"></code>
+This tells Vim that the function is named "Min" and it takes two arguments:
+"num1" and "num2".
+   The first thing you need to do is to check to see which number is smaller:
+
+<code class="example">	:  if a:num1 &lt; a:num2</code>
+<code class="example"></code>
+The special prefix "a:" tells Vim that the variable is a function argument.
+Let's assign the variable "smaller" the value of the smallest number:
+<code class="example"></code>
+<code class="example">	:  if a:num1 &lt; a:num2</code>
+<code class="example">	:    let smaller = a:num1</code>
+<code class="example">	:  else</code>
+<code class="example">	:    let smaller = a:num2</code>
+<code class="example">	:  endif</code>
+<code class="example"></code>
+The variable "smaller" is a local variable.  Variables used inside a function
+are local unless prefixed by something like "g:", "a:", or "s:".
+
+	<code class="note">Note:</code>
+	To access a global variable from inside a function you must prepend
+	"g:" to it.  Thus "g:today" inside a function is used for the global
+	variable "today", and "today" is another variable, local to the
+	function.
+
+You now use the ":return" statement to return the smallest number to the user.
+Finally, you end the function:
+<code class="example"></code>
+<code class="example">	:  return smaller</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+The complete function definition is as follows:
+<code class="example"></code>
+<code class="example">	:function Min(num1, num2)</code>
+<code class="example">	:  if a:num1 &lt; a:num2</code>
+<code class="example">	:    let smaller = a:num1</code>
+<code class="example">	:  else</code>
+<code class="example">	:    let smaller = a:num2</code>
+<code class="example">	:  endif</code>
+<code class="example">	:  return smaller</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+For people who like short functions, this does the same thing:
+<code class="example"></code>
+<code class="example">	:function Min(num1, num2)</code>
+<code class="example">	:  if a:num1 &lt; a:num2</code>
+<code class="example">	:    return a:num1</code>
+<code class="example">	:  endif</code>
+<code class="example">	:  return a:num2</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+A user defined function is called in exactly the same way as a built-in
+function.  Only the name is different.  The Min function can be used like
+this:
+<code class="example"></code>
+<code class="example">	:echo Min(5, 8)</code>
+<code class="example"></code>
+Only now will the function be executed and the lines be interpreted by Vim.
+If there are mistakes, like using an undefined variable or function, you will
+now get an error message.  When defining the function these errors are not
+detected.
+
+When a function reaches ":endfunction" or ":return" is used without an
+argument, the function returns zero.
+
+To redefine a function that already exists, use the ! for the ":function"
+command:
+<code class="example"></code>
+<code class="example">	:function!  Min(num1, num2, num3)</code>
+<code class="example"></code>
+<code class="example"></code>
+USING A RANGE
+
+The ":call" command can be given a line range.  This can have one of two
+meanings.  When a function has been defined with the "range" keyword, it will
+take care of the line range itself.
+  The function will be passed the variables "a:firstline" and "a:lastline".
+These will have the line numbers from the range the function was called with.
+Example:
+<code class="example"></code>
+<code class="example">	:function Count_words() range</code>
+<code class="example">	:  let lnum = a:firstline</code>
+<code class="example">	:  let n = 0</code>
+<code class="example">	:  while lnum &lt;= a:lastline</code>
+<code class="example">	:    let n = n + len(split(getline(lnum)))</code>
+<code class="example">	:    let lnum = lnum + 1</code>
+<code class="example">	:  endwhile</code>
+<code class="example">	:  echo "found " . n . " words"</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+You can call this function with:
+<code class="example"></code>
+<code class="example">	:10,30call Count_words()</code>
+<code class="example"></code>
+It will be executed once and echo the number of words.
+   The other way to use a line range is by defining a function without the
+"range" keyword.  The function will be called once for every line in the
+range, with the cursor in that line.  Example:
+<code class="example"></code>
+<code class="example">	:function  Number()</code>
+<code class="example">	:  echo "line " . line(".") . " contains: " . getline(".")</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+If you call this function with:
+<code class="example"></code>
+<code class="example">	:10,15call Number()</code>
+<code class="example"></code>
+The function will be called six times.
+
+
+VARIABLE NUMBER OF ARGUMENTS
+
+Vim enables you to define functions that have a variable number of arguments.
+The following command, for instance, defines a function that must have 1
+argument (start) and can have up to 20 additional arguments:
+<code class="example"></code>
+<code class="example">	:function Show(start, ...)</code>
+<code class="example"></code>
+The variable "a:1" contains the first optional argument, "a:2" the second, and
+so on.  The variable "a:0" contains the number of extra arguments.
+   For example:
+<code class="example"></code>
+<code class="example">	:function Show(start, ...)</code>
+<code class="example">	:  echohl Title</code>
+<code class="example">	:  echo "start is " . a:start</code>
+<code class="example">	:  echohl None</code>
+<code class="example">	:  let index = 1</code>
+<code class="example">	:  while index &lt;= a:0</code>
+<code class="example">	:    echo "  Arg " . index . " is " . a:<code class="special">{index}</code></code>
+<code class="example">	:    let index = index + 1</code>
+<code class="example">	:  endwhile</code>
+<code class="example">	:  echo ""</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+This uses the ":echohl" command to specify the highlighting used for the
+following ":echo" command.  ":echohl None" stops it again.  The ":echon"
+command works like ":echo", but doesn't output a line break.
+
+You can also use the a:000 variable, it is a List of all the "..." arguments.
+See |<a href="eval.html#a:000">a:000</a>|.
+
+
+LISTING FUNCTIONS
+
+The ":function" command lists the names and arguments of all user-defined
+functions:
+<code class="example"></code>
+<code class="example">	:function</code>
+<code class="section">	function Show(start, ...) </code>
+<code class="section">	function GetVimIndent() </code>
+<code class="section">	function SetSyn(name) </code>
+
+To see what a function does, use its name as an argument for ":function":
+<code class="example"></code>
+<code class="example">	:function SetSyn</code>
+<code class="section">	1     if &amp;syntax == '' </code>
+<code class="section">	2       let &amp;syntax = a:name </code>
+<code class="section">	3     endif </code>
+<code class="section">	   endfunction </code>
+
+
+DEBUGGING
+
+The line number is useful for when you get an error message or when debugging.
+See |<a href="repeat.html#debug-scripts">debug-scripts</a>| about debugging mode.
+   You can also set the 'verbose' option to 12 or higher to see all function
+calls.  Set it to 15 or higher to see every executed line.
+
+
+DELETING A FUNCTION
+
+To delete the Show() function:
+<code class="example"></code>
+<code class="example">	:delfunction Show</code>
+<code class="example"></code>
+You get an error when the function doesn't exist.
+
+
+FUNCTION REFERENCES
+
+Sometimes it can be useful to have a variable point to one function or
+another.  You can do it with the function() function.  It turns the name of a
+function into a reference:
+<code class="example"></code>
+<code class="example">	:let result = 0		" or 1</code>
+<code class="example">	:function! Right()</code>
+<code class="example">	:  return 'Right!'</code>
+<code class="example">	:endfunc</code>
+<code class="example">	:function! Wrong()</code>
+<code class="example">	:  return 'Wrong!'</code>
+<code class="example">	:endfunc</code>
+<code class="example">	:</code>
+<code class="example">	:if result == 1</code>
+<code class="example">	:  let Afunc = function('Right')</code>
+<code class="example">	:else</code>
+<code class="example">	:  let Afunc = function('Wrong')</code>
+<code class="example">	:endif</code>
+<code class="example">	:echo call(Afunc, [])</code>
+<code class="section">	Wrong! </code>
+
+<code class="note">Note</code> that the name of a variable that holds a function reference must start
+with a capital.  Otherwise it could be confused with the name of a builtin
+function.
+   The way to invoke a function that a variable refers to is with the call()
+function.  Its first argument is the function reference, the second argument
+is a List with arguments.
+
+Function references are most useful in combination with a Dictionary, as is
+explained in the next section.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.8">41.8</a>*</b>	Lists and Dictionaries
+
+So far we have used the basic types String and Number.  Vim also supports two
+composite types: List and Dictionary.
+
+A List is an ordered sequence of things.  The things can be any kind of value,
+thus you can make a List of numbers, a List of Lists and even a List of mixed
+items.  To create a List with three strings:
+<code class="example"></code>
+<code class="example">	:let alist = ['aap', 'mies', 'noot']</code>
+<code class="example"></code>
+The List items are enclosed in square brackets and separated by commas.  To
+create an empty List:
+<code class="example"></code>
+<code class="example">	:let alist = []</code>
+<code class="example"></code>
+You can add items to a List with the add() function:
+<code class="example"></code>
+<code class="example">	:let alist = []</code>
+<code class="example">	:call add(alist, 'foo')</code>
+<code class="example">	:call add(alist, 'bar')</code>
+<code class="example">	:echo alist</code>
+<code class="section">	['foo', 'bar'] </code>
+
+List concatenation is done with +:
+<code class="example"></code>
+<code class="example">	:echo alist + ['foo', 'bar']</code>
+<code class="section">	['foo', 'bar', 'foo', 'bar'] </code>
+
+Or, if you want to extend a List directly:
+<code class="example"></code>
+<code class="example">	:let alist = ['one']</code>
+<code class="example">	:call extend(alist, ['two', 'three'])</code>
+<code class="example">	:echo alist</code>
+<code class="section">	['one', 'two', 'three'] </code>
+
+Notice that using add() will have a different effect:
+<code class="example"></code>
+<code class="example">	:let alist = ['one']</code>
+<code class="example">	:call add(alist, ['two', 'three'])</code>
+<code class="example">	:echo alist</code>
+<code class="section">	['one', ['two', 'three']] </code>
+
+The second argument of add() is added as a single item.
+
+
+FOR LOOP
+
+One of the nice things you can do with a List is iterate over it:
+<code class="example"></code>
+<code class="example">	:let alist = ['one', 'two', 'three']</code>
+<code class="example">	:for n in alist</code>
+<code class="example">	:  echo n</code>
+<code class="example">	:endfor</code>
+<code class="section">	one </code>
+<code class="section">	two </code>
+<code class="section">	three </code>
+
+This will loop over each element in List "alist", assigning the value to
+variable "n".  The generic form of a for loop is:
+<code class="example"></code>
+<code class="example">	:for <code class="special">{varname}</code> in <code class="special">{listexpression}</code></code>
+<code class="example">	:  <code class="special">{commands}</code></code>
+<code class="example">	:endfor</code>
+<code class="example"></code>
+To loop a certain number of times you need a List of a specific length.  The
+range() function creates one for you:
+<code class="example"></code>
+<code class="example">	:for a in range(3)</code>
+<code class="example">	:  echo a</code>
+<code class="example">	:endfor</code>
+<code class="section">	0 </code>
+<code class="section">	1 </code>
+<code class="section">	2 </code>
+
+Notice that the first item of the List that range() produces is zero, thus the
+last item is one less than the length of the list.
+   You can also specify the maximum value, the stride and even go backwards:
+<code class="example"></code>
+<code class="example">	:for a in range(8, 4, -2)</code>
+<code class="example">	:  echo a</code>
+<code class="example">	:endfor</code>
+<code class="section">	8 </code>
+<code class="section">	6 </code>
+<code class="section">	4 </code>
+
+A more useful example, looping over lines in the buffer:
+<code class="example"></code>
+<code class="example">	:for line in getline(1, 20)</code>
+<code class="example">	:  if line =~ "Date: "</code>
+<code class="example">	:    echo matchstr(line, 'Date: \zs.*')</code>
+<code class="example">	:  endif</code>
+<code class="example">	:endfor</code>
+<code class="example"></code>
+This looks into lines 1 to 20 (inclusive) and echoes any date found in there.
+
+
+DICTIONARIES
+
+A Dictionary stores key-value pairs.  You can quickly lookup a value if you
+know the key.  A Dictionary is created with curly braces:
+<code class="example"></code>
+<code class="example">	:let uk2nl = <code class="special">{'one': 'een', 'two': 'twee', 'three': 'drie'}</code></code>
+<code class="example"></code>
+Now you can lookup words by putting the key in square brackets:
+<code class="example"></code>
+<code class="example">	:echo uk2nl['two']</code>
+<code class="section">	twee </code>
+
+The generic form for defining a Dictionary is:
+<code class="example"></code>
+<code class="example">	<code class="special">{<code class="special">&lt;key&gt;</code> : <code class="special">&lt;value&gt;</code>, ...}</code></code>
+<code class="example"></code>
+An empty Dictionary is one without any keys:
+<code class="example"></code>
+<code class="example">	<code class="special">{}</code></code>
+<code class="example"></code>
+The possibilities with Dictionaries are numerous.  There are various functions
+for them as well.  For example, you can obtain a list of the keys and loop
+over them:
+<code class="example"></code>
+<code class="example">	:for key in keys(uk2nl)</code>
+<code class="example">	:  echo key</code>
+<code class="example">	:endfor</code>
+<code class="section">	three </code>
+<code class="section">	one </code>
+<code class="section">	two </code>
+
+You will notice the keys are not ordered.  You can sort the list to get a
+specific order:
+<code class="example"></code>
+<code class="example">	:for key in sort(keys(uk2nl))</code>
+<code class="example">	:  echo key</code>
+<code class="example">	:endfor</code>
+<code class="section">	one </code>
+<code class="section">	three </code>
+<code class="section">	two </code>
+
+But you can never get back the order in which items are defined.  For that you
+need to use a List, it stores items in an ordered sequence.
+
+
+DICTIONARY FUNCTIONS
+
+The items in a Dictionary can normally be obtained with an index in square
+brackets:
+<code class="example"></code>
+<code class="example">	:echo uk2nl['one']</code>
+<code class="section">	een </code>
+
+A method that does the same, but without so many punctuation characters:
+<code class="example"></code>
+<code class="example">	:echo uk2nl.one</code>
+<code class="section">	een </code>
+
+This only works for a key that is made of ASCII letters, digits and the
+underscore.  You can also assign a new value this way:
+<code class="example"></code>
+<code class="example">	:let uk2nl.four = 'vier'</code>
+<code class="example">	:echo uk2nl</code>
+<code class="section">	<code class="special">{'three': 'drie', 'four': 'vier', 'one': 'een', 'two': 'twee'}</code> </code>
+
+And now for something special: you can directly define a function and store a
+reference to it in the dictionary:
+<code class="example"></code>
+<code class="example">	:function uk2nl.translate(line) dict</code>
+<code class="example">	:  return join(map(split(a:line), 'get(self, v:val, "???")'))</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+Let's first try it out:
+<code class="example"></code>
+<code class="example">	:echo uk2nl.translate('three two five one')</code>
+<code class="section">	drie twee ??? een </code>
+
+The first special thing you notice is the "dict" at the end of the ":function"
+line.  This marks the function as being used from a Dictionary.  The "self"
+local variable will then refer to that Dictionary.
+   Now let's break up the complicated return command:
+<code class="example"></code>
+<code class="example">	split(a:line)</code>
+<code class="example"></code>
+The split() function takes a string, chops it into whitespace separated words
+and returns a list with these words.  Thus in the example it returns:
+<code class="example"></code>
+<code class="example">	:echo split('three two five one')</code>
+<code class="section">	['three', 'two', 'five', 'one'] </code>
+
+This list is the first argument to the map() function.  This will go through
+the list, evaluating its second argument with "v:val" set to the value of each
+item.  This is a shortcut to using a for loop.  This command:
+<code class="example"></code>
+<code class="example">	:let alist = map(split(a:line), 'get(self, v:val, "???")')</code>
+<code class="example"></code>
+Is equivalent to:
+<code class="example"></code>
+<code class="example">	:let alist = split(a:line)</code>
+<code class="example">	:for idx in range(len(alist))</code>
+<code class="example">	:  let alist[idx] = get(self, alist[idx], "???")</code>
+<code class="example">	:endfor</code>
+<code class="example"></code>
+The get() function checks if a key is present in a Dictionary.  If it is, then
+the value is retrieved.  If it isn't, then the default value is returned, in
+the example it's '???'.  This is a convenient way to handle situations where a
+key may not be present and you don't want an error message.
+
+The join() function does the opposite of split(): it joins together a list of
+words, putting a space in between.
+  This combination of split(), map() and join() is a nice way to filter a line
+of words in a very compact way.
+
+
+OBJECT ORIENTED PROGRAMMING
+
+Now that you can put both values and functions in a Dictionary, you can
+actually use a Dictionary like an object.
+   Above we used a Dictionary for translating Dutch to English.  We might want
+to do the same for other languages.  Let's first make an object (aka
+Dictionary) that has the translate function, but no words to translate:
+<code class="example"></code>
+<code class="example">	:let transdict = <code class="special">{}</code></code>
+<code class="example">	:function transdict.translate(line) dict</code>
+<code class="example">	:  return join(map(split(a:line), 'get(self.words, v:val, "???")'))</code>
+<code class="example">	:endfunction</code>
+<code class="example"></code>
+It's slightly different from the function above, using 'self.words' to lookup
+word translations.  But we don't have a self.words.  Thus you could call this
+an abstract class.
+
+Now we can instantiate a Dutch translation object:
+<code class="example"></code>
+<code class="example">	:let uk2nl = copy(transdict)</code>
+<code class="example">	:let uk2nl.words = <code class="special">{'one': 'een', 'two': 'twee', 'three': 'drie'}</code></code>
+<code class="example">	:echo uk2nl.translate('three one')</code>
+<code class="section">	drie een </code>
+
+And a German translator:
+<code class="example"></code>
+<code class="example">	:let uk2de = copy(transdict)</code>
+<code class="example">	:let uk2de.words = <code class="special">{'one': 'eins', 'two': 'zwei', 'three': 'drei'}</code></code>
+<code class="example">	:echo uk2de.translate('three one')</code>
+<code class="section">	drei eins </code>
+
+You see that the copy() function is used to make a copy of the "transdict"
+Dictionary and then the copy is changed to add the words.  The original
+remains the same, of course.
+
+Now you can go one step further, and use your preferred translator:
+<code class="example"></code>
+<code class="example">	:if $LANG =~ "de"</code>
+<code class="example">	:  let trans = uk2de</code>
+<code class="example">	:else</code>
+<code class="example">	:  let trans = uk2nl</code>
+<code class="example">	:endif</code>
+<code class="example">	:echo trans.translate('one two three')</code>
+<code class="section">	een twee drie </code>
+
+Here "trans" refers to one of the two objects (Dictionaries).  No copy is
+made.  More about List and Dictionary identity can be found at |<a href="eval.html#list-identity">list-identity</a>|
+and |<a href="eval.html#dict-identity">dict-identity</a>|.
+
+Now you might use a language that isn't supported.  You can overrule the
+translate() function to do nothing:
+<code class="example"></code>
+<code class="example">	:let uk2uk = copy(transdict)</code>
+<code class="example">	:function! uk2uk.translate(line)</code>
+<code class="example">	:  return a:line</code>
+<code class="example">	:endfunction</code>
+<code class="example">	:echo uk2uk.translate('three one wladiwostok')</code>
+<code class="section">	three one wladiwostok </code>
+
+Notice that a ! was used to overwrite the existing function reference.  Now
+use "uk2uk" when no recognized language is found:
+<code class="example"></code>
+<code class="example">	:if $LANG =~ "de"</code>
+<code class="example">	:  let trans = uk2de</code>
+<code class="example">	:elseif $LANG =~ "nl"</code>
+<code class="example">	:  let trans = uk2nl</code>
+<code class="example">	:else</code>
+<code class="example">	:  let trans = uk2uk</code>
+<code class="example">	:endif</code>
+<code class="example">	:echo trans.translate('one two three')</code>
+<code class="section">	one two three </code>
+
+For further reading see |<a href="eval.html#Lists">Lists</a>| and |<a href="eval.html#Dictionaries">Dictionaries</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.9">41.9</a>*</b>	Exceptions
+
+Let's start with an example:
+<code class="example"></code>
+<code class="example">	:try</code>
+<code class="example">	:   read ~/templates/pascal.tmpl</code>
+<code class="example">	:catch /E484:/</code>
+<code class="example">	:   echo "Sorry, the Pascal template file cannot be found."</code>
+<code class="example">	:endtry</code>
+<code class="example"></code>
+The ":read" command will fail if the file does not exist.  Instead of
+generating an error message, this code catches the error and gives the user a
+nice message.
+
+For the commands in between ":try" and ":endtry" errors are turned into
+exceptions.  An exception is a string.  In the case of an error the string
+contains the error message.  And every error message has a number.  In this
+case, the error we catch contains "E484:".  This number is guaranteed to stay
+the same (the text may change, e.g., it may be translated).
+
+When the ":read" command causes another error, the pattern "E484:" will not
+match in it.  Thus this exception will not be caught and result in the usual
+error message.
+
+You might be tempted to do this:
+<code class="example"></code>
+<code class="example">	:try</code>
+<code class="example">	:   read ~/templates/pascal.tmpl</code>
+<code class="example">	:catch</code>
+<code class="example">	:   echo "Sorry, the Pascal template file cannot be found."</code>
+<code class="example">	:endtry</code>
+<code class="example"></code>
+This means all errors are caught.  But then you will not see errors that are
+useful, such as "E21: Cannot make changes, 'modifiable' is off".
+
+Another useful mechanism is the ":finally" command:
+<code class="example"></code>
+<code class="example">	:let tmp = tempname()</code>
+<code class="example">	:try</code>
+<code class="example">	:   exe ".,$write " . tmp</code>
+<code class="example">	:   exe "!filter " . tmp</code>
+<code class="example">	:   .,$delete</code>
+<code class="example">	:   exe "$read " . tmp</code>
+<code class="example">	:finally</code>
+<code class="example">	:   call delete(tmp)</code>
+<code class="example">	:endtry</code>
+<code class="example"></code>
+This filters the lines from the cursor until the end of the file through the
+"filter" command, which takes a file name argument.  No matter if the
+filtering works, something goes wrong in between ":try" and ":finally" or the
+user cancels the filtering by pressing <code class="keystroke">CTRL-C</code>, the "call delete(tmp)" is
+always executed.  This makes sure you don't leave the temporary file behind.
+
+More information about exception handling can be found in the reference
+manual: |<a href="eval.html#exception-handling">exception-handling</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.10">41.10</a>*</b>	Various remarks
+
+Here is a summary of items that apply to Vim scripts.  They are also mentioned
+elsewhere, but form a nice checklist.
+
+The end-of-line character depends on the system.  For Unix a single <code class="special">&lt;NL&gt;</code>
+character is used.  For MS-Windows and the like, <code class="special">&lt;CR&gt;</code><code class="special">&lt;LF&gt;</code> is used.  This is
+important when using mappings that end in a <code class="special">&lt;CR&gt;</code>.  See |<a href="repeat.html#:source_crnl">:source_crnl</a>|.
+
+
+WHITE SPACE
+
+Blank lines are allowed and ignored.
+
+Leading whitespace characters (blanks and TABs) are always ignored.  The
+whitespaces between parameters (e.g. between the "set" and the "cpoptions" in
+the example below) are reduced to one blank character and plays the role of a
+separator, the whitespaces after the last (visible) character may or may not
+be ignored depending on the situation, see below.
+
+For a ":set" command involving the "=" (equal) sign, such as in:
+<code class="example"></code>
+<code class="example">	:set cpoptions    =aABceFst</code>
+<code class="example"></code>
+the whitespace immediately before the "=" sign is ignored.  But there can be
+no whitespace after the "=" sign!
+
+To include a whitespace character in the value of an option, it must be
+escaped by a "\" (backslash)  as in the following example:
+<code class="example"></code>
+<code class="example">	:set tags=my\ nice\ file</code>
+<code class="example"></code>
+The same example written as:
+<code class="example"></code>
+<code class="example">	:set tags=my nice file</code>
+<code class="example"></code>
+will issue an error, because it is interpreted as:
+<code class="example"></code>
+<code class="example">	:set tags=my</code>
+<code class="example">	:set nice</code>
+<code class="example">	:set file</code>
+<code class="example"></code>
+<code class="example"></code>
+COMMENTS
+
+The character " (the double quote mark) starts a comment.  Everything after
+and including this character until the end-of-line is considered a comment and
+is ignored, except for commands that don't consider comments, as shown in
+examples below.  A comment can start on any character position on the line.
+
+There is a little "catch" with comments for some commands.  Examples:
+<code class="example"></code>
+<code class="example">	:abbrev dev development		" shorthand</code>
+<code class="example">	:map <code class="special">&lt;F3&gt;</code> o#include		" insert include</code>
+<code class="example">	:execute cmd			" do it</code>
+<code class="example">	:!ls *.c			" list C files</code>
+<code class="example"></code>
+The abbreviation 'dev' will be expanded to 'development     " shorthand'.  The
+mapping of <code class="special">&lt;F3&gt;</code> will actually be the whole line after the 'o# ....' including
+the '" insert include'.  The "execute" command will give an error.  The "!"
+command will send everything after it to the shell, causing an error for an
+unmatched '"' character.
+   There can be no comment after ":map", ":abbreviate", ":execute" and "!"
+commands (there are a few more commands with this restriction).  For the
+":map", ":abbreviate" and ":execute" commands there is a trick:
+<code class="example"></code>
+<code class="example">	:abbrev dev development|" shorthand</code>
+<code class="example">	:map <code class="special">&lt;F3&gt;</code> o#include|" insert include</code>
+<code class="example">	:execute cmd			|" do it</code>
+<code class="example"></code>
+With the '|' character the command is separated from the next one.  And that
+next command is only a comment.  For the last command you need to do two
+things: |<a href="eval.html#:execute">:execute</a>| and use '|':
+<code class="example">	:exe '!ls *.c'			|" list C files</code>
+<code class="example"></code>
+Notice that there is no white space before the '|' in the abbreviation and
+mapping.  For these commands, any character until the end-of-line or '|' is
+included.  As a consequence of this behavior, you don't always see that
+trailing whitespace is included:
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;F4&gt;</code> o#include</code>
+<code class="example"></code>
+To spot these problems, you can set the 'list' option when editing vimrc
+files.
+
+For Unix there is one special way to comment a line, that allows making a Vim
+script executable:
+<code class="example">	#!/usr/bin/env vim -S</code>
+<code class="example">	echo "this is a Vim script"</code>
+<code class="example">	quit</code>
+<code class="example"></code>
+The "#" command by itself lists a line with the line number.  Adding an
+exclamation mark changes it into doing nothing, so that you can add the shell
+command to execute the rest of the file. |<a href="various.html#:%23!">:#!</a>| |<a href="starting.html#-S">-S</a>|
+
+
+PITFALLS
+
+Even bigger problem arises in the following example:
+<code class="example"></code>
+<code class="example">	:map ,ab o#include</code>
+<code class="example">	:unmap ,ab</code>
+<code class="example"></code>
+Here the unmap command will not work, because it tries to unmap ",ab ".  This
+does not exist as a mapped sequence.  An error will be issued, which is very
+hard to identify, because the ending whitespace character in ":unmap ,ab " is
+not visible.
+
+And this is the same as what happens when one uses a comment after an 'unmap'
+command:
+<code class="example"></code>
+<code class="example">	:unmap ,ab     " comment</code>
+<code class="example"></code>
+Here the comment part will be ignored.  However, Vim will try to unmap
+',ab     ', which does not exist.  Rewrite it as:
+<code class="example"></code>
+<code class="example">	:unmap ,ab|    " comment</code>
+<code class="example"></code>
+<code class="example"></code>
+RESTORING THE VIEW
+
+Sometimes you want to make a change and go back to where the cursor was.
+Restoring the relative position would also be nice, so that the same line
+appears at the top of the window.
+   This example yanks the current line, puts it above the first line in the
+file and then restores the view:
+<code class="example"></code>
+<code class="example">	map ,p ma"aYHmbgg"aP`bzt`a</code>
+<code class="example"></code>
+What this does:
+<code class="example">	ma"aYHmbgg"aP`bzt`a</code>
+	ma			set mark a at cursor position
+	  "aY			yank current line into register a
+	     Hmb		go to top line in window and set mark b there
+		gg		go to first line in file
+		  "aP		put the yanked line above it
+		     `b		go back to top line in display
+		       zt	position the text in the window as before
+			 `a	go back to saved cursor position
+
+
+PACKAGING
+
+To avoid your function names to interfere with functions that you get from
+others, use this scheme:
+- Prepend a unique string before each function name.  I often use an
+  abbreviation.  For example, "OW_" is used for the option window functions.
+- Put the definition of your functions together in a file.  Set a global
+  variable to indicate that the functions have been loaded.  When sourcing the
+  file again, first unload the functions.
+Example:
+<code class="example"></code>
+<code class="example">	" This is the XXX package</code>
+<code class="example"></code>
+<code class="example">	if exists("XXX_loaded")</code>
+<code class="example">	  delfun XXX_one</code>
+<code class="example">	  delfun XXX_two</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+<code class="example">	function XXX_one(a)</code>
+<code class="example">		... body of function ...</code>
+<code class="example">	endfun</code>
+<code class="example"></code>
+<code class="example">	function XXX_two(b)</code>
+<code class="example">		... body of function ...</code>
+<code class="example">	endfun</code>
+<code class="example"></code>
+<code class="example">	let XXX_loaded = 1</code>
+<code class="example"></code>
+</pre><hr/><pre><b class="vimtag">*<a name="41.11">41.11</a>*</b>	Writing a plugin				<b class="vimtag">*<a name="write-plugin">write-plugin</a>*</b>
+
+You can write a Vim script in such a way that many people can use it.  This is
+called a plugin.  Vim users can drop your script in their plugin directory and
+use its features right away |<a href="usr_05.html#add-plugin">add-plugin</a>|.
+
+There are actually two types of plugins:
+
+  global plugins: For all types of files.
+filetype plugins: Only for files of a specific type.
+
+In this section the first type is explained.  Most items are also relevant for
+writing filetype plugins.  The specifics for filetype plugins are in the next
+section |<a href="usr_41.html#write-filetype-plugin">write-filetype-plugin</a>|.
+
+
+NAME
+
+First of all you must choose a name for your plugin.  The features provided
+by the plugin should be clear from its name.  And it should be unlikely that
+someone else writes a plugin with the same name but which does something
+different.  And please limit the name to 8 characters, to avoid problems on
+old MS-Windows systems.
+
+A script that corrects typing mistakes could be called "typecorr.vim".  We
+will use it here as an example.
+
+For the plugin to work for everybody, it should follow a few guidelines.  This
+will be explained step-by-step.  The complete example plugin is at the end.
+
+
+BODY
+
+Let's start with the body of the plugin, the lines that do the actual work:
+<code class="example"></code>
+<code class="example"> 14	iabbrev teh the</code>
+<code class="example"> 15	iabbrev otehr other</code>
+<code class="example"> 16	iabbrev wnat want</code>
+<code class="example"> 17	iabbrev synchronisation</code>
+<code class="example"> 18		\ synchronization</code>
+<code class="example"> 19	let s:count = 4</code>
+<code class="example"></code>
+The actual list should be much longer, of course.
+
+The line numbers have only been added to explain a few things, don't put them
+in your plugin file!
+
+
+HEADER
+
+You will probably add new corrections to the plugin and soon have several
+versions lying around.  And when distributing this file, people will want to
+know who wrote this wonderful plugin and where they can send remarks.
+Therefore, put a header at the top of your plugin:
+<code class="example"></code>
+<code class="example">  1	" Vim global plugin for correcting typing mistakes</code>
+<code class="example">  2	" Last Change:	2000 Oct 15</code>
+<code class="example">  3	" Maintainer:	Bram Moolenaar <code class="special">&lt;Bram@vim.org&gt;</code></code>
+<code class="example"></code>
+About copyright and licensing: Since plugins are very useful and it's hardly
+worth restricting their distribution, please consider making your plugin
+either public domain or use the Vim |<a href="uganda.html#license">license</a>|.  A short <code class="note">note</code> about this near
+the top of the plugin should be sufficient.  Example:
+<code class="example"></code>
+<code class="example">  4	" License:	This file is placed in the public domain.</code>
+<code class="example"></code>
+<code class="example"></code>
+LINE CONTINUATION, AVOIDING SIDE EFFECTS		<b class="vimtag">*<a name="use-cpo-save">use-cpo-save</a>*</b>
+
+In line 18 above, the line-continuation mechanism is used |<a href="repeat.html#line-continuation">line-continuation</a>|.
+Users with 'compatible' set will run into trouble here, they will get an error
+message.  We can't just reset 'compatible', because that has a lot of side
+effects.  To avoid this, we will set the 'cpoptions' option to its Vim default
+value and restore it later.  That will allow the use of line-continuation and
+make the script work for most people.  It is done like this:
+<code class="example"></code>
+<code class="example"> 11	let s:save_cpo = &amp;cpo</code>
+<code class="example"> 12	set cpo&amp;vim</code>
+<code class="example"> ..</code>
+<code class="example"> 42	let &amp;cpo = s:save_cpo</code>
+<code class="example"> 43	unlet s:save_cpo</code>
+<code class="example"></code>
+We first store the old value of 'cpoptions' in the s:save_cpo variable.  At
+the end of the plugin this value is restored.
+
+Notice that a script-local variable is used |<a href="eval.html#s:var">s:var</a>|.  A global variable could
+already be in use for something else.  Always use script-local variables for
+things that are only used in the script.
+
+
+NOT LOADING
+
+It's possible that a user doesn't always want to load this plugin.  Or the
+system administrator has dropped it in the system-wide plugin directory, but a
+user has his own plugin he wants to use.  Then the user must have a chance to
+disable loading this specific plugin.  This will make it possible:
+<code class="example"></code>
+<code class="example">  6	if exists("g:loaded_typecorr")</code>
+<code class="example">  7	  finish</code>
+<code class="example">  8	endif</code>
+<code class="example">  9	let g:loaded_typecorr = 1</code>
+<code class="example"></code>
+This also avoids that when the script is loaded twice it would cause error
+messages for redefining functions and cause trouble for autocommands that are
+added twice.
+
+The name is recommended to start with "loaded_" and then the file name of the
+plugin, literally.  The "g:" is prepended just to avoid mistakes when using
+the variable in a function (without "g:" it would be a variable local to the
+function).
+
+Using "finish" stops Vim from reading the rest of the file, it's much quicker
+than using if-endif around the whole file.
+
+
+MAPPING
+
+Now let's make the plugin more interesting: We will add a mapping that adds a
+correction for the word under the cursor.  We could just pick a key sequence
+for this mapping, but the user might already use it for something else.  To
+allow the user to define which keys a mapping in a plugin uses, the <code class="special">&lt;Leader&gt;</code>
+item can be used:
+<code class="example"></code>
+<code class="example"> 22	  map <code class="special">&lt;unique&gt;</code> <code class="special">&lt;Leader&gt;</code>a  <code class="special">&lt;Plug&gt;</code>TypecorrAdd</code>
+<code class="example"></code>
+The "<code class="special">&lt;Plug&gt;</code>TypecorrAdd" thing will do the work, more about that further on.
+
+The user can set the "mapleader" variable to the key sequence that he wants
+this mapping to start with.  Thus if the user has done:
+<code class="example"></code>
+<code class="example">	let mapleader = "_"</code>
+<code class="example"></code>
+the mapping will define "_a".  If the user didn't do this, the default value
+will be used, which is a backslash.  Then a map for "\a" will be defined.
+
+<code class="note">Note</code> that <code class="special">&lt;unique&gt;</code> is used, this will cause an error message if the mapping
+already happened to exist. |<a href="map.html#:map-%3Cunique%3E">:map-&lt;unique&gt;</a>|
+
+But what if the user wants to define his own key sequence?  We can allow that
+with this mechanism:
+<code class="example"></code>
+<code class="example"> 21	if !hasmapto('<code class="special">&lt;Plug&gt;</code>TypecorrAdd')</code>
+<code class="example"> 22	  map <code class="special">&lt;unique&gt;</code> <code class="special">&lt;Leader&gt;</code>a  <code class="special">&lt;Plug&gt;</code>TypecorrAdd</code>
+<code class="example"> 23	endif</code>
+<code class="example"></code>
+This checks if a mapping to "<code class="special">&lt;Plug&gt;</code>TypecorrAdd" already exists, and only
+defines the mapping from "<code class="special">&lt;Leader&gt;</code>a" if it doesn't.  The user then has a
+chance of putting this in his vimrc file:
+<code class="example"></code>
+<code class="example">	map ,c  <code class="special">&lt;Plug&gt;</code>TypecorrAdd</code>
+<code class="example"></code>
+Then the mapped key sequence will be ",c" instead of "_a" or "\a".
+
+
+PIECES
+
+If a script gets longer, you often want to break up the work in pieces.  You
+can use functions or mappings for this.  But you don't want these functions
+and mappings to interfere with the ones from other scripts.  For example, you
+could define a function Add(), but another script could try to define the same
+function.  To avoid this, we define the function local to the script by
+prepending it with "s:".
+
+We will define a function that adds a new typing correction:
+<code class="example"></code>
+<code class="example"> 30	function s:Add(from, correct)</code>
+<code class="example"> 31	  let to = input("type the correction for " . a:from . ": ")</code>
+<code class="example"> 32	  exe ":iabbrev " . a:from . " " . to</code>
+<code class="example"> ..</code>
+<code class="example"> 36	endfunction</code>
+<code class="example"></code>
+Now we can call the function s:Add() from within this script.  If another
+script also defines s:Add(), it will be local to that script and can only
+be called from the script it was defined in.  There can also be a global Add()
+function (without the "s:"), which is again another function.
+
+<code class="special">&lt;SID&gt;</code> can be used with mappings.  It generates a script ID, which identifies
+the current script.  In our typing correction plugin we use it like this:
+<code class="example"></code>
+<code class="example"> 24	noremap <code class="special">&lt;unique&gt;</code> <code class="special">&lt;script&gt;</code> <code class="special">&lt;Plug&gt;</code>TypecorrAdd  <code class="special">&lt;SID&gt;</code>Add</code>
+<code class="example"> ..</code>
+<code class="example"> 28	noremap <code class="special">&lt;SID&gt;</code>Add  :call <code class="special">&lt;SID&gt;</code>Add(expand("<code class="special">&lt;cword&gt;</code>"), 1)<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+Thus when a user types "\a", this sequence is invoked:
+<code class="example"></code>
+<code class="example">	\a  -&gt;  <code class="special">&lt;Plug&gt;</code>TypecorrAdd  -&gt;  <code class="special">&lt;SID&gt;</code>Add  -&gt;  :call <code class="special">&lt;SID&gt;</code>Add()</code>
+<code class="example"></code>
+If another script would also map <code class="special">&lt;SID&gt;</code>Add, it would get another script ID and
+thus define another mapping.
+
+<code class="note">Note</code> that instead of s:Add() we use <code class="special">&lt;SID&gt;</code>Add() here.  That is because the
+mapping is typed by the user, thus outside of the script.  The <code class="special">&lt;SID&gt;</code> is
+translated to the script ID, so that Vim knows in which script to look for
+the Add() function.
+
+This is a bit complicated, but it's required for the plugin to work together
+with other plugins.  The basic rule is that you use <code class="special">&lt;SID&gt;</code>Add() in mappings and
+s:Add() in other places (the script itself, autocommands, user commands).
+
+We can also add a menu entry to do the same as the mapping:
+<code class="example"></code>
+<code class="example"> 26	noremenu <code class="special">&lt;script&gt;</code> Plugin.Add\ Correction      <code class="special">&lt;SID&gt;</code>Add</code>
+<code class="example"></code>
+The "Plugin" menu is recommended for adding menu items for plugins.  In this
+case only one item is used.  When adding more items, creating a submenu is
+recommended.  For example, "Plugin.CVS" could be used for a plugin that offers
+CVS operations "Plugin.CVS.checkin", "Plugin.CVS.checkout", etc.
+
+<code class="note">Note</code> that in line 28 ":noremap" is used to avoid that any other mappings cause
+trouble.  Someone may have remapped ":call", for example.  In line 24 we also
+use ":noremap", but we do want "<code class="special">&lt;SID&gt;</code>Add" to be remapped.  This is why
+"<code class="special">&lt;script&gt;</code>" is used here.  This only allows mappings which are local to the
+script. |<a href="map.html#:map-%3Cscript%3E">:map-&lt;script&gt;</a>|  The same is done in line 26 for ":noremenu".
+|<a href="gui.html#:menu-%3Cscript%3E">:menu-&lt;script&gt;</a>|
+
+
+<code class="special">&lt;SID&gt;</code> AND <code class="special">&lt;Plug&gt;</code>					<b class="vimtag">*<a name="using-%3CPlug%3E">using-&lt;Plug&gt;</a>*</b>
+
+Both <code class="special">&lt;SID&gt;</code> and <code class="special">&lt;Plug&gt;</code> are used to avoid that mappings of typed keys interfere
+with mappings that are only to be used from other mappings.  <code class="note">Note</code> the
+difference between using <code class="special">&lt;SID&gt;</code> and <code class="special">&lt;Plug&gt;</code>:
+
+<code class="special">&lt;Plug&gt;</code>	is visible outside of the script.  It is used for mappings which the
+	user might want to map a key sequence to.  <code class="special">&lt;Plug&gt;</code> is a special code
+	that a typed key will never produce.
+	To make it very unlikely that other plugins use the same sequence of
+	characters, use this structure: <code class="special">&lt;Plug&gt;</code> scriptname mapname
+	In our example the scriptname is "Typecorr" and the mapname is "Add".
+	This results in "<code class="special">&lt;Plug&gt;</code>TypecorrAdd".  Only the first character of
+	scriptname and mapname is uppercase, so that we can see where mapname
+	starts.
+
+<code class="special">&lt;SID&gt;</code>	is the script ID, a unique identifier for a script.
+	Internally Vim translates <code class="special">&lt;SID&gt;</code> to "<code class="special">&lt;SNR&gt;</code>123_", where "123" can be any
+	number.  Thus a function "<code class="special">&lt;SID&gt;</code>Add()" will have a name "<code class="special">&lt;SNR&gt;</code>11_Add()"
+	in one script, and "<code class="special">&lt;SNR&gt;</code>22_Add()" in another.  You can see this if
+	you use the ":function" command to get a list of functions.  The
+	translation of <code class="special">&lt;SID&gt;</code> in mappings is exactly the same, that's how you
+	can call a script-local function from a mapping.
+
+
+USER COMMAND
+
+Now let's add a user command to add a correction:
+<code class="example"></code>
+<code class="example"> 38	if !exists(":Correct")</code>
+<code class="example"> 39	  command -nargs=1  Correct  :call s:Add(<code class="special">&lt;q-args&gt;</code>, 0)</code>
+<code class="example"> 40	endif</code>
+<code class="example"></code>
+The user command is defined only if no command with the same name already
+exists.  Otherwise we would get an error here.  Overriding the existing user
+command with ":command!" is not a good idea, this would probably make the user
+wonder why the command he defined himself doesn't work.  |<a href="map.html#:command">:command</a>|
+
+
+SCRIPT VARIABLES
+
+When a variable starts with "s:" it is a script variable.  It can only be used
+inside a script.  Outside the script it's not visible.  This avoids trouble
+with using the same variable name in different scripts.  The variables will be
+kept as long as Vim is running.  And the same variables are used when sourcing
+the same script again. |<a href="eval.html#s:var">s:var</a>|
+
+The fun is that these variables can also be used in functions, autocommands
+and user commands that are defined in the script.  In our example we can add
+a few lines to count the number of corrections:
+<code class="example"></code>
+<code class="example"> 19	let s:count = 4</code>
+<code class="example"> ..</code>
+<code class="example"> 30	function s:Add(from, correct)</code>
+<code class="example"> ..</code>
+<code class="example"> 34	  let s:count = s:count + 1</code>
+<code class="example"> 35	  echo s:count . " corrections now"</code>
+<code class="example"> 36	endfunction</code>
+<code class="example"></code>
+First s:count is initialized to 4 in the script itself.  When later the
+s:Add() function is called, it increments s:count.  It doesn't matter from
+where the function was called, since it has been defined in the script, it
+will use the local variables from this script.
+
+
+THE RESULT
+
+Here is the resulting complete example:
+<code class="example"></code>
+<code class="example">  1	" Vim global plugin for correcting typing mistakes</code>
+<code class="example">  2	" Last Change:	2000 Oct 15</code>
+<code class="example">  3	" Maintainer:	Bram Moolenaar <code class="special">&lt;Bram@vim.org&gt;</code></code>
+<code class="example">  4	" License:	This file is placed in the public domain.</code>
+<code class="example">  5</code>
+<code class="example">  6	if exists("g:loaded_typecorr")</code>
+<code class="example">  7	  finish</code>
+<code class="example">  8	endif</code>
+<code class="example">  9	let g:loaded_typecorr = 1</code>
+<code class="example"> 10</code>
+<code class="example"> 11	let s:save_cpo = &amp;cpo</code>
+<code class="example"> 12	set cpo&amp;vim</code>
+<code class="example"> 13</code>
+<code class="example"> 14	iabbrev teh the</code>
+<code class="example"> 15	iabbrev otehr other</code>
+<code class="example"> 16	iabbrev wnat want</code>
+<code class="example"> 17	iabbrev synchronisation</code>
+<code class="example"> 18		\ synchronization</code>
+<code class="example"> 19	let s:count = 4</code>
+<code class="example"> 20</code>
+<code class="example"> 21	if !hasmapto('<code class="special">&lt;Plug&gt;</code>TypecorrAdd')</code>
+<code class="example"> 22	  map <code class="special">&lt;unique&gt;</code> <code class="special">&lt;Leader&gt;</code>a  <code class="special">&lt;Plug&gt;</code>TypecorrAdd</code>
+<code class="example"> 23	endif</code>
+<code class="example"> 24	noremap <code class="special">&lt;unique&gt;</code> <code class="special">&lt;script&gt;</code> <code class="special">&lt;Plug&gt;</code>TypecorrAdd  <code class="special">&lt;SID&gt;</code>Add</code>
+<code class="example"> 25</code>
+<code class="example"> 26	noremenu <code class="special">&lt;script&gt;</code> Plugin.Add\ Correction      <code class="special">&lt;SID&gt;</code>Add</code>
+<code class="example"> 27</code>
+<code class="example"> 28	noremap <code class="special">&lt;SID&gt;</code>Add  :call <code class="special">&lt;SID&gt;</code>Add(expand("<code class="special">&lt;cword&gt;</code>"), 1)<code class="special">&lt;CR&gt;</code></code>
+<code class="example"> 29</code>
+<code class="example"> 30	function s:Add(from, correct)</code>
+<code class="example"> 31	  let to = input("type the correction for " . a:from . ": ")</code>
+<code class="example"> 32	  exe ":iabbrev " . a:from . " " . to</code>
+<code class="example"> 33	  if a:correct |<code class="badlink"> exe "normal viws\&lt;C-R&gt;\" \b\e" </code>| endif</code>
+<code class="example"> 34	  let s:count = s:count + 1</code>
+<code class="example"> 35	  echo s:count . " corrections now"</code>
+<code class="example"> 36	endfunction</code>
+<code class="example"> 37</code>
+<code class="example"> 38	if !exists(":Correct")</code>
+<code class="example"> 39	  command -nargs=1  Correct  :call s:Add(<code class="special">&lt;q-args&gt;</code>, 0)</code>
+<code class="example"> 40	endif</code>
+<code class="example"> 41</code>
+<code class="example"> 42	let &amp;cpo = s:save_cpo</code>
+<code class="example"> 43	unlet s:save_cpo</code>
+<code class="example"></code>
+Line 33 wasn't explained yet.  It applies the new correction to the word under
+the cursor.  The |<a href="various.html#:normal">:normal</a>| command is used to use the new abbreviation.  <code class="note">Note</code>
+that mappings and abbreviations are expanded here, even though the function
+was called from a mapping defined with ":noremap".
+
+Using "unix" for the 'fileformat' option is recommended.  The Vim scripts will
+then work everywhere.  Scripts with 'fileformat' set to "dos" do not work on
+Unix.  Also see |<a href="repeat.html#:source_crnl">:source_crnl</a>|.  To be sure it is set right, do this before
+writing the file:
+<code class="example"></code>
+<code class="example">	:set fileformat=unix</code>
+<code class="example"></code>
+<code class="example"></code>
+DOCUMENTATION						<b class="vimtag">*<a name="write-local-help">write-local-help</a>*</b>
+
+It's a good idea to also write some documentation for your plugin.  Especially
+when its behavior can be changed by the user.  See |<a href="usr_05.html#add-local-help">add-local-help</a>| for how
+they are installed.
+
+Here is a simple example for a plugin help file, called "typecorr.txt":
+<code class="example"></code>
+<code class="example">  1	<b class="vimtag">*<a name="typecorr.txt">typecorr.txt</a>*</b>	Plugin for correcting typing mistakes</code>
+<code class="example">  2</code>
+<code class="example">  3	If you make typing mistakes, this plugin will have them corrected</code>
+<code class="example">  4	automatically.</code>
+<code class="example">  5</code>
+<code class="example">  6	There are currently only a few corrections.  Add your own if you like.</code>
+<code class="example">  7</code>
+<code class="example">  8	Mappings:</code>
+<code class="example">  9	<code class="special">&lt;Leader&gt;</code>a   or   <code class="special">&lt;Plug&gt;</code>TypecorrAdd</code>
+<code class="example"> 10		Add a correction for the word under the cursor.</code>
+<code class="example"> 11</code>
+<code class="example"> 12	Commands:</code>
+<code class="example"> 13	:Correct <code class="special">{word}</code></code>
+<code class="example"> 14		Add a correction for <code class="special">{word}</code>.</code>
+<code class="example"> 15</code>
+<code class="example"> 16							<b class="vimtag">*<a name="typecorr-settings">typecorr-settings</a>*</b></code>
+<code class="example"> 17	This plugin doesn't have any settings.</code>
+<code class="example"></code>
+The first line is actually the only one for which the format matters.  It will
+be extracted from the help file to be put in the "LOCAL ADDITIONS:" section of
+help.txt |<a href="help.html#local-additions">local-additions</a>|.  The first "*" must be in the first column of the
+first line.  After adding your help file do ":help" and check that the entries
+line up nicely.
+
+You can add more tags inside ** in your help file.  But be careful not to use
+existing help tags.  You would probably use the name of your plugin in most of
+them, like "typecorr-settings" in the example.
+
+Using references to other parts of the help in || is recommended.  This makes
+it easy for the user to find associated help.
+
+
+FILETYPE DETECTION					<b class="vimtag">*<a name="plugin-filetype">plugin-filetype</a>*</b>
+
+If your filetype is not already detected by Vim, you should create a filetype
+detection snippet in a separate file.  It is usually in the form of an
+autocommand that sets the filetype when the file name matches a pattern.
+Example:
+<code class="example"></code>
+<code class="example">	au BufNewFile,BufRead *.foo			set filetype=foofoo</code>
+<code class="example"></code>
+Write this single-line file as "ftdetect/foofoo.vim" in the first directory
+that appears in 'runtimepath'.  For Unix that would be
+"~/.vim/ftdetect/foofoo.vim".  The convention is to use the name of the
+filetype for the script name.
+
+You can make more complicated checks if you like, for example to inspect the
+contents of the file to recognize the language.  Also see |<a href="filetype.html#new-filetype">new-filetype</a>|.
+
+
+SUMMARY							<b class="vimtag">*<a name="plugin-special">plugin-special</a>*</b>
+
+Summary of special things to use in a plugin:
+
+s:name			Variables local to the script.
+
+<code class="special">&lt;SID&gt;</code>			Script-ID, used for mappings and functions local to
+			the script.
+
+hasmapto()		Function to test if the user already defined a mapping
+			for functionality the script offers.
+
+<code class="special">&lt;Leader&gt;</code>		Value of "mapleader", which the user defines as the
+			keys that plugin mappings start with.
+
+:map <code class="special">&lt;unique&gt;</code>		Give a warning if a mapping already exists.
+
+:noremap <code class="special">&lt;script&gt;</code>	Use only mappings local to the script, not global
+			mappings.
+
+exists(":Cmd")		Check if a user command already exists.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.12">41.12</a>*</b>	Writing a filetype plugin	<b class="vimtag">*<a name="write-filetype-plugin">write-filetype-plugin</a>*</b> <b class="vimtag">*<a name="ftplugin">ftplugin</a>*</b>
+
+A filetype plugin is like a global plugin, except that it sets options and
+defines mappings for the current buffer only.  See |<a href="usr_05.html#add-filetype-plugin">add-filetype-plugin</a>| for
+how this type of plugin is used.
+
+First read the section on global plugins above |<a href="usr_41.html#41.11">41.11</a>|.  All that is said there
+also applies to filetype plugins.  There are a few extras, which are explained
+here.  The essential thing is that a filetype plugin should only have an
+effect on the current buffer.
+
+
+DISABLING
+
+If you are writing a filetype plugin to be used by many people, they need a
+chance to disable loading it.  Put this at the top of the plugin:
+<code class="example"></code>
+<code class="example">	" Only do this when not done yet for this buffer</code>
+<code class="example">	if exists("b:did_ftplugin")</code>
+<code class="example">	  finish</code>
+<code class="example">	endif</code>
+<code class="example">	let b:did_ftplugin = 1</code>
+<code class="example"></code>
+This also needs to be used to avoid that the same plugin is executed twice for
+the same buffer (happens when using an ":edit" command without arguments).
+
+Now users can disable loading the default plugin completely by making a
+filetype plugin with only this line:
+<code class="example"></code>
+<code class="example">	let b:did_ftplugin = 1</code>
+<code class="example"></code>
+This does require that the filetype plugin directory comes before $VIMRUNTIME
+in 'runtimepath'!
+
+If you do want to use the default plugin, but overrule one of the settings,
+you can write the different setting in a script:
+<code class="example"></code>
+<code class="example">	setlocal textwidth=70</code>
+<code class="example"></code>
+Now write this in the "after" directory, so that it gets sourced after the
+distributed "vim.vim" ftplugin |<a href="options.html#after-directory">after-directory</a>|.  For Unix this would be
+"~/.vim/after/ftplugin/vim.vim".  <code class="note">Note</code> that the default plugin will have set
+"b:did_ftplugin", but it is ignored here.
+
+
+OPTIONS
+
+To make sure the filetype plugin only affects the current buffer use the
+<code class="example"></code>
+<code class="example">	:setlocal</code>
+<code class="example"></code>
+command to set options.  And only set options which are local to a buffer (see
+the help for the option to check that).  When using |<a href="options.html#:setlocal">:setlocal</a>| for global
+options or options local to a window, the value will change for many buffers,
+and that is not what a filetype plugin should do.
+
+When an option has a value that is a list of flags or items, consider using
+"+=" and "-=" to keep the existing value.  Be aware that the user may have
+changed an option value already.  First resetting to the default value and
+then changing it is often a good idea.  Example:
+<code class="example"></code>
+<code class="example">	:setlocal formatoptions&amp; formatoptions+=ro</code>
+<code class="example"></code>
+<code class="example"></code>
+MAPPINGS
+
+To make sure mappings will only work in the current buffer use the
+<code class="example"></code>
+<code class="example">	:map <code class="special">&lt;buffer&gt;</code></code>
+<code class="example"></code>
+command.  This needs to be combined with the two-step mapping explained above.
+An example of how to define functionality in a filetype plugin:
+<code class="example"></code>
+<code class="example">	if !hasmapto('<code class="special">&lt;Plug&gt;</code>JavaImport')</code>
+<code class="example">	  map <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;unique&gt;</code> <code class="special">&lt;LocalLeader&gt;</code>i <code class="special">&lt;Plug&gt;</code>JavaImport</code>
+<code class="example">	endif</code>
+<code class="example">	noremap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;unique&gt;</code> <code class="special">&lt;Plug&gt;</code>JavaImport oimport ""<code class="special">&lt;Left&gt;</code><code class="special">&lt;Esc&gt;</code></code>
+<code class="example"></code>
+|<a href="eval.html#hasmapto()">hasmapto()</a>| is used to check if the user has already defined a map to
+<code class="special">&lt;Plug&gt;</code>JavaImport.  If not, then the filetype plugin defines the default
+mapping.  This starts with |<a href="map.html#%3CLocalLeader%3E">&lt;LocalLeader&gt;</a>|, which allows the user to select
+the key(s) he wants filetype plugin mappings to start with.  The default is a
+backslash.
+"<code class="special">&lt;unique&gt;</code>" is used to give an error message if the mapping already exists or
+overlaps with an existing mapping.
+|<a href="map.html#:noremap">:noremap</a>| is used to avoid that any other mappings that the user has defined
+interferes.  You might want to use ":noremap <code class="special">&lt;script&gt;</code>" to allow remapping
+mappings defined in this script that start with <code class="special">&lt;SID&gt;</code>.
+
+The user must have a chance to disable the mappings in a filetype plugin,
+without disabling everything.  Here is an example of how this is done for a
+plugin for the mail filetype:
+<code class="example"></code>
+<code class="example">	" Add mappings, unless the user didn't want this.</code>
+<code class="example">	if !exists("no_plugin_maps") &amp;&amp; !exists("no_mail_maps")</code>
+<code class="example">	  " Quote text by inserting "&gt; "</code>
+<code class="example">	  if !hasmapto('<code class="special">&lt;Plug&gt;</code>MailQuote')</code>
+<code class="example">	    vmap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;LocalLeader&gt;</code>q <code class="special">&lt;Plug&gt;</code>MailQuote</code>
+<code class="example">	    nmap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;LocalLeader&gt;</code>q <code class="special">&lt;Plug&gt;</code>MailQuote</code>
+<code class="example">	  endif</code>
+<code class="example">	  vnoremap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;Plug&gt;</code>MailQuote :s/^/&gt; /<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	  nnoremap <code class="special">&lt;buffer&gt;</code> <code class="special">&lt;Plug&gt;</code>MailQuote :.,$s/^/&gt; /<code class="special">&lt;CR&gt;</code></code>
+<code class="example">	endif</code>
+<code class="example"></code>
+Two global variables are used:
+|<a href="filetype.html#no_plugin_maps">no_plugin_maps</a>|	disables mappings for all filetype plugins
+|<a href="filetype.html#no_mail_maps">no_mail_maps</a>|		disables mappings for the "mail" filetype
+
+
+USER COMMANDS
+
+To add a user command for a specific file type, so that it can only be used in
+one buffer, use the "-buffer" argument to |<a href="map.html#:command">:command</a>|.  Example:
+<code class="example"></code>
+<code class="example">	:command -buffer  Make  make %:r.s</code>
+<code class="example"></code>
+<code class="example"></code>
+VARIABLES
+
+A filetype plugin will be sourced for each buffer of the type it's for.  Local
+script variables |<a href="eval.html#s:var">s:var</a>| will be shared between all invocations.  Use local
+buffer variables |<a href="eval.html#b:var">b:var</a>| if you want a variable specifically for one buffer.
+
+
+FUNCTIONS
+
+When defining a function, this only needs to be done once.  But the filetype
+plugin will be sourced every time a file with this filetype will be opened.
+This construct makes sure the function is only defined once:
+<code class="example"></code>
+<code class="example">	:if !exists("*s:Func")</code>
+<code class="example">	:  function s:Func(arg)</code>
+<code class="example">	:    ...</code>
+<code class="example">	:  endfunction</code>
+<code class="example">	:endif</code>
+
+
+UNDO						<b class="vimtag">*<a name="undo_indent">undo_indent</a>*</b> <b class="vimtag">*<a name="undo_ftplugin">undo_ftplugin</a>*</b>
+
+When the user does ":setfiletype xyz" the effect of the previous filetype
+should be undone.  Set the b:undo_ftplugin variable to the commands that will
+undo the settings in your filetype plugin.  Example:
+<code class="example"></code>
+<code class="example">	let b:undo_ftplugin = "setlocal fo&lt; com&lt; tw&lt; commentstring&lt;"</code>
+<code class="example">		\ . "| unlet b:match_ignorecase b:match_words b:match_skip"</code>
+<code class="example"></code>
+Using ":setlocal" with "&lt;" after the option name resets the option to its
+global value.  That is mostly the best way to reset the option value.
+
+This does require removing the "C" flag from 'cpoptions' to allow line
+continuation, as mentioned above |<a href="usr_41.html#use-cpo-save">use-cpo-save</a>|.
+
+For undoing the effect of an indent script, the b:undo_indent variable should
+be set accordingly.
+
+
+FILE NAME
+
+The filetype must be included in the file name |<a href="usr_05.html#ftplugin-name">ftplugin-name</a>|.  Use one of
+these three forms:
+
+	.../ftplugin/stuff.vim
+	.../ftplugin/stuff_foo.vim
+	.../ftplugin/stuff/bar.vim
+
+"stuff" is the filetype, "foo" and "bar" are arbitrary names.
+
+
+SUMMARY							<b class="vimtag">*<a name="ftplugin-special">ftplugin-special</a>*</b>
+
+Summary of special things to use in a filetype plugin:
+
+<code class="special">&lt;LocalLeader&gt;</code>		Value of "maplocalleader", which the user defines as
+			the keys that filetype plugin mappings start with.
+
+:map <code class="special">&lt;buffer&gt;</code>		Define a mapping local to the buffer.
+
+:noremap <code class="special">&lt;script&gt;</code>	Only remap mappings defined in this script that start
+			with <code class="special">&lt;SID&gt;</code>.
+
+:setlocal		Set an option for the current buffer only.
+
+:command -buffer	Define a user command local to the buffer.
+
+exists("*s:Func")	Check if a function was already defined.
+
+Also see |<a href="usr_41.html#plugin-special">plugin-special</a>|, the special things used for all plugins.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.13">41.13</a>*</b>	Writing a compiler plugin		<b class="vimtag">*<a name="write-compiler-plugin">write-compiler-plugin</a>*</b>
+
+A compiler plugin sets options for use with a specific compiler.  The user can
+load it with the |<a href="quickfix.html#:compiler">:compiler</a>| command.  The main use is to set the
+'errorformat' and 'makeprg' options.
+
+Easiest is to have a look at examples.  This command will edit all the default
+compiler plugins:
+<code class="example"></code>
+<code class="example">	:next $VIMRUNTIME/compiler/*.vim</code>
+<code class="example"></code>
+Use |<a href="editing.html#:next">:next</a>| to go to the next plugin file.
+
+There are two special items about these files.  First is a mechanism to allow
+a user to overrule or add to the default file.  The default files start with:
+<code class="example"></code>
+<code class="example">	:if exists("current_compiler")</code>
+<code class="example">	:  finish</code>
+<code class="example">	:endif</code>
+<code class="example">	:let current_compiler = "mine"</code>
+<code class="example"></code>
+When you write a compiler file and put it in your personal runtime directory
+(e.g., ~/.vim/compiler for Unix), you set the "current_compiler" variable to
+make the default file skip the settings.
+							<b class="vimtag">*<a name=":CompilerSet">:CompilerSet</a>*</b>
+The second mechanism is to use ":set" for ":compiler!" and ":setlocal" for
+":compiler".  Vim defines the ":CompilerSet" user command for this.  However,
+older Vim versions don't, thus your plugin should define it then.  This is an
+example:
+<code class="example"></code>
+<code class="example">  if exists(":CompilerSet") != 2</code>
+<code class="example">    command -nargs=* CompilerSet setlocal <code class="special">&lt;args&gt;</code></code>
+<code class="example">  endif</code>
+<code class="example">  CompilerSet errorformat&amp;		" use the default 'errorformat'</code>
+<code class="example">  CompilerSet makeprg=nmake</code>
+<code class="example"></code>
+When you write a compiler plugin for the Vim distribution or for a system-wide
+runtime directory, use the mechanism mentioned above.  When
+"current_compiler" was already set by a user plugin nothing will be done.
+
+When you write a compiler plugin to overrule settings from a default plugin,
+don't check "current_compiler".  This plugin is supposed to be loaded
+last, thus it should be in a directory at the end of 'runtimepath'.  For Unix
+that could be ~/.vim/after/compiler.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.14">41.14</a>*</b>	Writing a plugin that loads quickly	<b class="vimtag">*<a name="write-plugin-quickload">write-plugin-quickload</a>*</b>
+
+A plugin may grow and become quite long.  The startup delay may become
+noticeable, while you hardly ever use the plugin.  Then it's time for a
+quickload plugin.
+
+The basic idea is that the plugin is loaded twice.  The first time user
+commands and mappings are defined that offer the functionality.  The second
+time the functions that implement the functionality are defined.
+
+It may sound surprising that quickload means loading a script twice.  What we
+mean is that it loads quickly the first time, postponing the bulk of the
+script to the second time, which only happens when you actually use it.  When
+you always use the functionality it actually gets slower!
+
+<code class="note">Note</code> that since Vim 7 there is an alternative: use the |<a href="eval.html#autoload">autoload</a>|
+functionality |<a href="usr_41.html#41.15">41.15</a>|.
+
+The following example shows how it's done:
+<code class="example"></code>
+<code class="example">	" Vim global plugin for demonstrating quick loading</code>
+<code class="example">	" Last Change:	2005 Feb 25</code>
+<code class="example">	" Maintainer:	Bram Moolenaar <code class="special">&lt;Bram@vim.org&gt;</code></code>
+<code class="example">	" License:	This file is placed in the public domain.</code>
+<code class="example"></code>
+<code class="example">	if !exists("s:did_load")</code>
+<code class="example">		command -nargs=* BNRead  call BufNetRead(<code class="special">&lt;f-args&gt;</code>)</code>
+<code class="example">		map <code class="special">&lt;F19&gt;</code> :call BufNetWrite('something')<code class="special">&lt;CR&gt;</code></code>
+<code class="example"></code>
+<code class="example">		let s:did_load = 1</code>
+<code class="example">		exe 'au FuncUndefined BufNet* source ' . expand('<code class="special">&lt;sfile&gt;</code>')</code>
+<code class="example">		finish</code>
+<code class="example">	endif</code>
+<code class="example"></code>
+<code class="example">	function BufNetRead(...)</code>
+<code class="example">		echo 'BufNetRead(' . string(a:000) . ')'</code>
+<code class="example">		" read functionality here</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+<code class="example">	function BufNetWrite(...)</code>
+<code class="example">		echo 'BufNetWrite(' . string(a:000) . ')'</code>
+<code class="example">		" write functionality here</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+When the script is first loaded "s:did_load" is not set.  The commands between
+the "if" and "endif" will be executed.  This ends in a |<a href="repeat.html#:finish">:finish</a>| command, thus
+the rest of the script is not executed.
+
+The second time the script is loaded "s:did_load" exists and the commands
+after the "endif" are executed.  This defines the (possible long)
+BufNetRead() and BufNetWrite() functions.
+
+If you drop this script in your plugin directory Vim will execute it on
+startup.  This is the sequence of events that happens:
+
+1. The "BNRead" command is defined and the <code class="special">&lt;F19&gt;</code> key is mapped when the script
+   is sourced at startup.  A |<a href="autocmd.html#FuncUndefined">FuncUndefined</a>| autocommand is defined.  The
+   ":finish" command causes the script to terminate early.
+
+2. The user types the BNRead command or presses the <code class="special">&lt;F19&gt;</code> key.  The
+   BufNetRead() or BufNetWrite() function will be called.
+
+3. Vim can't find the function and triggers the |<a href="autocmd.html#FuncUndefined">FuncUndefined</a>| autocommand
+   event.  Since the pattern "BufNet*" matches the invoked function, the
+   command "source fname" will be executed.  "fname" will be equal to the name
+   of the script, no matter where it is located, because it comes from
+   expanding "<code class="special">&lt;sfile&gt;</code>" (see |<a href="eval.html#expand()">expand()</a>|).
+
+4. The script is sourced again, the "s:did_load" variable exists and the
+   functions are defined.
+
+Notice that the functions that are loaded afterwards match the pattern in the
+|<a href="autocmd.html#FuncUndefined">FuncUndefined</a>| autocommand.  You must make sure that no other plugin defines
+functions that match this pattern.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.15">41.15</a>*</b>	Writing library scripts			<b class="vimtag">*<a name="write-library-script">write-library-script</a>*</b>
+
+Some functionality will be required in several places.  When this becomes more
+than a few lines you will want to put it in one script and use it from many
+scripts.  We will call that one script a library script.
+
+Manually loading a library script is possible, so long as you avoid loading it
+when it's already done.  You can do this with the |<a href="eval.html#exists()">exists()</a>| function.
+Example:
+<code class="example"></code>
+<code class="example">	if !exists('*MyLibFunction')</code>
+<code class="example">	   runtime library/mylibscript.vim</code>
+<code class="example">	endif</code>
+<code class="example">	call MyLibFunction(arg)</code>
+<code class="example"></code>
+Here you need to know that MyLibFunction() is defined in a script
+"library/mylibscript.vim" in one of the directories in 'runtimepath'.
+
+To make this a bit simpler Vim offers the autoload mechanism.  Then the
+example looks like this:
+<code class="example"></code>
+<code class="example">	call mylib#myfunction(arg)</code>
+<code class="example"></code>
+That's a lot simpler, isn't it?  Vim will recognize the function name and when
+it's not defined search for the script "autoload/mylib.vim" in 'runtimepath'.
+That script must define the "mylib#myfunction()" function.
+
+You can put many other functions in the mylib.vim script, you are free to
+organize your functions in library scripts.  But you must use function names
+where the part before the '#' matches the script name.  Otherwise Vim would
+not know what script to load.
+
+If you get really enthusiastic and write lots of library scripts, you may
+want to use subdirectories.  Example:
+<code class="example"></code>
+<code class="example">	call netlib#ftp#read('somefile')</code>
+<code class="example"></code>
+For Unix the library script used for this could be:
+
+	~/.vim/autoload/netlib/ftp.vim
+
+Where the function is defined like this:
+<code class="example"></code>
+<code class="example">	function netlib#ftp#read(fname)</code>
+<code class="example">		"  Read the file fname through ftp</code>
+<code class="example">	endfunction</code>
+<code class="example"></code>
+Notice that the name the function is defined with is exactly the same as the
+name used for calling the function.  And the part before the last '#'
+exactly matches the subdirectory and script name.
+
+You can use the same mechanism for variables:
+<code class="example"></code>
+<code class="example">	let weekdays = dutch#weekdays</code>
+<code class="example"></code>
+This will load the script "autoload/dutch.vim", which should contain something
+like:
+<code class="example"></code>
+<code class="example">	let dutch#weekdays = ['zondag', 'maandag', 'dinsdag', 'woensdag',</code>
+<code class="example">		\ 'donderdag', 'vrijdag', 'zaterdag']</code>
+<code class="example"></code>
+Further reading: |<a href="eval.html#autoload">autoload</a>|.
+
+</pre><hr/><pre><b class="vimtag">*<a name="41.16">41.16</a>*</b>	Distributing Vim scripts			<b class="vimtag">*<a name="distribute-script">distribute-script</a>*</b>
+
+Vim users will look for scripts on the Vim website: http://www.vim.org.
+If you made something that is useful for others, share it!
+
+Vim scripts can be used on any system.  There might not be a tar or gzip
+command.  If you want to pack files together and/or compress them the "zip"
+utility is recommended.
+
+For utmost portability use Vim itself to pack scripts together.  This can be
+done with the Vimball utility.  See |<a href="pi_vimball.html#vimball">vimball</a>|.
+
+It's good if you add a line to allow automatic updating.  See |<a href="pi_getscript.html#glvs-plugins">glvs-plugins</a>|.
+
+</pre><hr/><pre>
+Next chapter: |<a href="usr_42.html#usr_42.txt">usr_42</a>|  Add new menus
+
+Copyright: see |<a href="usr_01.html#manual-copyright">manual-copyright</a>|  vim:tw=78:ts=8:noet:ft=help:norl:
+</pre>
+<p><i>Generated by vim2html on Wed Feb 26 03:19:42 UTC 2020</i></p>
+</body>
+</html>
