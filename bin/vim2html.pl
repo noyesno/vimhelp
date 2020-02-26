@@ -84,12 +84,11 @@ sub vim2html
 	my $head = uc( $outfile );
 
 	print OUT<<EOF;
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <title>VIM: $outfile</title>
-<link rel="stylesheet" href="vim-stylesheet.css" type="text/css">
+<link rel="stylesheet" href="vim-stylesheet.css" type="text/css"/>
 </head>
 <body>
 <h2>$head</h2>
@@ -100,7 +99,7 @@ EOF
 	while( <IN> ) {
 		chop;
 		if ( /^\s*[-=]+\s*$/ ) {
-			print OUT "</pre><hr><pre>";
+			print OUT "</pre><hr/><pre>";
 			next;
 		}
 

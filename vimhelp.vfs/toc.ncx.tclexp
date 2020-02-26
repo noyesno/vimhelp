@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+	<meta content="vimhelp" name="dtb:generator"/>
+	<meta content="vimhelp" name="dtb:uid"/>
+	<meta content="1" name="dtb:depth"/>
+	<meta content="0" name="dtb:totalPageCount"/>
+	<meta content="0" name="dtb:maxPageNumber"/>
+  </head>
+
+  <docTitle>
+	<text>Vim Help</text>
+  </docTitle>
+
+  <navMap>
+	<!--navPoint class="chapter" id="%id%" playOrder="%order%">
+		<navLabel><text>%label%</text></navLabel>
+		<content src="%content%"/>
+	</navPoint-->
+
+<?tcl 
+  set order 0
+  foreach page [epub-pagelist] {
+      incr order
+      set id [file tail $page]
+      set label [file root [file tail $page]]
+
+      @ "<navPoint class='chapter' id='$id' playOrder='$order'>"
+      @ "  <navLabel><text>$label</text></navLabel>"
+      @ "  <content src='$page'/>"
+      @	"</navPoint>"
+  }
+?>
+  </navMap>
+</ncx>
+
