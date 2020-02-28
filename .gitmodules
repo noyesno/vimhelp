@@ -1,3 +1,6 @@
 [submodule "vim"]
 	path = vim
 	url = https://github.com/vim/vim.git
+[submodule "vimcdoc"]
+	path = vimcdoc
+	url = https://github.com/yianwillis/vimcdoc.git
